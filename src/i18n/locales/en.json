@@ -1,0 +1,574 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "dashboard": "Dashboard",
+    "posts": "Posts",
+    "calendar": "Calendar"
+  },
+  "hero": {
+    "title": "30 Days of Content",
+    "titleHighlight": "In 15 Minutes",
+    "goToDashboard": "Go to Dashboard",
+    "subtitle": "No writers. No designers. No burnout. Just click, approve, post.",
+    "subtitleSecondary": "AI does the work. You take the credit.",
+    "cta": "Create My Content Now",
+    "ctaFree": "Create My Content Now",
+    "freePlanInfo": "See results in 5 minutes. Free forever.",
+    "viewPricing": "See What's Included",
+    "demo": "See How It Works",
+    "users": "From zero to 30 days of content in one sitting",
+    "trustedBy": "Trusted by businesses worldwide",
+    "trustNoCreditCard": "Results in 5 minutes",
+    "trustCancel": "No credit card needed",
+    "trustLocalData": "Cancel anytime",
+    "transformationBefore": "8+ hours",
+    "transformationAfter": "15 min",
+    "transformationLabel": "of content work"
+  },
+  "problem": {
+    "title": "Never Run Out",
+    "titleHighlight": "Of Content Again",
+    "oldWay": "WITHOUT POSTAIFY",
+    "newWay": "WITH POSTAIFY",
+    "before": {
+      "title": "The Content Hamster Wheel",
+      "point1": "Staring at blank screens for hours",
+      "point2": "Posting randomly, missing momentum",
+      "point3": "Juggling multiple accounts = chaos",
+      "point4": "Sunday night content panic",
+      "point5": "Hiring writers you can't afford"
+    },
+    "after": {
+      "title": "Content on Autopilot",
+      "point1": "30 days of posts in one sitting",
+      "point2": "AI matches your brand voice perfectly",
+      "point3": "All platforms, one dashboard",
+      "point4": "Schedule months ahead, stress-free",
+      "point5": "Professional quality, zero team needed"
+    },
+    "flow": {
+      "step1": "Describe",
+      "step2": "Generate",
+      "step3": "Approve"
+    }
+  },
+  "agents": {
+    "title": "AI Does The Work.",
+    "titleHighlight": "You Approve.",
+    "subtitle": "Every tool you need to create a month of content in minutes. No learning curve. No expertise required.",
+    "sales": {
+      "category": "Content",
+      "title": "AI Content Generation",
+      "description": "Generate engaging posts for all social platforms automatically",
+      "feature1": "Instagram, Facebook, TikTok, LinkedIn",
+      "feature2": "Multiple content styles",
+      "feature3": "Brand-aligned content"
+    },
+    "marketing": {
+      "category": "Images",
+      "title": "AI Image Generation",
+      "description": "Create stunning AI images with Flux & SDXL models",
+      "feature1": "Flux & SDXL models",
+      "feature2": "Custom prompts",
+      "feature3": "High-quality outputs"
+    },
+    "research": {
+      "category": "Voice",
+      "title": "Script + Voiceover",
+      "description": "Create scripts and generate professional AI voiceovers",
+      "feature1": "Natural voice generation",
+      "feature2": "Multiple voice options",
+      "feature3": "Script optimization"
+    },
+    "content": {
+      "category": "Repurpose",
+      "title": "YouTube to Posts",
+      "description": "Turn any YouTube video into multiple social media posts",
+      "feature1": "Automatic transcript extraction",
+      "feature2": "Multi-post generation",
+      "feature3": "Content repurposing"
+    },
+    "data": {
+      "category": "Brands",
+      "title": "Brand Management",
+      "description": "Create and manage multiple brands with unique voices and styles",
+      "feature1": "Multiple brand profiles",
+      "feature2": "Custom brand voice",
+      "feature3": "Brand-specific content"
+    },
+    "support": {
+      "category": "Scheduling",
+      "title": "Smart Scheduling",
+      "description": "Plan and schedule your content calendar in advance",
+      "feature1": "Visual content calendar",
+      "feature2": "Bulk scheduling",
+      "feature3": "Optimal posting times"
+    },
+    "telegram": {
+      "category": "Delivery",
+      "title": "Telegram Delivery",
+      "description": "Get your scheduled posts delivered directly to Telegram when ready",
+      "feature1": "Instant mobile delivery",
+      "feature2": "Copy & post in seconds",
+      "feature3": "Never miss a schedule"
+    }
+  },
+  "howItWorks": {
+    "title": "From Zero to 30 Days",
+    "titleHighlight": "In 4 Steps",
+    "step1": {
+      "title": "Describe Your Brand",
+      "description": "Tell us your voice, style, and topics. Takes 2 minutes."
+    },
+    "step2": {
+      "title": "Click Generate",
+      "description": "AI creates a month of posts. You watch it happen."
+    },
+    "step3": {
+      "title": "Approve & Schedule",
+      "description": "Review, tweak if needed, pick your dates."
+    },
+    "step4": {
+      "title": "You're Done",
+      "description": "Content goes out on autopilot. Go live your life."
+    }
+  },
+  "pricing": {
+    "title": "Less Than",
+    "titleHighlight": "$0.02 Per Post",
+    "subtitle": "A month of content costs less than a coffee. No writers. No designers. No stress.",
+    "monthly": "month",
+    "monthlyLabel": "Monthly",
+    "yearlyLabel": "Yearly",
+    "savePercentage": "Save 20%",
+    "year": "year",
+    "valueStack": {
+      "headline": "Replace 5+ subscriptions with one",
+      "totalValue": "Total value",
+      "content": "Content",
+      "images": "Images",
+      "voiceover": "Voiceover",
+      "channels": "5 channels",
+      "ifBoughtSeparately": "If bought separately",
+      "save87": "Save 87%"
+    },
+    "starter": {
+      "name": "Free Forever",
+      "price": "$0",
+      "description": "See results in 5 minutes",
+      "cta": "Start Creating Now",
+      "feature1": "2 brand profiles",
+      "feature2": "20 posts/month",
+      "feature3": "Smart scheduling",
+      "feature4": "All platforms included"
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "$19",
+      "priceYearly": "$149",
+      "saveAmount": "Save $79",
+      "description": "Full content machine",
+      "cta": "Unlock Pro",
+      "feature1": "5 brand profiles",
+      "feature2": "1,000 posts/month",
+      "feature3": "AI image generation",
+      "feature4": "AI voiceovers",
+      "feature5": "YouTube repurposing"
+    },
+    "enterprise": {
+      "name": "Agency",
+      "price": "$49",
+      "priceYearly": "$399",
+      "saveAmount": "Save $189",
+      "description": "For teams & agencies",
+      "cta": "Scale My Agency",
+      "feature1": "Unlimited brands",
+      "feature2": "90,000 posts/month",
+      "feature3": "Everything in Pro",
+      "feature4": "Team collaboration",
+      "feature5": "API access",
+      "feature6": "Dedicated support"
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked",
+    "titleHighlight": "Questions",
+    "q1": {
+      "question": "What is this platform?",
+      "answer": "This is an automated content platform. It helps you create brands, generate social media content with AI, and schedule posts automatically across all platforms."
+    },
+    "q2": {
+      "question": "How does AI content generation work?",
+      "answer": "You set up your brand's voice and style, then our AI generates engaging posts tailored to your brand. You can generate content for Instagram, Facebook, TikTok, LinkedIn, and more."
+    },
+    "q3": {
+      "question": "Do I need technical knowledge?",
+      "answer": "No! The platform is designed to be simple. Just create your brand, click generate, and get professional content instantly. No coding or technical skills required."
+    },
+    "q4": {
+      "question": "What platforms are supported?",
+      "answer": "We support all major social platforms including Instagram, Facebook, TikTok, LinkedIn, Twitter/X, and more. You can manage all your content from one dashboard."
+    },
+    "q5": {
+      "question": "Can I manage multiple brands?",
+      "answer": "Yes! Depending on your plan, you can manage 2 to unlimited brands. Each brand has its own voice, style, and content. Perfect for agencies and businesses with multiple products."
+    },
+    "q6": {
+      "question": "How many posts can I create?",
+      "answer": "The Free plan includes 20 posts, Pro plan includes 1,000 posts, and Business plan includes up to 90,000 posts per month. Upgrade anytime as you grow."
+    },
+    "q7": {
+      "question": "What currency are prices in?",
+      "answer": "All prices are in US Dollars ($). We accept major payment methods including credit cards and PayPal."
+    },
+    "q8": {
+      "question": "Can I cancel anytime?",
+      "answer": "Yes! There are no long-term contracts. You can cancel or change your plan anytime from your dashboard."
+    },
+    "stillHaveQuestions": "Still have questions?",
+    "contactUs": "Contact us at"
+  },
+  "footer": {
+    "product": {
+      "title": "Product",
+      "features": "Features",
+      "pricing": "Pricing",
+      "docs": "Documentation",
+      "changelog": "Changelog"
+    },
+    "company": {
+      "title": "Company",
+      "about": "About",
+      "blog": "Blog",
+      "careers": "Careers",
+      "contact": "Contact"
+    },
+    "legal": {
+      "title": "Legal",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "security": "Security"
+    },
+    "rights": "All rights reserved."
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "stats": {
+      "totalPosts": "Total Posts",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "drafts": "Drafts"
+    },
+    "recentPosts": "Recent Posts",
+    "quickActions": "Quick Actions",
+    "calendarPreview": "Calendar Preview",
+    "viewAll": "View All",
+    "viewCalendar": "View Calendar",
+    "noPosts": "No posts yet",
+    "createFirst": "Create your first post to get started",
+    "generate": "Generate",
+    "brands": "Brands"
+  },
+  "posts": {
+    "title": "Posts",
+    "filter": {
+      "all": "All Posts",
+      "draft": "Drafts",
+      "scheduled": "Scheduled",
+      "published": "Published"
+    },
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "published": "Published"
+    },
+    "platform": {
+      "instagram": "Instagram",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn",
+      "tiktok": "TikTok",
+      "facebook": "Facebook"
+    },
+    "noPosts": "No posts found",
+    "createPost": "Create your first post",
+    "scheduledFor": "Scheduled for",
+    "publishedOn": "Published on",
+    "createdOn": "Created on"
+  },
+  "calendar": {
+    "title": "Content Calendar",
+    "month": "Month",
+    "week": "Week",
+    "day": "Day",
+    "today": "Today",
+    "noEvents": "No posts scheduled for this day"
+  },
+  "brandSelector": {
+    "select": "Select Brand",
+    "manage": "Manage Brands"
+  },
+  "brandModal": {
+    "create": "Create New Brand",
+    "edit": "Edit Brand",
+    "name": "Brand Name",
+    "namePlaceholder": "Enter brand name",
+    "color": "Brand Color",
+    "voice": "Brand Voice",
+    "voiceOptions": {
+      "professional": "Professional",
+      "casual": "Casual & Friendly",
+      "witty": "Witty & Humorous",
+      "inspirational": "Inspirational",
+      "educational": "Educational"
+    },
+    "topics": "Topics",
+    "topicsPlaceholder": "e.g., tech, productivity, design",
+    "description": "Brand Description",
+    "descriptionPlaceholder": "Describe your brand's personality and values",
+    "cancel": "Cancel",
+    "save": "Save Changes"
+  },
+  "generateModal": {
+    "title": "Generate Content",
+    "selectBrand": "Select a brand first",
+    "platform": "Platform",
+    "style": "Content Style",
+    "styleOptions": {
+      "viral": "Viral & Engaging",
+      "storytelling": "Storytelling",
+      "educational": "Educational",
+      "controversial": "Controversial Take",
+      "inspirational": "Inspirational"
+    },
+    "topic": "Topic/Theme",
+    "topicPlaceholder": "What should this post be about?",
+    "generating": "Generating...",
+    "generate": "Generate",
+    "scheduleFor": "Schedule For",
+    "scheduleOptional": "(Optional)",
+    "saveDraft": "Save as Draft",
+    "schedule": "Schedule Post",
+    "scheduleTitle": "Schedule Your Post",
+    "back": "Back",
+    "confirmSchedule": "Confirm Schedule",
+    "apiKeyMissing": "Please add your OpenRouter API key in settings",
+    "error": "Failed to generate content. Please try again."
+  },
+  "quickActions": {
+    "generate": "Generate Content",
+    "createBrand": "Create Brand",
+    "voiceover": "Script + Voiceover",
+    "voiceoverDesc": "Create scripts and generate AI voiceovers",
+    "voiceoverButton": "Create Voiceover",
+    "videoToPosts": "YouTube to Posts",
+    "videoToPostsDesc": "Turn any YouTube video into multiple posts",
+    "videoToPostsButton": "Import Video"
+  },
+  "videoToPosts": {
+    "title": "YouTube to Posts",
+    "urlMode": "From URL",
+    "manualMode": "Paste Transcript",
+    "manualModeHint": "Don't have a YouTube API key? No problem! Copy the transcript directly from YouTube and paste it here.",
+    "transcriptLabel": "Video Transcript",
+    "characters": "characters",
+    "min100": "minimum 100",
+    "continueWithTranscript": "Continue with Transcript",
+    "pasteUrl": "Paste YouTube URL",
+    "fetchVideo": "Fetch Video",
+    "fetching": "Fetching...",
+    "fetchingVideo": "Fetching video info...",
+    "fetchingTranscript": "Extracting transcript...",
+    "invalidUrl": "Please enter a valid YouTube URL",
+    "fetchError": "Could not fetch video. Please check the URL.",
+    "transcriptError": "Could not auto-extract transcript. Please paste it manually.",
+    "manualTranscriptHint": "Copy the transcript from YouTube and paste it below. You can find it by clicking '...more' under the video, then 'Show transcript'.",
+    "apiKeyHint": "Pro tip: For automatic extraction, you can add a YouTube Data API key in Settings. Get one free at console.cloud.google.com",
+    "pasteTranscript": "Paste video transcript here...",
+    "useTranscript": "Use This Transcript",
+    "transcriptTooShort": "Transcript is too short. Please paste at least 100 characters.",
+    "numberOfPosts": "Number of Posts",
+    "posts": "posts",
+    "generateButton": "Generate {{count}} Posts",
+    "generating": "Generating Posts...",
+    "generatingHint": "AI is extracting the best content from your video",
+    "generatingPosts": "Creating posts from video...",
+    "generateError": "Failed to generate posts. Please try again.",
+    "generatedCount": "{{count}} posts generated",
+    "saveAllDrafts": "Save All as Drafts",
+    "postNumber": "Post {{number}}",
+    "edit": "Edit",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveDraft": "Save as Draft",
+    "selectAll": "Select All",
+    "selected": "selected",
+    "saveSelected": "Save Selected",
+    "draft": "Draft",
+    "schedulePost": "Schedule This Post",
+    "confirmSchedule": "Confirm Schedule",
+    "addToCalendar": "Add to Calendar",
+    "removeSchedule": "Remove Schedule",
+    "saveNow": "Save Now",
+    "saved": "Saved",
+    "toSchedule": "scheduled",
+    "toDraft": "as drafts",
+    "voiceover": "Voiceover"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKey": {
+      "title": "OpenRouter API Key",
+      "label": "API Key",
+      "placeholder": "sk-or-v1-...",
+      "description": "Your API key is stored locally and never sent to our servers",
+      "info": "You need an OpenRouter API key to generate content with AI",
+      "getKey": "Get your API key from OpenRouter",
+      "show": "Show",
+      "hide": "Hide",
+      "connected": "API key is set",
+      "notSet": "No API key configured. Add one to generate content."
+    },
+    "youtubeApiKey": {
+      "title": "YouTube Data API Key (Optional)",
+      "label": "YouTube API Key",
+      "description": "Enables automatic transcript extraction from YouTube videos",
+      "info": "Add a YouTube Data API key to auto-extract video transcripts. Without it, you'll need to paste transcripts manually.",
+      "getKey": "Get your free API key from Google Cloud Console",
+      "connected": "YouTube API key is set - auto-extraction enabled"
+    },
+    "elevenLabsApiKey": {
+      "title": "ElevenLabs API Key (Optional)",
+      "label": "ElevenLabs API Key",
+      "description": "Enables AI voiceover generation for your scripts",
+      "info": "Add an ElevenLabs API key to generate professional voiceovers for your content.",
+      "getKey": "Get your API key from ElevenLabs",
+      "connected": "ElevenLabs API key is set - voiceover enabled"
+    },
+    "usage": {
+      "title": "Usage Statistics",
+      "creditsUsed": "Credits Used",
+      "creditsRemaining": "Credits Remaining",
+      "resetInfo": "Credits reset monthly"
+    }
+  },
+  "voiceover": {
+    "title": "Script + Voiceover",
+    "script": "Your Script",
+    "scriptPlaceholder": "Enter or paste your script here...",
+    "scriptRequired": "Please enter a script",
+    "characterLimitExceeded": "Script exceeds the 5000 character limit",
+    "optimizeForVoice": "Optimize for Voice",
+    "optimize": "Optimize Script",
+    "optimizing": "Optimizing...",
+    "optimizeDescription": "AI will optimize your script for natural speech",
+    "style": {
+      "conversational": "Conversational",
+      "professional": "Professional",
+      "energetic": "Energetic",
+      "calm": "Calm"
+    },
+    "selectVoice": "Select Voice",
+    "refreshVoices": "Refresh",
+    "loading": "Loading...",
+    "noVoices": "No voices available",
+    "loadVoices": "Load Voices",
+    "enterApiKeyFirst": "Enter your ElevenLabs API key to load voices",
+    "preview": "Preview",
+    "generate": "Generate Voiceover",
+    "generating": "Generating...",
+    "audioReady": "Your voiceover is ready!",
+    "clickToPlay": "Click play to preview",
+    "download": "Download MP3",
+    "apiKeyMissing": "Please add your ElevenLabs API key",
+    "apiKeyPlaceholder": "Enter your ElevenLabs API key",
+    "getApiKey": "Get your API key at",
+    "errorLoadingVoices": "Failed to load voices. Check your API key.",
+    "errorOptimizing": "Failed to optimize script",
+    "errorGenerating": "Failed to generate voiceover"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "settings": "Settings"
+  },
+  "welcome": {
+    "title": "Welcome to Branding",
+    "subtitle": "Create and automate your social media content with AI",
+    "feature1": "Generate content for all platforms",
+    "feature2": "Schedule posts in advance",
+    "feature3": "Manage multiple brands",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "Enter your email",
+    "invalidEmail": "Please enter a valid email",
+    "freePlan": "Start with 2 brands and 20 posts free",
+    "getStarted": "Get Started",
+    "skip": "Skip for now"
+  },
+  "emailCapture": {
+    "title": "Almost there!",
+    "subtitle": "Enter your email to continue to payment",
+    "planSelected": "Plan selected",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "emailRequired": "Email is required",
+    "invalidEmail": "Please enter a valid email",
+    "marketingConsent": "Send me tips and updates on new features",
+    "securityNote": "We'll never share your email",
+    "continue": "Continue to Payment",
+    "skip": "Skip for now"
+  },
+  "upgrade": {
+    "brandLimit": {
+      "title": "Brand limit reached!",
+      "description": "Upgrade to manage more brands and grow your business."
+    },
+    "postLimit": {
+      "title": "All your posts for this month are used!",
+      "description": "Upgrade to create more content and engage your audience."
+    },
+    "imageLimit": {
+      "title": "AI image generation is a Pro feature",
+      "description": "Upgrade to Pro to create stunning AI-generated images for your posts."
+    },
+    "voiceoverLimit": {
+      "title": "Voiceover is a Pro feature",
+      "description": "Upgrade to Pro to create professional AI voiceovers for your content."
+    },
+    "videoLimit": {
+      "title": "Video repurposing is a Pro feature",
+      "description": "Upgrade to Pro to turn YouTube videos into multiple posts."
+    },
+    "brandsUsed": "Brands used",
+    "postsUsed": "Posts used",
+    "proIncludes": "Upgrade to Pro and get:",
+    "benefits": {
+      "posts": "{{count}} posts/month",
+      "brands": "{{count}} brand profiles",
+      "images": "AI Image Generation",
+      "voiceover": "AI Voiceover Creation",
+      "video": "YouTube to Posts",
+      "support": "Priority Support"
+    },
+    "price": "$19",
+    "pricePerPost": "Less than $0.02 per post",
+    "viewPlans": "View Plans",
+    "upgradeToPro": "Upgrade to Pro"
+  }
+}

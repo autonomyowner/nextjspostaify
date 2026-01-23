@@ -1,0 +1,13 @@
+// Landing page components
+export { LandingPage } from './LandingPage'
+export { Navbar } from './Navbar'
+export { Hero } from './Hero'
+export { ProblemSolution } from './ProblemSolution'
+export { HowItWorks } from './HowItWorks'
+export { AgentFeatures } from './AgentFeatures'
+export { Pricing } from './Pricing'
+export { FAQ } from './FAQ'
+export { Footer } from './Footer'
+export { LanguageSwitcher } from './LanguageSwitcher'
+export { StripeCheckout } from './StripeCheckout'
+export { EmailCaptureModal } from './EmailCaptureModal'
