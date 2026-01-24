@@ -198,6 +198,87 @@ IMPORTANT RULES:
   },
 });
 
+// Generate YouTube video summary (no auth required)
+export const generateYouTubeSummary = action({
+  args: {
+    youtubeUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const videoId = extractVideoId(args.youtubeUrl);
+    if (!videoId) {
+      throw new Error("Invalid YouTube URL. Please enter a valid YouTube video link.");
+    }
+
+    const videoInfo = await fetchVideoInfo(videoId);
+    if (!videoInfo) {
+      throw new Error("Could not fetch video information. Please check the URL and try again.");
+    }
+
+    const transcript = await fetchTranscript(videoId);
+
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error("AI service not configured");
+    }
+
+    const contentSource = transcript
+      ? `Video Title: "${videoInfo.title}"\n\nTranscript:\n${transcript}`
+      : `Video Title: "${videoInfo.title}"\nChannel: ${videoInfo.description}\n\nNote: Transcript unavailable - create a summary based on the title and likely content of this video.`;
+
+    const systemPrompt = `You are an expert at summarizing YouTube videos. Create a clear, comprehensive summary.
+
+Structure your summary:
+1. **Key Takeaways** (3-5 bullet points)
+2. **Detailed Summary** (2-3 paragraphs)
+3. **Who This Is For** (1 sentence)
+
+Keep it under 500 words. Be concise but informative.`;
+
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://postaify.com",
+          "X-Title": "POSTAIFY YouTube Summary",
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-3-haiku",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Summarize this YouTube video:\n\n${contentSource}` },
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("OpenRouter error:", error);
+      throw new Error("Failed to generate summary. Please try again.");
+    }
+
+    const data = await response.json() as {
+      choices: Array<{ message: { content: string } }>;
+    };
+
+    const summary = data.choices[0]?.message?.content;
+    if (!summary) {
+      throw new Error("No summary generated. Please try again.");
+    }
+
+    return {
+      summary: summary.trim(),
+      videoTitle: videoInfo.title,
+      hasTranscript: !!transcript,
+    };
+  },
+});
+
 // Save email capture from tool page
 export const captureToolEmail = mutation({
   args: {
