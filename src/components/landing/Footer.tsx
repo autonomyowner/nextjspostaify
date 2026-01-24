@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 
 export function Footer() {
@@ -24,6 +25,14 @@ export function Footer() {
       t('footer.legal.security')
     ]
   }
+
+  const freeTools = [
+    { name: 'All Free Tools', href: '/tools' },
+    { name: 'YouTube Summarizer', href: '/youtube-summary' },
+    { name: 'YouTube to LinkedIn', href: '/tools/youtube-to-linkedin' },
+    { name: 'YouTube to Twitter', href: '/tools/youtube-to-twitter' },
+    { name: 'YouTube to Instagram', href: '/tools/youtube-to-instagram' },
+  ]
   return (
     <footer className="py-16 border-t border-white/10">
       <div className="max-w-6xl mx-auto px-6">
@@ -46,6 +55,23 @@ export function Footer() {
                 Facebook
               </a>
             </div>
+          </div>
+
+          {/* Free Tools */}
+          <div>
+            <h4 className="font-semibold mb-4 text-sm">Free Tools</h4>
+            <ul className="space-y-2">
+              {freeTools.map((tool) => (
+                <li key={tool.href}>
+                  <Link
+                    href={tool.href}
+                    className="text-sm text-muted-foreground hover:text-white transition-colors"
+                  >
+                    {tool.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Links */}

@@ -39,6 +39,9 @@ export function Navbar() {
           <a href="#agents" className="text-sm text-muted-foreground hover:text-white transition-colors">
             {t('nav.features')}
           </a>
+          <Link href="/tools" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            Free Tools
+          </Link>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-white transition-colors">
             {t('nav.pricing')}
           </a>
