@@ -118,7 +118,7 @@ function TiltCard({ children, className, popular }: TiltCardProps) {
 export function Pricing() {
   const { t } = useTranslation()
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const isInView = useInView(ref, { once: true, margin: "-50px" })
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [emailCaptureOpen, setEmailCaptureOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: string; isYearly: boolean } | null>(null)

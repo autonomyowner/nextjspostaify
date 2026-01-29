@@ -26,13 +26,14 @@ export const getUserByStripeCustomerId = internalQuery({
 });
 
 // Get user by email (internal use only)
+// Uses .first() instead of .unique() to handle potential duplicates
 export const getUserByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+      .first();
   },
 });
 
@@ -58,6 +59,9 @@ export const getUserById = internalQuery({
 });
 
 // Get admin stats (internal use only)
+// Optimized with limits to prevent full table scans at scale
+const STATS_SAMPLE_LIMIT = 5000; // Cap for performance at scale
+
 export const getAdminStats = internalQuery({
   args: {},
   handler: async (ctx) => {
@@ -65,21 +69,29 @@ export const getAdminStats = internalQuery({
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-    // Get all users
-    const allUsers = await ctx.db.query("users").collect();
+    // Run all queries in parallel with limits to prevent memory issues
+    const [allUsers, allPosts, allBrands, allEmailCaptures] = await Promise.all([
+      ctx.db.query("users").take(STATS_SAMPLE_LIMIT),
+      ctx.db.query("posts").take(STATS_SAMPLE_LIMIT),
+      ctx.db.query("brands").take(STATS_SAMPLE_LIMIT),
+      ctx.db.query("emailCaptures").take(STATS_SAMPLE_LIMIT),
+    ]);
+
+    // Calculate user stats
     const freeUsers = allUsers.filter((u) => u.plan === "FREE").length;
     const proUsers = allUsers.filter((u) => u.plan === "PRO").length;
     const businessUsers = allUsers.filter((u) => u.plan === "BUSINESS").length;
     const recentSignups = allUsers.filter((u) => u._creationTime > thirtyDaysAgo).length;
 
-    // Get all posts and brands
-    const allPosts = await ctx.db.query("posts").collect();
-    const allBrands = await ctx.db.query("brands").collect();
-
-    // Get email captures
-    const allEmailCaptures = await ctx.db.query("emailCaptures").collect();
+    // Calculate email capture stats
     const withConsent = allEmailCaptures.filter((e) => e.marketingConsent).length;
     const recentCaptures = allEmailCaptures.filter((e) => e.capturedAt > sevenDaysAgo).length;
+
+    // Indicate if results are capped
+    const isCapped = allUsers.length >= STATS_SAMPLE_LIMIT ||
+      allPosts.length >= STATS_SAMPLE_LIMIT ||
+      allBrands.length >= STATS_SAMPLE_LIMIT ||
+      allEmailCaptures.length >= STATS_SAMPLE_LIMIT;
 
     return {
       users: {
@@ -102,6 +114,7 @@ export const getAdminStats = internalQuery({
             ? Math.round((withConsent / allEmailCaptures.length) * 100)
             : 0,
       },
+      isCapped, // True if stats are approximate due to volume
     };
   },
 });

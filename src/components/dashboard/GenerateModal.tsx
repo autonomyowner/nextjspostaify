@@ -78,6 +78,16 @@ function GenerateModalComponent({ isOpen, onClose, initialImageUrl }: GenerateMo
     return map[p]
   }
 
+  // Timeout wrapper to prevent infinite loading on API hang
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), ms)
+      )
+    ])
+  }
+
   const handleGenerate = async () => {
     // Check post limit before generating
     if (!canCreatePost()) {
@@ -95,14 +105,18 @@ function GenerateModalComponent({ isOpen, onClose, initialImageUrl }: GenerateMo
     setError('')
 
     try {
-      const result = await generateContentAction({
-        brandId: selectedBrand.id as Id<"brands">,
-        platform: platformToBackend(selectedPlatform),
-        topic: topic || undefined,
-        style: selectedStyle,
-        model: selectedModel,
-        clerkId: clerkUser?.id, // Pass clerkId for auth fallback
-      })
+      // 30 second timeout for AI generation
+      const result = await withTimeout(
+        generateContentAction({
+          brandId: selectedBrand.id as Id<"brands">,
+          platform: platformToBackend(selectedPlatform),
+          topic: topic || undefined,
+          style: selectedStyle,
+          model: selectedModel,
+          clerkId: clerkUser?.id, // Pass clerkId for auth fallback
+        }),
+        30000
+      )
       setGeneratedContent(result.content)
       setStep('result')
     } catch (err) {

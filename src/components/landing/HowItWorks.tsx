@@ -148,7 +148,8 @@ function PulsingNode({ cx, cy, isActive, label, delay }: {
 
 // Main visualization component
 function DataVisualization({ activeStep }: { activeStep: number }) {
-  const particleCount = 20
+  // Reduced from 20 to 8 particles for better performance
+  const particleCount = 8
 
   // Node positions for 4-step flow
   const nodes = [
@@ -165,10 +166,12 @@ function DataVisualization({ activeStep }: { activeStep: number }) {
     { d: "M 312 80 Q 366 60 408 150", delay: 1 }
   ]
 
-  // Generate particles along paths
+  // Generate particles along paths (deterministic durations to avoid hydration mismatch)
   const particles = Array.from({ length: particleCount }, (_, i) => {
     const pathIndex = i % 3
     const progress = (i / particleCount) * 3
+    // Use deterministic duration based on index instead of Math.random()
+    const deterministicVariation = ((i * 7) % 10) / 10 // Creates 0.0 to 0.9 variation
     return {
       id: i,
       startX: nodes[pathIndex].x,
@@ -176,7 +179,7 @@ function DataVisualization({ activeStep }: { activeStep: number }) {
       endX: nodes[pathIndex + 1].x,
       endY: nodes[pathIndex + 1].y,
       delay: progress * 0.5,
-      duration: 2 + Math.random()
+      duration: 2 + deterministicVariation
     }
   })
 
@@ -372,9 +375,19 @@ function DataVisualization({ activeStep }: { activeStep: number }) {
 export function HowItWorks() {
   const { t } = useTranslation()
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const isInView = useInView(ref, { once: true, margin: "-50px" })
   const [activeStep, setActiveStep] = useState(0)
   const [isHovering, setIsHovering] = useState(false)
+  const [currentTime, setCurrentTime] = useState<string | null>(null)
+
+  // Update time only on client side to avoid hydration mismatch
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString())
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString())
+    }, 1000)
+    return () => clearInterval(timeInterval)
+  }, [])
 
   // Auto-cycle through steps when not hovering
   useEffect(() => {
@@ -534,7 +547,7 @@ export function HowItWorks() {
                   <span className="text-xs text-muted-foreground font-mono">LIVE</span>
                 </div>
                 <span className="text-xs text-muted-foreground font-mono">
-                  {new Date().toLocaleTimeString()}
+                  {currentTime ?? '--:--:--'}
                 </span>
               </div>
             </div>

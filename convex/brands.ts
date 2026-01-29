@@ -51,27 +51,31 @@ export const list = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
-    // Get post counts for each brand
-    const brandsWithCounts = await Promise.all(
-      brands.map(async (brand) => {
-        const posts = await ctx.db
-          .query("posts")
-          .withIndex("by_brandId", (q) => q.eq("brandId", brand._id))
-          .collect();
+    // Batch fetch all posts for this user once (avoids N+1 queries)
+    const allUserPosts = await ctx.db
+      .query("posts")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
 
-        return {
-          _id: brand._id,
-          name: brand.name,
-          description: brand.description,
-          color: brand.color,
-          initials: brand.initials,
-          voice: brand.voice,
-          topics: brand.topics,
-          postCount: posts.length,
-          _creationTime: brand._creationTime,
-        };
-      })
-    );
+    // Group posts by brandId in memory
+    const postCountByBrand = new Map<string, number>();
+    for (const post of allUserPosts) {
+      const brandId = post.brandId.toString();
+      postCountByBrand.set(brandId, (postCountByBrand.get(brandId) || 0) + 1);
+    }
+
+    // Map brands with counts from the precomputed map
+    const brandsWithCounts = brands.map((brand) => ({
+      _id: brand._id,
+      name: brand.name,
+      description: brand.description,
+      color: brand.color,
+      initials: brand.initials,
+      voice: brand.voice,
+      topics: brand.topics,
+      postCount: postCountByBrand.get(brand._id.toString()) || 0,
+      _creationTime: brand._creationTime,
+    }));
 
     // Sort by creation time descending
     return brandsWithCounts.sort(

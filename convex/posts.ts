@@ -91,33 +91,40 @@ export const list = query({
     // Apply pagination
     const paginatedPosts = allPosts.slice(offset, offset + limit);
 
-    // Get brand info for each post
-    const postsWithBrands = await Promise.all(
-      paginatedPosts.map(async (post) => {
-        const brand = await ctx.db.get(post.brandId);
-        return {
-          _id: post._id,
-          content: post.content,
-          platform: post.platform,
-          imageUrl: post.imageUrl,
-          voiceUrl: post.voiceUrl,
-          status: post.status,
-          scheduledFor: post.scheduledFor,
-          publishedAt: post.publishedAt,
-          aiGenerated: post.aiGenerated,
-          aiModel: post.aiModel,
-          brand: brand
-            ? {
-                _id: brand._id,
-                name: brand.name,
-                color: brand.color,
-                initials: brand.initials,
-              }
-            : null,
-          _creationTime: post._creationTime,
-        };
-      })
+    // Batch fetch all needed brands in a single operation (avoids N+1 queries)
+    const uniqueBrandIds = [...new Set(paginatedPosts.map((p) => p.brandId))];
+    const brands = await Promise.all(
+      uniqueBrandIds.map((id) => ctx.db.get(id))
     );
+    const brandMap = new Map(
+      brands.filter(Boolean).map((b) => [b!._id, b!])
+    );
+
+    // Map posts to brands using the preloaded map
+    const postsWithBrands = paginatedPosts.map((post) => {
+      const brand = brandMap.get(post.brandId);
+      return {
+        _id: post._id,
+        content: post.content,
+        platform: post.platform,
+        imageUrl: post.imageUrl,
+        voiceUrl: post.voiceUrl,
+        status: post.status,
+        scheduledFor: post.scheduledFor,
+        publishedAt: post.publishedAt,
+        aiGenerated: post.aiGenerated,
+        aiModel: post.aiModel,
+        brand: brand
+          ? {
+              _id: brand._id,
+              name: brand.name,
+              color: brand.color,
+              initials: brand.initials,
+            }
+          : null,
+        _creationTime: post._creationTime,
+      };
+    });
 
     return {
       posts: postsWithBrands,

@@ -1,15 +1,15 @@
 'use client'
 
+import { memo, useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-export function AgentFeatures() {
+export const AgentFeatures = memo(function AgentFeatures() {
   const { t } = useTranslation()
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const isInView = useInView(ref, { once: true, margin: '-50px' })
 
   const agents = [
     {
@@ -123,4 +123,4 @@ export function AgentFeatures() {
       </div>
     </section>
   )
-}
+})

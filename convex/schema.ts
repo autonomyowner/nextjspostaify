@@ -58,7 +58,8 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_brandId", ["brandId"])
     .index("by_userId_status", ["userId", "status"])
-    .index("by_status_scheduledFor", ["status", "scheduledFor"]),
+    .index("by_status_scheduledFor", ["status", "scheduledFor"])
+    .index("by_userId_scheduledFor", ["userId", "scheduledFor"]),
 
   emailCaptures: defineTable({
     email: v.string(),

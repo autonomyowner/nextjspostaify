@@ -1,15 +1,15 @@
 'use client'
 
+import { memo, useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 
-export function FAQ() {
+export const FAQ = memo(function FAQ() {
   const { t } = useTranslation()
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const isInView = useInView(ref, { once: true, margin: '-50px' })
 
   const faqs = [
     {
@@ -98,4 +98,4 @@ export function FAQ() {
       </div>
     </section>
   )
-}
+})

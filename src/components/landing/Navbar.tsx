@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
 import { useAuth, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
@@ -9,7 +10,7 @@ import { Logo } from '@/components/ui/Logo'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { cn } from '@/lib/utils'
 
-export function Navbar() {
+export const Navbar = memo(function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const { t } = useTranslation()
   const { isSignedIn, isLoaded } = useAuth()
@@ -67,10 +68,12 @@ export function Navbar() {
               </Link>
               {user?.imageUrl && (
                 <Link href="/dashboard" className="hidden sm:block">
-                  <img
+                  <Image
                     src={user.imageUrl}
                     alt={user.firstName || 'User'}
-                    className="w-8 h-8 rounded-full border border-border hover:border-primary transition-colors"
+                    width={32}
+                    height={32}
+                    className="rounded-full border border-border hover:border-primary transition-colors"
                   />
                 </Link>
               )}
@@ -94,4 +97,4 @@ export function Navbar() {
       </div>
     </nav>
   )
-}
+})
