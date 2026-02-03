@@ -14,6 +14,68 @@ export const LOGO_MODELS = [
   { id: "fal-ai/flux/dev", name: "Flux Dev", speed: "slow", description: "Alternative" },
 ];
 
+// Product photography scene presets
+export const PRODUCT_SCENES = [
+  {
+    value: "studio-white",
+    label: "Studio White",
+    description: "Clean professional white background, studio lighting, commercial photography"
+  },
+  {
+    value: "marble-surface",
+    label: "Marble Surface",
+    description: "On elegant white marble surface, soft shadows, luxury product photography, clean background"
+  },
+  {
+    value: "wooden-table",
+    label: "Wooden Table",
+    description: "On rustic wooden table surface, warm natural lighting, artisan aesthetic, cozy atmosphere"
+  },
+  {
+    value: "kitchen-counter",
+    label: "Kitchen Counter",
+    description: "On modern kitchen counter, bright natural light from window, lifestyle home setting"
+  },
+  {
+    value: "living-room",
+    label: "Living Room",
+    description: "In stylish living room interior, soft ambient lighting, modern home decor, lifestyle shot"
+  },
+  {
+    value: "nature-outdoor",
+    label: "Nature Outdoor",
+    description: "Outdoor natural setting, green plants and foliage, soft natural daylight, organic feel"
+  },
+  {
+    value: "gradient-modern",
+    label: "Gradient Modern",
+    description: "Modern gradient background, smooth color transition, contemporary design, minimalist"
+  },
+  {
+    value: "beach-seaside",
+    label: "Beach Seaside",
+    description: "On sandy beach, ocean waves in background, golden hour sunlight, summer vibes"
+  },
+  {
+    value: "concrete-urban",
+    label: "Concrete Urban",
+    description: "On concrete surface, urban industrial aesthetic, moody lighting, edgy modern style"
+  },
+  {
+    value: "fabric-textile",
+    label: "Fabric Textile",
+    description: "On soft fabric or linen textile, elegant folds, soft diffused lighting, boutique style"
+  },
+];
+
+// Get product scene presets
+export const getProductScenes = query({
+  args: {},
+  handler: async () => {
+    return PRODUCT_SCENES;
+  },
+});
+
 // Available aspect ratios
 export const ASPECT_RATIOS = [
   { value: "1:1", label: "Square (1:1)" },

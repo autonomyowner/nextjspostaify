@@ -77,6 +77,25 @@ const ASPECT_RATIOS = [
   { value: '3:4', label: '3:4', description: 'Classic portrait' },
 ] as const
 
+const PRODUCT_SCENES = [
+  { value: 'studio-white', label: 'Studio White', description: 'Clean professional white background' },
+  { value: 'marble-surface', label: 'Marble Surface', description: 'Elegant marble counter' },
+  { value: 'wooden-table', label: 'Wooden Table', description: 'Rustic wood surface' },
+  { value: 'kitchen-counter', label: 'Kitchen', description: 'Modern kitchen lifestyle' },
+  { value: 'living-room', label: 'Living Room', description: 'Home interior setting' },
+  { value: 'nature-outdoor', label: 'Nature', description: 'Outdoor greenery' },
+  { value: 'gradient-modern', label: 'Gradient', description: 'Modern color gradient' },
+  { value: 'beach-seaside', label: 'Beach', description: 'Sandy beach setting' },
+  { value: 'concrete-urban', label: 'Urban', description: 'Industrial concrete' },
+  { value: 'fabric-textile', label: 'Fabric', description: 'Soft textile backdrop' },
+] as const
+
+const PRODUCT_ASPECT_RATIOS = [
+  { value: '1:1', label: '1:1', description: 'Square - Best for most e-commerce' },
+  { value: '16:9', label: '16:9', description: 'Landscape - Banner ads' },
+  { value: '9:16', label: '9:16', description: 'Portrait - Mobile/Stories' },
+] as const
+
 function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGeneratorModalProps) {
   const { canUseFeature, openUpgradeModal } = useSubscription()
   const { user: clerkUser } = useUser()
@@ -85,9 +104,10 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const availableModels = useQuery(convexApi.images.getModels) || []
   const logoModels = useQuery(convexApi.images.getLogoModels) || []
   const generateImageAction = useAction(convexApi.imagesAction.generate)
+  const generateProductShotAction = useAction(convexApi.imagesAction.generateProductShot)
 
-  // Mode: 'image' for general image generation, 'logo' for logo generation
-  const [mode, setMode] = useState<'image' | 'logo'>('image')
+  // Mode: 'image' for general, 'logo' for logos, 'product' for product photography
+  const [mode, setMode] = useState<'image' | 'logo' | 'product'>('image')
 
   // General image state
   const [prompt, setPrompt] = useState('')
@@ -100,6 +120,14 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const [brandColor, setBrandColor] = useState('blue')
   const [logoStyle, setLogoStyle] = useState('minimal')
   const [selectedLogoModel, setSelectedLogoModel] = useState('fal-ai/ideogram/v2/turbo')
+
+  // Product photography state
+  const [productImageUrl, setProductImageUrl] = useState('')
+  const [productImagePreview, setProductImagePreview] = useState('')
+  const [selectedScene, setSelectedScene] = useState('studio-white')
+  const [customScenePrompt, setCustomScenePrompt] = useState('')
+  const [productAspectRatio, setProductAspectRatio] = useState('1:1')
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   // Shared state
   const [generatedImageUrl, setGeneratedImageUrl] = useState('')
@@ -125,6 +153,50 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       .replace('{color}', brandColor)
   }, [brandName, brandColor, logoStyle])
 
+  // Handle image file upload for product photography
+  const handleProductImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('Please upload a JPEG, PNG, or WebP image.')
+      return
+    }
+
+    // Validate file size (max 12MB for Bria API)
+    if (file.size > 12 * 1024 * 1024) {
+      setError('Image must be smaller than 12MB.')
+      return
+    }
+
+    setIsUploadingImage(true)
+    setError('')
+
+    try {
+      // Create preview
+      const previewUrl = URL.createObjectURL(file)
+      setProductImagePreview(previewUrl)
+
+      // Convert to base64 data URL for now (in production, upload to storage)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        // For Fal.ai, we need a public URL. Using base64 data URL as fallback
+        // In production, you'd upload to Convex storage or a CDN
+        setProductImageUrl(reader.result as string)
+        setIsUploadingImage(false)
+      }
+      reader.onerror = () => {
+        setError('Failed to read image file.')
+        setIsUploadingImage(false)
+      }
+      reader.readAsDataURL(file)
+    } catch {
+      setError('Failed to process image.')
+      setIsUploadingImage(false)
+    }
+  }, [])
+
   const handleGenerate = async () => {
     if (!hasAccess) {
       handleClose()
@@ -141,22 +213,38 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       setError('Please enter your brand name.')
       return
     }
+    if (mode === 'product' && !productImageUrl) {
+      setError('Please upload a product image.')
+      return
+    }
 
     setIsGenerating(true)
     setError('')
 
     try {
-      // Build the prompt based on mode
-      const finalPrompt = mode === 'logo' ? buildLogoPrompt() : prompt
+      if (mode === 'product') {
+        // Product photography mode
+        const result = await generateProductShotAction({
+          imageUrl: productImageUrl,
+          scenePreset: selectedScene,
+          customScene: customScenePrompt || undefined,
+          aspectRatio: productAspectRatio,
+          clerkId: clerkUser?.id,
+        })
+        setGeneratedImageUrl(result.url)
+      } else {
+        // Image or Logo mode
+        const finalPrompt = mode === 'logo' ? buildLogoPrompt() : prompt
 
-      const result = await generateImageAction({
-        prompt: finalPrompt,
-        model: mode === 'logo' ? selectedLogoModel : selectedModel,
-        aspectRatio: mode === 'logo' ? '1:1' : selectedAspectRatio, // Force square for logos
-        style: mode === 'image' && selectedStyle !== 'none' ? selectedStyle : undefined,
-        clerkId: clerkUser?.id, // Pass clerkId for auth fallback
-      })
-      setGeneratedImageUrl(result.url)
+        const result = await generateImageAction({
+          prompt: finalPrompt,
+          model: mode === 'logo' ? selectedLogoModel : selectedModel,
+          aspectRatio: mode === 'logo' ? '1:1' : selectedAspectRatio,
+          style: mode === 'image' && selectedStyle !== 'none' ? selectedStyle : undefined,
+          clerkId: clerkUser?.id,
+        })
+        setGeneratedImageUrl(result.url)
+      }
       setStep('result')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate. Please try again.')
@@ -185,6 +273,12 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setBrandColor('blue')
     setLogoStyle('minimal')
     setSelectedLogoModel('fal-ai/ideogram/v2/turbo')
+    // Reset product state
+    setProductImageUrl('')
+    setProductImagePreview('')
+    setSelectedScene('studio-white')
+    setCustomScenePrompt('')
+    setProductAspectRatio('1:1')
     onClose()
   }, [onClose])
 
@@ -265,8 +359,8 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">
                 {step === 'result'
-                  ? (mode === 'logo' ? 'Generated Logo' : 'Generated Image')
-                  : (mode === 'logo' ? 'Generate Logo' : 'Generate Image')
+                  ? (mode === 'logo' ? 'Generated Logo' : mode === 'product' ? 'Product Shot' : 'Generated Image')
+                  : (mode === 'logo' ? 'Generate Logo' : mode === 'product' ? 'Product Photography' : 'Generate Image')
                 }
               </h2>
               <button
@@ -301,6 +395,16 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   }`}
                 >
                   Logo
+                </button>
+                <button
+                  onClick={() => setMode('product')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    mode === 'product'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-white'
+                  }`}
+                >
+                  Product
                 </button>
               </div>
             )}
@@ -478,6 +582,129 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   </>
                 )}
 
+                {/* PRODUCT MODE */}
+                {mode === 'product' && (
+                  <>
+                    {/* Product Image Upload */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Product Image</label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-white/30 transition-colors">
+                        {productImagePreview ? (
+                          <div className="relative">
+                            <img
+                              src={productImagePreview}
+                              alt="Product preview"
+                              className="max-h-40 mx-auto rounded-lg object-contain"
+                            />
+                            <button
+                              onClick={() => {
+                                setProductImageUrl('')
+                                setProductImagePreview('')
+                              }}
+                              className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="cursor-pointer block">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={handleProductImageUpload}
+                              className="hidden"
+                              disabled={isUploadingImage}
+                            />
+                            {isUploadingImage ? (
+                              <div className="py-4">
+                                <svg className="animate-spin h-8 w-8 mx-auto text-muted-foreground" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                <p className="text-sm text-muted-foreground mt-2">Processing...</p>
+                              </div>
+                            ) : (
+                              <div className="py-4">
+                                <svg className="w-10 h-10 mx-auto text-muted-foreground mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p className="text-sm text-muted-foreground">Click to upload product image</p>
+                                <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP (max 12MB)</p>
+                              </div>
+                            )}
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Scene Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Background Scene</label>
+                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                        {PRODUCT_SCENES.map((scene) => (
+                          <button
+                            key={scene.value}
+                            onClick={() => setSelectedScene(scene.value)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              selectedScene === scene.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">{scene.label}</span>
+                            <span className={`block text-xs mt-0.5 ${
+                              selectedScene === scene.value ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              {scene.description}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Scene Prompt (Optional) */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">
+                        Custom Details <span className="text-muted-foreground font-normal">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customScenePrompt}
+                        onChange={(e) => setCustomScenePrompt(e.target.value)}
+                        placeholder="Add specific details... e.g., 'with coffee beans', 'morning light'"
+                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    {/* Aspect Ratio for Product */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2">Output Size</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PRODUCT_ASPECT_RATIOS.map((ratio) => (
+                          <button
+                            key={ratio.value}
+                            onClick={() => setProductAspectRatio(ratio.value)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              productAspectRatio === ratio.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">{ratio.label}</span>
+                            <span className={`block text-xs mt-0.5 ${
+                              productAspectRatio === ratio.value ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              {ratio.description}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* Error */}
                 {error && (
                   <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -488,7 +715,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                 {/* Generate Button */}
                 <Button
                   onClick={handleGenerate}
-                  disabled={isGenerating || (mode === 'image' ? !prompt.trim() : !brandName.trim())}
+                  disabled={isGenerating || isUploadingImage || (mode === 'image' ? !prompt.trim() : mode === 'logo' ? !brandName.trim() : !productImageUrl)}
                   className="w-full"
                 >
                   {isGenerating ? (
@@ -500,7 +727,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       Generating... (this may take up to 30 seconds)
                     </span>
                   ) : (
-                    mode === 'logo' ? 'Generate Logo' : 'Generate Image'
+                    mode === 'logo' ? 'Generate Logo' : mode === 'product' ? 'Generate Product Shot' : 'Generate Image'
                   )}
                 </Button>
               </>
@@ -512,10 +739,10 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <span className="text-sm text-muted-foreground">
-                      {mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
+                      {mode === 'product' ? 'Bria Product Shot' : mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                      {mode === 'logo' ? '1:1' : selectedAspectRatio}
+                      {mode === 'logo' ? '1:1' : mode === 'product' ? productAspectRatio : selectedAspectRatio}
                     </span>
                     {mode === 'image' && selectedStyle !== 'none' && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
@@ -536,17 +763,27 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                         </span>
                       </>
                     )}
+                    {mode === 'product' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                        {PRODUCT_SCENES.find(s => s.value === selectedScene)?.label}
+                      </span>
+                    )}
                   </div>
                   <div className="rounded-lg overflow-hidden bg-background border border-border">
                     <img
                       src={generatedImageUrl}
-                      alt={mode === 'logo' ? `Generated logo for ${brandName}` : 'Generated image'}
+                      alt={mode === 'logo' ? `Generated logo for ${brandName}` : mode === 'product' ? 'Product shot' : 'Generated image'}
                       className="w-full h-auto"
                     />
                   </div>
                   {mode === 'logo' ? (
                     <p className="text-xs text-muted-foreground mt-2">
                       Logo for: <span className="font-medium text-foreground">{brandName}</span>
+                    </p>
+                  ) : mode === 'product' ? (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Scene: <span className="font-medium text-foreground">{PRODUCT_SCENES.find(s => s.value === selectedScene)?.label}</span>
+                      {customScenePrompt && <span> + {customScenePrompt}</span>}
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
@@ -558,7 +795,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                 {/* Actions */}
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={handleRegenerate} className="flex-1">
-                    {mode === 'logo' ? 'New Logo' : 'New Image'}
+                    {mode === 'logo' ? 'New Logo' : mode === 'product' ? 'New Shot' : 'New Image'}
                   </Button>
                   <Button variant="outline" onClick={handleDownload} className="flex-1">
                     Download

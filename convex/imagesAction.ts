@@ -265,3 +265,137 @@ export const generate = action({
     };
   },
 });
+
+// Product scene description enhancer
+function enhanceProductScene(sceneDescription: string, customPrompt?: string): string {
+  // Base quality keywords for product photography
+  const qualityKeywords = "professional product photography, high resolution, sharp focus, commercial quality";
+
+  // Combine scene description with custom prompt if provided
+  let finalDescription = sceneDescription;
+  if (customPrompt && customPrompt.trim()) {
+    finalDescription = `${sceneDescription}, ${customPrompt.trim()}`;
+  }
+
+  // Add product photography quality boost
+  return `${finalDescription}, ${qualityKeywords}`;
+}
+
+// Generate product photography - places product in professional scene
+export const generateProductShot = action({
+  args: {
+    imageUrl: v.string(), // URL of the product image
+    scenePreset: v.optional(v.string()), // Preset scene key
+    customScene: v.optional(v.string()), // Custom scene description
+    aspectRatio: v.optional(v.string()), // Output size
+    clerkId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Auth check
+    const identity = await ctx.auth.getUserIdentity();
+    const userClerkId = identity?.subject || args.clerkId;
+
+    if (!userClerkId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check feature access
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    if (!user) {
+      throw new Error("User not found. Please refresh the page.");
+    }
+    if (!user.features.hasImageGeneration) {
+      throw new Error(
+        "Product photography is not available on your plan. Upgrade to Pro."
+      );
+    }
+
+    const falApiKey = process.env.FAL_API_KEY;
+    if (!falApiKey) {
+      throw new Error("Fal.ai API key not configured");
+    }
+
+    // Scene presets mapping
+    const scenePresets: Record<string, string> = {
+      "studio-white": "Clean professional white background, studio lighting, commercial photography",
+      "marble-surface": "On elegant white marble surface, soft shadows, luxury product photography, clean background",
+      "wooden-table": "On rustic wooden table surface, warm natural lighting, artisan aesthetic, cozy atmosphere",
+      "kitchen-counter": "On modern kitchen counter, bright natural light from window, lifestyle home setting",
+      "living-room": "In stylish living room interior, soft ambient lighting, modern home decor, lifestyle shot",
+      "nature-outdoor": "Outdoor natural setting, green plants and foliage, soft natural daylight, organic feel",
+      "gradient-modern": "Modern gradient background, smooth color transition, contemporary design, minimalist",
+      "beach-seaside": "On sandy beach, ocean waves in background, golden hour sunlight, summer vibes",
+      "concrete-urban": "On concrete surface, urban industrial aesthetic, moody lighting, edgy modern style",
+      "fabric-textile": "On soft fabric or linen textile, elegant folds, soft diffused lighting, boutique style",
+    };
+
+    // Get scene description
+    let sceneDescription = args.customScene || "";
+    if (args.scenePreset && scenePresets[args.scenePreset]) {
+      sceneDescription = scenePresets[args.scenePreset];
+      // If custom scene also provided, append it
+      if (args.customScene) {
+        sceneDescription = `${sceneDescription}, ${args.customScene}`;
+      }
+    }
+
+    if (!sceneDescription) {
+      sceneDescription = "Professional product photography, clean background, studio lighting";
+    }
+
+    // Enhance the scene description
+    const enhancedScene = enhanceProductScene(sceneDescription);
+
+    // Determine output size
+    const shotSize = args.aspectRatio === "16:9"
+      ? [1200, 675]
+      : args.aspectRatio === "9:16"
+      ? [675, 1200]
+      : [1000, 1000]; // Default square
+
+    // Call Bria Product Shot API
+    const response = await fetch("https://fal.run/fal-ai/bria/product-shot", {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${falApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_url: args.imageUrl,
+        scene_description: enhancedScene,
+        optimize_description: true,
+        num_results: 1,
+        fast: false, // Higher quality
+        placement_type: "automatic",
+        shot_size: shotSize,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Invalid Fal.ai API key");
+      }
+      if (response.status === 402) {
+        throw new Error("Insufficient Fal.ai credits");
+      }
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `Failed to generate product shot: ${errorText || response.statusText}`
+      );
+    }
+
+    const result = (await response.json()) as {
+      images?: Array<{ url: string }>;
+    };
+
+    if (!result.images || result.images.length === 0) {
+      throw new Error("No product shot was generated");
+    }
+
+    return {
+      url: result.images[0].url,
+      scene: sceneDescription,
+      aspectRatio: args.aspectRatio || "1:1",
+    };
+  },
+});
