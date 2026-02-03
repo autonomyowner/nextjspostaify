@@ -268,8 +268,8 @@ export const generate = action({
 
 // Product scene description enhancer
 function enhanceProductScene(sceneDescription: string, customPrompt?: string): string {
-  // Base quality keywords for product photography
-  const qualityKeywords = "professional product photography, high resolution, sharp focus, commercial quality";
+  // Quality keywords for realistic product photography
+  const qualityKeywords = "professional product photography, sharp focus, realistic lighting, natural shadows, high detail, commercial quality, centered composition";
 
   // Combine scene description with custom prompt if provided
   let finalDescription = sceneDescription;
@@ -288,6 +288,7 @@ export const generateProductShot = action({
     scenePreset: v.optional(v.string()), // Preset scene key
     customScene: v.optional(v.string()), // Custom scene description
     aspectRatio: v.optional(v.string()), // Output size
+    closeUp: v.optional(v.boolean()), // Close-up framing (product fills more of frame)
     clerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -315,18 +316,18 @@ export const generateProductShot = action({
       throw new Error("Fal.ai API key not configured");
     }
 
-    // Scene presets mapping
+    // Scene presets mapping - optimized for realistic close-up product shots
     const scenePresets: Record<string, string> = {
-      "studio-white": "Clean professional white background, studio lighting, commercial photography",
-      "marble-surface": "On elegant white marble surface, soft shadows, luxury product photography, clean background",
-      "wooden-table": "On rustic wooden table surface, warm natural lighting, artisan aesthetic, cozy atmosphere",
-      "kitchen-counter": "On modern kitchen counter, bright natural light from window, lifestyle home setting",
-      "living-room": "In stylish living room interior, soft ambient lighting, modern home decor, lifestyle shot",
-      "nature-outdoor": "Outdoor natural setting, green plants and foliage, soft natural daylight, organic feel",
-      "gradient-modern": "Modern gradient background, smooth color transition, contemporary design, minimalist",
-      "beach-seaside": "On sandy beach, ocean waves in background, golden hour sunlight, summer vibes",
-      "concrete-urban": "On concrete surface, urban industrial aesthetic, moody lighting, edgy modern style",
-      "fabric-textile": "On soft fabric or linen textile, elegant folds, soft diffused lighting, boutique style",
+      "studio-white": "Product on clean white surface, soft studio lighting with gentle shadows, professional e-commerce photography, crisp and clear",
+      "marble-surface": "Product placed on polished white marble countertop, elegant reflections, soft natural window light, luxury aesthetic, realistic shadows",
+      "wooden-table": "Product on warm oak wood table, natural grain texture visible, soft golden hour side lighting, cozy artisan feel, subtle shadows",
+      "kitchen-counter": "Product on modern white kitchen counter, bright daylight from window, clean minimal background, lifestyle home setting, natural shadows",
+      "living-room": "Product on coffee table in modern living room, soft ambient lighting, blurred cozy interior background, lifestyle photography, warm tones",
+      "nature-outdoor": "Product on natural stone surface outdoors, lush green plants softly blurred in background, dappled sunlight, organic fresh feel",
+      "gradient-modern": "Product floating on smooth gradient background from white to soft gray, professional studio lighting, modern minimalist, soft shadow below",
+      "beach-seaside": "Product on light sandy surface, soft ocean waves blurred in background, warm golden sunset lighting, summer vacation mood",
+      "concrete-urban": "Product on raw concrete surface, industrial texture, dramatic side lighting, urban loft aesthetic, strong shadows, edgy modern",
+      "fabric-textile": "Product resting on soft cream linen fabric with gentle folds, diffused natural light, elegant boutique styling, soft romantic feel",
     };
 
     // Get scene description
@@ -346,12 +347,30 @@ export const generateProductShot = action({
     // Enhance the scene description
     const enhancedScene = enhanceProductScene(sceneDescription);
 
-    // Determine output size
+    // Determine output size - keep around 1M pixels for optimal quality
     const shotSize = args.aspectRatio === "16:9"
       ? [1200, 675]
       : args.aspectRatio === "9:16"
       ? [675, 1200]
       : [1000, 1000]; // Default square
+
+    // Use manual_padding for closer, more realistic product placement
+    // Smaller padding = larger/closer product in frame
+    const isCloseUp = args.closeUp !== false; // Default to close-up (true)
+
+    // Close-up: smaller padding (50-80px) = product fills ~70% of frame
+    // Normal: larger padding (120-180px) = product fills ~50% of frame
+    const paddingValues = isCloseUp
+      ? args.aspectRatio === "16:9"
+        ? [80, 80, 50, 50]    // Close-up landscape
+        : args.aspectRatio === "9:16"
+        ? [50, 50, 80, 60]    // Close-up portrait
+        : [60, 60, 60, 50]    // Close-up square
+      : args.aspectRatio === "16:9"
+        ? [180, 180, 100, 100] // Normal landscape
+        : args.aspectRatio === "9:16"
+        ? [100, 100, 180, 120] // Normal portrait
+        : [140, 140, 140, 100]; // Normal square
 
     // Call Bria Product Shot API
     const response = await fetch("https://fal.run/fal-ai/bria/product-shot", {
@@ -366,8 +385,10 @@ export const generateProductShot = action({
         optimize_description: true,
         num_results: 1,
         fast: false, // Higher quality
-        placement_type: "automatic",
+        placement_type: "manual_padding",
+        padding_values: paddingValues,
         shot_size: shotSize,
+        original_quality: true, // Preserve product quality
       }),
     });
 

@@ -128,6 +128,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const [customScenePrompt, setCustomScenePrompt] = useState('')
   const [productAspectRatio, setProductAspectRatio] = useState('1:1')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [productCloseUp, setProductCloseUp] = useState(true) // Default to close-up
 
   // Shared state
   const [generatedImageUrl, setGeneratedImageUrl] = useState('')
@@ -229,6 +230,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
           scenePreset: selectedScene,
           customScene: customScenePrompt || undefined,
           aspectRatio: productAspectRatio,
+          closeUp: productCloseUp,
           clerkId: clerkUser?.id,
         })
         setGeneratedImageUrl(result.url)
@@ -279,6 +281,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setSelectedScene('studio-white')
     setCustomScenePrompt('')
     setProductAspectRatio('1:1')
+    setProductCloseUp(true)
     onClose()
   }, [onClose])
 
@@ -676,6 +679,43 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                         placeholder="Add specific details... e.g., 'with coffee beans', 'morning light'"
                         className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
                       />
+                    </div>
+
+                    {/* Framing Options */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Product Framing</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setProductCloseUp(true)}
+                          className={`p-3 rounded-lg text-left transition-colors ${
+                            productCloseUp
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-background border border-border hover:border-white/20'
+                          }`}
+                        >
+                          <span className="block text-sm font-medium">Close-up</span>
+                          <span className={`block text-xs mt-0.5 ${
+                            productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}>
+                            Product fills frame (recommended)
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => setProductCloseUp(false)}
+                          className={`p-3 rounded-lg text-left transition-colors ${
+                            !productCloseUp
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-background border border-border hover:border-white/20'
+                          }`}
+                        >
+                          <span className="block text-sm font-medium">Wide Shot</span>
+                          <span className={`block text-xs mt-0.5 ${
+                            !productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}>
+                            More background visible
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Aspect Ratio for Product */}
