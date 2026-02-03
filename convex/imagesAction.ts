@@ -35,6 +35,23 @@ function getImageSize(
   return dimensions[aspectRatio] || dimensions["1:1"];
 }
 
+// Convert aspect ratio to Ideogram format
+function getIdeogramAspectRatio(aspectRatio: string): string {
+  const mapping: Record<string, string> = {
+    "1:1": "ASPECT_1_1",
+    "16:9": "ASPECT_16_9",
+    "9:16": "ASPECT_9_16",
+    "4:3": "ASPECT_4_3",
+    "3:4": "ASPECT_3_4",
+  };
+  return mapping[aspectRatio] || "ASPECT_1_1";
+}
+
+// Check if model is Ideogram
+function isIdeogramModel(model: string): boolean {
+  return model.includes("ideogram");
+}
+
 // Generate image - returns the URL from Fal.ai
 export const generate = action({
   args: {
@@ -84,6 +101,27 @@ export const generate = action({
     const enhancedPrompt = enhancePrompt(args.prompt, style);
     const imageSize = getImageSize(aspectRatio);
 
+    // Build request body based on model type
+    let requestBody: Record<string, unknown>;
+
+    if (isIdeogramModel(model)) {
+      // Ideogram uses different parameters
+      requestBody = {
+        prompt: enhancedPrompt,
+        aspect_ratio: getIdeogramAspectRatio(aspectRatio),
+        model: "V_2", // Use V2 model
+        magic_prompt_option: "AUTO",
+      };
+    } else {
+      // Flux and other models
+      requestBody = {
+        prompt: enhancedPrompt,
+        image_size: imageSize,
+        num_images: 1,
+        enable_safety_checker: true,
+      };
+    }
+
     // Generate image using Fal.ai
     const response = await fetch(`https://fal.run/${model}`, {
       method: "POST",
@@ -91,12 +129,7 @@ export const generate = action({
         Authorization: `Key ${falApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt: enhancedPrompt,
-        image_size: imageSize,
-        num_images: 1,
-        enable_safety_checker: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

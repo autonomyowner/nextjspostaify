@@ -28,32 +28,32 @@ const LOGO_STYLES = [
   {
     value: 'minimal',
     label: 'Minimal',
-    template: 'Minimal flat vector logo for "{brand}", simple geometric mark, {color} on solid white background, clean lines, no text, no letters, Paul Rand style, professional logo design'
+    template: 'Professional minimal logo design for "{brand}". Simple bold geometric icon, {color} color, pure white background, high contrast, sharp clean edges, flat vector style, centered composition, no text'
   },
   {
     value: 'modern-tech',
     label: 'Modern Tech',
-    template: 'Modern tech startup logo symbol for "{brand}", sleek minimalist geometric icon, {color} gradient, flat design, solid white background, Pentagram style, no text, professional logo'
+    template: 'Modern tech company logo for "{brand}". Bold geometric symbol, vibrant {color} with subtle gradient, pure white background, high contrast, clean sharp lines, professional startup style, no text'
   },
   {
     value: 'lettermark',
     label: 'Lettermark',
-    template: 'Letter monogram logo using first letter of "{brand}", bold modern typography, {color}, minimal flat vector, solid white background, professional lettermark design'
+    template: 'Bold lettermark logo using letter "{brand}" first letter. Strong {color} typography, pure white background, high contrast, modern sans-serif, thick bold strokes, centered, professional'
   },
   {
     value: 'abstract',
     label: 'Abstract',
-    template: 'Abstract geometric logo mark for "{brand}", modern minimal symbol, {color} color scheme, flat vector design, solid white background, Sagi Haviv style, no text, professional'
+    template: 'Abstract logo mark for "{brand}". Bold geometric shapes, solid {color}, pure white background, high contrast, striking modern design, clean composition, professional brand identity, no text'
   },
   {
     value: 'bold-startup',
     label: 'Bold Startup',
-    template: 'Bold modern logo icon for "{brand}", simple memorable shape, {color}, flat design, Y Combinator startup style, solid white background, no text, professional logo'
+    template: 'Bold startup logo icon for "{brand}". Simple memorable geometric shape, solid {color}, pure white background, maximum contrast, thick lines, modern tech aesthetic, centered, no text'
   },
   {
     value: 'elegant',
     label: 'Elegant',
-    template: 'Elegant luxury logo symbol for "{brand}", refined minimal design, {color} and gold accents, sophisticated, solid white background, high-end brand style, no text'
+    template: 'Elegant premium logo for "{brand}". Refined geometric symbol, {color} with subtle gold accent, pure white background, high contrast, sophisticated minimal design, luxury brand style, no text'
   },
 ] as const
 
@@ -83,6 +83,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
   // Convex hooks
   const availableModels = useQuery(convexApi.images.getModels) || []
+  const logoModels = useQuery(convexApi.images.getLogoModels) || []
   const generateImageAction = useAction(convexApi.imagesAction.generate)
 
   // Mode: 'image' for general image generation, 'logo' for logo generation
@@ -98,6 +99,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const [brandName, setBrandName] = useState('')
   const [brandColor, setBrandColor] = useState('blue')
   const [logoStyle, setLogoStyle] = useState('minimal')
+  const [selectedLogoModel, setSelectedLogoModel] = useState('fal-ai/ideogram/v2/turbo')
 
   // Shared state
   const [generatedImageUrl, setGeneratedImageUrl] = useState('')
@@ -149,7 +151,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
       const result = await generateImageAction({
         prompt: finalPrompt,
-        model: selectedModel,
+        model: mode === 'logo' ? selectedLogoModel : selectedModel,
         aspectRatio: mode === 'logo' ? '1:1' : selectedAspectRatio, // Force square for logos
         style: mode === 'image' && selectedStyle !== 'none' ? selectedStyle : undefined,
         clerkId: clerkUser?.id, // Pass clerkId for auth fallback
@@ -182,6 +184,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setBrandName('')
     setBrandColor('blue')
     setLogoStyle('minimal')
+    setSelectedLogoModel('fal-ai/ideogram/v2/turbo')
     onClose()
   }, [onClose])
 
@@ -191,6 +194,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   }, [])
 
   const currentModel = useMemo(() => availableModels.find(m => m.id === selectedModel), [availableModels, selectedModel])
+  const currentLogoModel = useMemo(() => logoModels.find(m => m.id === selectedLogoModel), [logoModels, selectedLogoModel])
 
   const currentAspectRatioDescription = useMemo(() =>
     ASPECT_RATIOS.find(r => r.value === selectedAspectRatio)?.description,
@@ -451,21 +455,21 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                     <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">Model</label>
                       <div className="grid grid-cols-3 gap-2">
-                        {availableModels.map((model) => (
+                        {logoModels.map((model) => (
                           <button
                             key={model.id}
-                            onClick={() => setSelectedModel(model.id)}
+                            onClick={() => setSelectedLogoModel(model.id)}
                             className={`p-3 rounded-lg text-left transition-colors ${
-                              selectedModel === model.id
+                              selectedLogoModel === model.id
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-background border border-border hover:border-white/20'
                             }`}
                           >
                             <span className="block text-sm font-medium">{model.name}</span>
                             <span className={`block text-xs mt-1 ${
-                              selectedModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              selectedLogoModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
                             }`}>
-                              {model.speed}
+                              {model.description || model.speed}
                             </span>
                           </button>
                         ))}
@@ -507,7 +511,9 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                 {/* Generated Image Display */}
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
-                    <span className="text-sm text-muted-foreground">{currentModel?.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
+                    </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
                       {mode === 'logo' ? '1:1' : selectedAspectRatio}
                     </span>
