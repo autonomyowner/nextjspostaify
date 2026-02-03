@@ -24,6 +24,51 @@ const IMAGE_STYLES = [
   { value: '3d-model', label: '3D Model' },
 ] as const
 
+const LOGO_STYLES = [
+  {
+    value: 'minimal',
+    label: 'Minimal',
+    template: 'Minimal flat vector logo for "{brand}", simple geometric mark, {color} on solid white background, clean lines, no text, no letters, Paul Rand style, professional logo design'
+  },
+  {
+    value: 'modern-tech',
+    label: 'Modern Tech',
+    template: 'Modern tech startup logo symbol for "{brand}", sleek minimalist geometric icon, {color} gradient, flat design, solid white background, Pentagram style, no text, professional logo'
+  },
+  {
+    value: 'lettermark',
+    label: 'Lettermark',
+    template: 'Letter monogram logo using first letter of "{brand}", bold modern typography, {color}, minimal flat vector, solid white background, professional lettermark design'
+  },
+  {
+    value: 'abstract',
+    label: 'Abstract',
+    template: 'Abstract geometric logo mark for "{brand}", modern minimal symbol, {color} color scheme, flat vector design, solid white background, Sagi Haviv style, no text, professional'
+  },
+  {
+    value: 'bold-startup',
+    label: 'Bold Startup',
+    template: 'Bold modern logo icon for "{brand}", simple memorable shape, {color}, flat design, Y Combinator startup style, solid white background, no text, professional logo'
+  },
+  {
+    value: 'elegant',
+    label: 'Elegant',
+    template: 'Elegant luxury logo symbol for "{brand}", refined minimal design, {color} and gold accents, sophisticated, solid white background, high-end brand style, no text'
+  },
+] as const
+
+const PRESET_COLORS = [
+  { value: 'blue', label: 'Blue', hex: '#3B82F6' },
+  { value: 'purple', label: 'Purple', hex: '#8B5CF6' },
+  { value: 'green', label: 'Green', hex: '#10B981' },
+  { value: 'red', label: 'Red', hex: '#EF4444' },
+  { value: 'orange', label: 'Orange', hex: '#F97316' },
+  { value: 'yellow', label: 'Yellow', hex: '#FACC15' },
+  { value: 'pink', label: 'Pink', hex: '#EC4899' },
+  { value: 'teal', label: 'Teal', hex: '#14B8A6' },
+  { value: 'black', label: 'Black', hex: '#000000' },
+] as const
+
 const ASPECT_RATIOS = [
   { value: '1:1', label: '1:1', description: 'Square - Instagram posts' },
   { value: '16:9', label: '16:9', description: 'Landscape - YouTube thumbnails' },
@@ -40,10 +85,21 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const availableModels = useQuery(convexApi.images.getModels) || []
   const generateImageAction = useAction(convexApi.imagesAction.generate)
 
+  // Mode: 'image' for general image generation, 'logo' for logo generation
+  const [mode, setMode] = useState<'image' | 'logo'>('image')
+
+  // General image state
   const [prompt, setPrompt] = useState('')
   const [selectedModel, setSelectedModel] = useState('fal-ai/flux/schnell')
   const [selectedStyle, setSelectedStyle] = useState('none')
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<'1:1' | '16:9' | '9:16' | '4:3' | '3:4'>('1:1')
+
+  // Logo-specific state
+  const [brandName, setBrandName] = useState('')
+  const [brandColor, setBrandColor] = useState('blue')
+  const [logoStyle, setLogoStyle] = useState('minimal')
+
+  // Shared state
   const [generatedImageUrl, setGeneratedImageUrl] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState('')
@@ -58,6 +114,15 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     }
   }, [availableModels, selectedModel])
 
+  // Build logo prompt from template
+  const buildLogoPrompt = useCallback(() => {
+    const style = LOGO_STYLES.find(s => s.value === logoStyle)
+    if (!style) return ''
+    return style.template
+      .replace('{brand}', brandName)
+      .replace('{color}', brandColor)
+  }, [brandName, brandColor, logoStyle])
+
   const handleGenerate = async () => {
     if (!hasAccess) {
       handleClose()
@@ -65,8 +130,13 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       return
     }
 
-    if (!prompt.trim()) {
+    // Validation based on mode
+    if (mode === 'image' && !prompt.trim()) {
       setError('Please enter a prompt describing the image you want to generate.')
+      return
+    }
+    if (mode === 'logo' && !brandName.trim()) {
+      setError('Please enter your brand name.')
       return
     }
 
@@ -74,17 +144,20 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setError('')
 
     try {
+      // Build the prompt based on mode
+      const finalPrompt = mode === 'logo' ? buildLogoPrompt() : prompt
+
       const result = await generateImageAction({
-        prompt,
+        prompt: finalPrompt,
         model: selectedModel,
-        aspectRatio: selectedAspectRatio,
-        style: selectedStyle !== 'none' ? selectedStyle : undefined,
+        aspectRatio: mode === 'logo' ? '1:1' : selectedAspectRatio, // Force square for logos
+        style: mode === 'image' && selectedStyle !== 'none' ? selectedStyle : undefined,
         clerkId: clerkUser?.id, // Pass clerkId for auth fallback
       })
       setGeneratedImageUrl(result.url)
       setStep('result')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate image. Please try again.')
+      setError(err instanceof Error ? err.message : 'Failed to generate. Please try again.')
     } finally {
       setIsGenerating(false)
     }
@@ -105,6 +178,10 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setPrompt('')
     setGeneratedImageUrl('')
     setError('')
+    // Reset logo state
+    setBrandName('')
+    setBrandColor('blue')
+    setLogoStyle('minimal')
     onClose()
   }, [onClose])
 
@@ -181,9 +258,12 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
         >
           <Card className="p-6 bg-card border-border">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">
-                {step === 'result' ? 'Generated Image' : 'Generate Image'}
+                {step === 'result'
+                  ? (mode === 'logo' ? 'Generated Logo' : 'Generated Image')
+                  : (mode === 'logo' ? 'Generate Logo' : 'Generate Image')
+                }
               </h2>
               <button
                 onClick={handleClose}
@@ -195,87 +275,204 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
               </button>
             </div>
 
+            {/* Mode Tabs */}
+            {step === 'configure' && (
+              <div className="flex gap-2 mb-6 p-1 bg-background rounded-lg">
+                <button
+                  onClick={() => setMode('image')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    mode === 'image'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-white'
+                  }`}
+                >
+                  Image
+                </button>
+                <button
+                  onClick={() => setMode('logo')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    mode === 'logo'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-white'
+                  }`}
+                >
+                  Logo
+                </button>
+              </div>
+            )}
+
             {step === 'configure' && (
               <>
-                {/* Prompt Input */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Prompt</label>
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe the image you want to generate..."
-                    rows={3}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary resize-none"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Be specific about subjects, style, lighting, and composition.
-                  </p>
-                </div>
+                {/* IMAGE MODE */}
+                {mode === 'image' && (
+                  <>
+                    {/* Prompt Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Prompt</label>
+                      <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="Describe the image you want to generate..."
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary resize-none"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Be specific about subjects, style, lighting, and composition.
+                      </p>
+                    </div>
 
-                {/* Model Selection */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Model</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {availableModels.map((model) => (
-                      <button
-                        key={model.id}
-                        onClick={() => setSelectedModel(model.id)}
-                        className={`p-3 rounded-lg text-left transition-colors ${
-                          selectedModel === model.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background border border-border hover:border-white/20'
-                        }`}
+                    {/* Model Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Model</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {availableModels.map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() => setSelectedModel(model.id)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              selectedModel === model.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">{model.name}</span>
+                            <span className={`block text-xs mt-1 ${
+                              selectedModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              {model.speed}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Style Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Style Enhancement</label>
+                      <select
+                        value={selectedStyle}
+                        onChange={(e) => setSelectedStyle(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
                       >
-                        <span className="block text-sm font-medium">{model.name}</span>
-                        <span className={`block text-xs mt-1 ${
-                          selectedModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                        }`}>
-                          {model.speed}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                        {IMAGE_STYLES.map((style) => (
+                          <option key={style.value} value={style.value}>
+                            {style.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                {/* Style Selection */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Style Enhancement</label>
-                  <select
-                    value={selectedStyle}
-                    onChange={(e) => setSelectedStyle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
-                  >
-                    {IMAGE_STYLES.map((style) => (
-                      <option key={style.value} value={style.value}>
-                        {style.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    {/* Aspect Ratio Selection */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {ASPECT_RATIOS.map((ratio) => (
+                          <button
+                            key={ratio.value}
+                            onClick={() => setSelectedAspectRatio(ratio.value as '1:1' | '16:9' | '9:16' | '4:3' | '3:4')}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              selectedAspectRatio === ratio.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                            title={ratio.description}
+                          >
+                            {ratio.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {currentAspectRatioDescription}
+                      </p>
+                    </div>
+                  </>
+                )}
 
-                {/* Aspect Ratio Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {ASPECT_RATIOS.map((ratio) => (
-                      <button
-                        key={ratio.value}
-                        onClick={() => setSelectedAspectRatio(ratio.value as '1:1' | '16:9' | '9:16' | '4:3' | '3:4')}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          selectedAspectRatio === ratio.value
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background border border-border hover:border-white/20'
-                        }`}
-                        title={ratio.description}
-                      >
-                        {ratio.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {currentAspectRatioDescription}
-                  </p>
-                </div>
+                {/* LOGO MODE */}
+                {mode === 'logo' && (
+                  <>
+                    {/* Brand Name Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Brand Name</label>
+                      <input
+                        type="text"
+                        value={brandName}
+                        onChange={(e) => setBrandName(e.target.value)}
+                        placeholder="Enter your brand name..."
+                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    {/* Color Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Brand Color</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PRESET_COLORS.map((color) => (
+                          <button
+                            key={color.value}
+                            onClick={() => setBrandColor(color.value)}
+                            className={`p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
+                              brandColor === color.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span
+                              className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            <span className="text-sm font-medium">{color.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Logo Style Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Logo Style</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {LOGO_STYLES.map((style) => (
+                          <button
+                            key={style.value}
+                            onClick={() => setLogoStyle(style.value)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              logoStyle === style.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">{style.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Model Selection for Logo */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2">Model</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {availableModels.map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() => setSelectedModel(model.id)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              selectedModel === model.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">{model.name}</span>
+                            <span className={`block text-xs mt-1 ${
+                              selectedModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              {model.speed}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Error */}
                 {error && (
@@ -287,7 +484,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                 {/* Generate Button */}
                 <Button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !prompt.trim()}
+                  disabled={isGenerating || (mode === 'image' ? !prompt.trim() : !brandName.trim())}
                   className="w-full"
                 >
                   {isGenerating ? (
@@ -299,7 +496,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       Generating... (this may take up to 30 seconds)
                     </span>
                   ) : (
-                    'Generate Image'
+                    mode === 'logo' ? 'Generate Logo' : 'Generate Image'
                   )}
                 </Button>
               </>
@@ -309,33 +506,53 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
               <>
                 {/* Generated Image Display */}
                 <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <span className="text-sm text-muted-foreground">{currentModel?.name}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                      {selectedAspectRatio}
+                      {mode === 'logo' ? '1:1' : selectedAspectRatio}
                     </span>
-                    {selectedStyle !== 'none' && (
+                    {mode === 'image' && selectedStyle !== 'none' && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
                         {IMAGE_STYLES.find(s => s.value === selectedStyle)?.label}
                       </span>
+                    )}
+                    {mode === 'logo' && (
+                      <>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                          {LOGO_STYLES.find(s => s.value === logoStyle)?.label}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 flex items-center gap-1">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: PRESET_COLORS.find(c => c.value === brandColor)?.hex }}
+                          />
+                          {PRESET_COLORS.find(c => c.value === brandColor)?.label}
+                        </span>
+                      </>
                     )}
                   </div>
                   <div className="rounded-lg overflow-hidden bg-background border border-border">
                     <img
                       src={generatedImageUrl}
-                      alt="Generated image"
+                      alt={mode === 'logo' ? `Generated logo for ${brandName}` : 'Generated image'}
                       className="w-full h-auto"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                    Prompt: {prompt}
-                  </p>
+                  {mode === 'logo' ? (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Logo for: <span className="font-medium text-foreground">{brandName}</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                      Prompt: {prompt}
+                    </p>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={handleRegenerate} className="flex-1">
-                    New Image
+                    {mode === 'logo' ? 'New Logo' : 'New Image'}
                   </Button>
                   <Button variant="outline" onClick={handleDownload} className="flex-1">
                     Download
