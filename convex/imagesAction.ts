@@ -35,16 +35,10 @@ function getImageSize(
   return dimensions[aspectRatio] || dimensions["1:1"];
 }
 
-// Convert aspect ratio to Ideogram format
+// Ideogram uses simple aspect ratio strings like "1:1"
 function getIdeogramAspectRatio(aspectRatio: string): string {
-  const mapping: Record<string, string> = {
-    "1:1": "ASPECT_1_1",
-    "16:9": "ASPECT_16_9",
-    "9:16": "ASPECT_9_16",
-    "4:3": "ASPECT_4_3",
-    "3:4": "ASPECT_3_4",
-  };
-  return mapping[aspectRatio] || "ASPECT_1_1";
+  // Ideogram accepts: "1:1", "16:9", "9:16", "4:3", "3:4", etc.
+  return aspectRatio || "1:1";
 }
 
 // Check if model is Ideogram
@@ -109,8 +103,8 @@ export const generate = action({
       requestBody = {
         prompt: enhancedPrompt,
         aspect_ratio: getIdeogramAspectRatio(aspectRatio),
-        model: "V_2", // Use V2 model
-        magic_prompt_option: "AUTO",
+        expand_prompt: true,
+        style: "auto",
       };
     } else {
       // Flux and other models
