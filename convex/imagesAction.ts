@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 
+// Style-specific enhancements
 const styleEnhancements: Record<string, string> = {
   none: "",
   photorealistic:
@@ -16,10 +17,116 @@ const styleEnhancements: Record<string, string> = {
   vibrant: "vibrant colors, bold, eye-catching, high contrast, energetic",
 };
 
+// Quality keywords to add for professional results
+const QUALITY_BOOSTERS = [
+  "high quality",
+  "detailed",
+  "professional",
+  "sharp focus",
+  "well-composed",
+];
+
+// Lighting enhancements
+const LIGHTING_TERMS = [
+  "beautiful lighting",
+  "soft natural light",
+  "golden hour lighting",
+  "studio lighting",
+  "dramatic lighting",
+];
+
+// Composition terms
+const COMPOSITION_TERMS = [
+  "rule of thirds",
+  "balanced composition",
+  "centered subject",
+  "dynamic angle",
+];
+
+// Check if prompt already has quality/technical terms
+function hasQualityTerms(prompt: string): boolean {
+  const qualityIndicators = [
+    "detailed", "quality", "professional", "8k", "4k", "hd", "realistic",
+    "lighting", "composition", "sharp", "vivid", "stunning", "beautiful",
+    "masterpiece", "award", "artistic", "render", "resolution"
+  ];
+  const lowerPrompt = prompt.toLowerCase();
+  return qualityIndicators.some(term => lowerPrompt.includes(term));
+}
+
+// Detect subject type for context-aware enhancement
+function detectSubjectType(prompt: string): string {
+  const lowerPrompt = prompt.toLowerCase();
+
+  if (/person|people|man|woman|portrait|face|human/.test(lowerPrompt)) {
+    return "portrait";
+  }
+  if (/landscape|mountain|ocean|forest|nature|sky|sunset/.test(lowerPrompt)) {
+    return "landscape";
+  }
+  if (/animal|bird|cat|dog|wildlife/.test(lowerPrompt)) {
+    return "animal";
+  }
+  if (/food|dish|meal|cuisine/.test(lowerPrompt)) {
+    return "food";
+  }
+  if (/product|item|object|thing/.test(lowerPrompt)) {
+    return "product";
+  }
+  if (/building|architecture|city|street|urban/.test(lowerPrompt)) {
+    return "architecture";
+  }
+  return "general";
+}
+
+// Get subject-specific enhancements
+function getSubjectEnhancements(subjectType: string): string {
+  const enhancements: Record<string, string> = {
+    portrait: "expressive eyes, natural skin texture, professional portrait photography",
+    landscape: "epic scale, atmospheric perspective, vibrant colors, scenic view",
+    animal: "sharp details, natural habitat, wildlife photography style, vivid fur/feathers",
+    food: "appetizing presentation, food photography, shallow depth of field, garnished",
+    product: "clean background, commercial photography, studio setup, product showcase",
+    architecture: "architectural photography, dramatic perspective, structural details",
+    general: "well-lit, sharp details, professional quality"
+  };
+  return enhancements[subjectType] || enhancements.general;
+}
+
+// Main prompt enhancer - transforms simple prompts into professional ones
+function autoEnhancePrompt(prompt: string): string {
+  // If prompt is already detailed (>100 chars) or has quality terms, minimal enhancement
+  if (prompt.length > 100 || hasQualityTerms(prompt)) {
+    // Just add basic quality boost if missing
+    if (!hasQualityTerms(prompt)) {
+      return `${prompt}, high quality, detailed`;
+    }
+    return prompt;
+  }
+
+  // Detect what the user is trying to create
+  const subjectType = detectSubjectType(prompt);
+  const subjectEnhancement = getSubjectEnhancements(subjectType);
+
+  // Pick random quality and lighting terms for variety
+  const quality = QUALITY_BOOSTERS[Math.floor(Math.random() * QUALITY_BOOSTERS.length)];
+  const lighting = LIGHTING_TERMS[Math.floor(Math.random() * LIGHTING_TERMS.length)];
+
+  // Build enhanced prompt
+  const enhancedPrompt = `${prompt}, ${subjectEnhancement}, ${quality}, ${lighting}`;
+
+  return enhancedPrompt;
+}
+
+// Apply style enhancement on top of auto-enhancement
 function enhancePrompt(prompt: string, style: string): string {
-  if (!style || style === "none") return prompt;
-  const enhancement = styleEnhancements[style];
-  return enhancement ? `${prompt}, ${enhancement}` : prompt;
+  // First auto-enhance the prompt
+  const autoEnhanced = autoEnhancePrompt(prompt);
+
+  // Then add style-specific terms if selected
+  if (!style || style === "none") return autoEnhanced;
+  const styleBoost = styleEnhancements[style];
+  return styleBoost ? `${autoEnhanced}, ${styleBoost}` : autoEnhanced;
 }
 
 function getImageSize(
