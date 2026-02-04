@@ -48,7 +48,9 @@ export function SignUpForm() {
     setError('')
     setIsLoading(true)
     try {
-      await signIn('google', { redirectTo: '/dashboard' })
+      // Use full URL for OAuth redirect
+      const redirectUrl = `${window.location.origin}/dashboard`
+      await signIn('google', { redirectTo: redirectUrl })
     } catch (err) {
       setError('Google sign up failed. Please try again.')
       setIsLoading(false)

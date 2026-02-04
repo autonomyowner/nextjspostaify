@@ -8,6 +8,12 @@ export const { auth, signIn, signOut, store } = convexAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+        },
+      },
     }),
   ],
 });
