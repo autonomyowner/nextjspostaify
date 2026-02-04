@@ -15,7 +15,7 @@ export default function AuthTestPage() {
   const [envVars, setEnvVars] = useState<Record<string, string>>({})
 
   // Try to get current user from Convex
-  const currentUser = useQuery(api.users.getCurrentUser)
+  const currentUser = useQuery(api.users.viewer)
 
   const addLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1].split('.')[0]
