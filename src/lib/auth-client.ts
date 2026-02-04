@@ -1,10 +1,9 @@
 import { createAuthClient } from "better-auth/react";
 import { convexClient } from "@convex-dev/better-auth/client/plugins";
 
-const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || "https://handsome-crocodile-686.convex.site";
-
+// Use same-origin API routes (Next.js handles /api/auth/* and proxies to Convex)
+// This avoids CORS issues since requests stay on the same domain
 export const authClient = createAuthClient({
-  baseURL: convexSiteUrl,
   plugins: [convexClient()],
 });
 
