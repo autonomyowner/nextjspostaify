@@ -1,17 +1,21 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
-import { auth } from "./auth";
+import { authComponent, getAuthenticatedAppUser } from "./auth";
 
 // Get Telegram connection status
 export const getStatus = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return null;
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return null;
     }
@@ -31,14 +35,9 @@ export const getStatus = query({
 export const disconnect = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db.get(userId);
+    const user = await getAuthenticatedAppUser(ctx);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error("Not authenticated");
     }
 
     await ctx.db.patch(user._id, {
@@ -82,14 +81,9 @@ export const toggle = mutation({
     enabled: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db.get(userId);
+    const user = await getAuthenticatedAppUser(ctx);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error("Not authenticated");
     }
 
     if (!user.telegramChatId) {
@@ -155,14 +149,14 @@ export const linkAccountById = internalMutation({
 export const generateLinkCode = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
       throw new Error("Not authenticated");
     }
 
     // Create a simple link code containing userId and timestamp
     const timestamp = Date.now().toString();
-    const payload = `${userId}:${timestamp}`;
+    const payload = `${user._id}:${timestamp}`;
     const linkCode = btoa(payload).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
     const botUsername = process.env.TELEGRAM_BOT_USERNAME || "PostaifyBot";

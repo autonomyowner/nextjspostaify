@@ -1,20 +1,51 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
 import { getPlanLimits } from "./lib/planLimits";
-import { auth } from "./auth";
+import { authComponent, getAuthenticatedAppUser } from "./auth";
 
 // Get current viewer (authenticated user)
 export const viewer = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return null;
     }
 
-    const user = await ctx.db.get(userId);
+    // Get app user record by email
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
+    // If no app user exists yet, return a minimal profile
+    // The user will be created by ensureUserExists mutation
     if (!user) {
-      return null;
+      return {
+        _id: null as any,
+        email: authUser.email,
+        name: authUser.name,
+        avatarUrl: authUser.image,
+        plan: "FREE" as const,
+        usage: {
+          postsThisMonth: 0,
+          postsLimit: 20,
+          imagesThisMonth: 0,
+          imagesLimit: 5,
+          voiceoversThisMonth: 0,
+          voiceoversLimit: 2,
+          brands: 0,
+          brandsLimit: 2,
+          totalPosts: 0,
+        },
+        features: {
+          hasImageGeneration: true,
+          hasVoiceover: true,
+          hasVideoRepurpose: false,
+        },
+        _creationTime: Date.now(),
+        needsSetup: true,
+      };
     }
 
     // Get brand count
@@ -38,7 +69,7 @@ export const viewer = query({
       _id: user._id,
       email: user.email,
       name: user.name,
-      avatarUrl: user.image,
+      avatarUrl: user.avatarUrl || authUser.image,
       plan,
       usage: {
         postsThisMonth: user.postsThisMonth ?? 0,
@@ -61,16 +92,56 @@ export const viewer = query({
   },
 });
 
+// Ensure user exists in app database (called after sign in)
+export const ensureUserExists = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check if user already exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
+    if (existingUser) {
+      return { userId: existingUser._id, created: false };
+    }
+
+    // Create new app user
+    const userId = await ctx.db.insert("users", {
+      email: authUser.email,
+      name: authUser.name ?? undefined,
+      avatarUrl: authUser.image ?? undefined,
+      plan: "FREE",
+      postsThisMonth: 0,
+      imagesThisMonth: 0,
+      voiceoversThisMonth: 0,
+      usageResetDate: Date.now(),
+      telegramEnabled: false,
+    });
+
+    return { userId, created: true };
+  },
+});
+
 // Get current user with usage stats (alias for viewer)
 export const getMe = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return null;
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return null;
     }
@@ -96,7 +167,7 @@ export const getMe = query({
       _id: user._id,
       email: user.email,
       name: user.name,
-      avatarUrl: user.image,
+      avatarUrl: user.avatarUrl || authUser.image,
       plan,
       usage: {
         postsThisMonth: user.postsThisMonth ?? 0,
@@ -125,14 +196,9 @@ export const updateMe = mutation({
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db.get(userId);
+    const user = await getAuthenticatedAppUser(ctx);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error("Not authenticated");
     }
 
     await ctx.db.patch(user._id, {
@@ -147,14 +213,9 @@ export const updateMe = mutation({
 export const incrementImageUsage = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db.get(userId);
+    const user = await getAuthenticatedAppUser(ctx);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error("Not authenticated");
     }
 
     await ctx.db.patch(user._id, {
@@ -169,14 +230,9 @@ export const incrementImageUsage = mutation({
 export const incrementVoiceoverUsage = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db.get(userId);
+    const user = await getAuthenticatedAppUser(ctx);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error("Not authenticated");
     }
 
     await ctx.db.patch(user._id, {

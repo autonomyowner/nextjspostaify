@@ -2,8 +2,8 @@
 
 import { v } from "convex/values";
 import { action } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { auth } from "./auth";
+import { api, internal } from "./_generated/api";
+import { authComponent } from "./auth";
 
 // Helper for Stripe API calls
 async function stripeRequest(
@@ -68,9 +68,16 @@ export const createCheckout = action({
     cancelUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    // Check auth using authComponent
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) {
       throw new Error("Not authenticated");
+    }
+
+    // Get app user through viewer query
+    const user = await ctx.runQuery(api.users.viewer);
+    if (!user) {
+      throw new Error("User not found. Please refresh the page.");
     }
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -86,14 +93,8 @@ export const createCheckout = action({
       throw new Error(`Price not configured for plan: ${args.plan}`);
     }
 
-    // Get user
-    const user = await ctx.runQuery(internal.internal.getUserById, { userId });
-    if (!user) {
-      throw new Error("User not found. Please refresh the page.");
-    }
-
     // Get or create Stripe customer
-    let customerId = await getStripeCustomerId(ctx, userId);
+    let customerId = await getStripeCustomerId(ctx, user._id);
 
     if (!customerId && user.email) {
       // Search for existing customer by email
@@ -127,7 +128,7 @@ export const createCheckout = action({
       "line_items[0][quantity]": 1,
       success_url: successUrl,
       cancel_url: cancelUrl,
-      "metadata[userId]": userId,
+      "metadata[userId]": user._id,
       "metadata[priceId]": priceId,
     };
 
@@ -153,9 +154,16 @@ export const createPortal = action({
     returnUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    // Check auth using authComponent
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) {
       throw new Error("Not authenticated");
+    }
+
+    // Get app user through viewer query
+    const user = await ctx.runQuery(api.users.viewer);
+    if (!user) {
+      throw new Error("User not found. Please refresh the page.");
     }
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -163,13 +171,7 @@ export const createPortal = action({
       throw new Error("Stripe is not configured");
     }
 
-    // Get user with Stripe customer ID
-    const user = await ctx.runQuery(internal.internal.getUserById, { userId });
-    if (!user) {
-      throw new Error("User not found. Please refresh the page.");
-    }
-
-    const customerId = await getStripeCustomerId(ctx, userId);
+    const customerId = await getStripeCustomerId(ctx, user._id);
     if (!customerId) {
       throw new Error("No active subscription");
     }

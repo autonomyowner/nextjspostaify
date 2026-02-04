@@ -1,22 +1,20 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
+
+// Better-auth manages its own tables via the component
+// No authTables spread needed - only app-specific tables here
 
 export default defineSchema({
-  ...authTables,
-
-  // Override the users table with app-specific fields
-  // Convex Auth will add: email, emailVerificationTime, image, name, isAnonymous
+  // App user profiles - linked to better-auth users via email
   users: defineTable({
-    // Convex Auth fields
-    email: v.optional(v.string()),
-    emailVerificationTime: v.optional(v.number()),
-    image: v.optional(v.string()),
+    // Core identity (synced from better-auth)
+    email: v.string(),
     name: v.optional(v.string()),
-    isAnonymous: v.optional(v.boolean()),
-    // Legacy fields (for backward compatibility with existing Clerk data)
-    clerkId: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    image: v.optional(v.string()), // Better-auth image field
+    emailVerificationTime: v.optional(v.number()), // Better-auth verification timestamp
+    // Legacy field (from old Clerk auth - kept for data compatibility)
+    clerkId: v.optional(v.string()),
     // App-specific fields
     plan: v.optional(v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS"))),
     stripeCustomerId: v.optional(v.string()),
@@ -28,7 +26,7 @@ export default defineSchema({
     telegramEnabled: v.optional(v.boolean()),
     telegramLinkedAt: v.optional(v.number()),
   })
-    .index("email", ["email"]) // Required by Convex Auth
+    .index("email", ["email"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_telegramChatId", ["telegramChatId"]),
 

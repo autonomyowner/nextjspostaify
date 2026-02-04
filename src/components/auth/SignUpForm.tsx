@@ -1,15 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuthActions } from '@convex-dev/auth/react'
-import { useRouter } from 'next/navigation'
+import { authClient } from '@/lib/auth-client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/Logo'
 
 export function SignUpForm() {
-  const { signIn } = useAuthActions()
-  const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,16 +25,20 @@ export function SignUpForm() {
     }
 
     try {
-      const formData = new FormData()
-      formData.set('email', email)
-      formData.set('password', password)
-      formData.set('name', name)
-      formData.set('flow', 'signUp')
+      const { error: signUpError } = await authClient.signUp.email({
+        email,
+        password,
+        name,
+      })
 
-      await signIn('password', formData)
-      // Redirect immediately - don't wait
+      if (signUpError) {
+        setError(signUpError.message || 'Could not create account')
+        setIsLoading(false)
+        return
+      }
+
+      // Redirect on success
       window.location.href = '/dashboard'
-      return // Don't run catch
     } catch (err) {
       setError('Could not create account. Email may already be in use.')
       setIsLoading(false)
@@ -48,9 +49,10 @@ export function SignUpForm() {
     setError('')
     setIsLoading(true)
     try {
-      // Use full URL for OAuth redirect
-      const redirectUrl = `${window.location.origin}/dashboard`
-      await signIn('google', { redirectTo: redirectUrl })
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/dashboard',
+      })
     } catch (err) {
       setError('Google sign up failed. Please try again.')
       setIsLoading(false)

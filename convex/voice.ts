@@ -3,14 +3,14 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
-import { auth } from "./auth";
+import { authComponent } from "./auth";
 
 // Get available voices from ElevenLabs
 export const getVoices = action({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) {
       throw new Error("Not authenticated");
     }
 
@@ -143,8 +143,8 @@ export const generate = action({
     ),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) {
       throw new Error("Not authenticated");
     }
 

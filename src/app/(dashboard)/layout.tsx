@@ -1,7 +1,9 @@
 'use client'
 
-import { useConvexAuth } from 'convex/react'
-import { useEffect } from 'react'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
+import { useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
+import { useEffect, useState } from 'react'
 
 export default function DashboardLayout({
   children,
@@ -9,6 +11,8 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
+  const ensureUserExists = useMutation(api.users.ensureUserExists)
+  const [userEnsured, setUserEnsured] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -16,6 +20,15 @@ export default function DashboardLayout({
       window.location.href = '/sign-in'
     }
   }, [isLoading, isAuthenticated])
+
+  // Ensure user exists in app database when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !userEnsured) {
+      ensureUserExists()
+        .then(() => setUserEnsured(true))
+        .catch(() => setUserEnsured(true)) // Ignore errors, user might already exist
+    }
+  }, [isAuthenticated, userEnsured, ensureUserExists])
 
   // Show loading state while checking auth
   if (isLoading) {

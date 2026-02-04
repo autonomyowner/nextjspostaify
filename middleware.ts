@@ -1,11 +1,29 @@
-import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// TEMPORARY: Middleware auth verification is having issues
-// Client-side auth protection is still active in (dashboard)/layout.tsx
-// TODO: Fix server-side token verification and re-enable route protection
+// Better-auth handles sessions via cookies automatically
+// This middleware protects routes and redirects unauthenticated users
+export function middleware(request: NextRequest) {
+  // Protected routes that require auth
+  const protectedPaths = ["/dashboard", "/posts", "/calendar", "/admin"];
 
-export default convexAuthNextjsMiddleware();
+  const isProtected = protectedPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  if (isProtected) {
+    // Check for better-auth session cookie
+    const sessionCookie = request.cookies.get("better-auth.session_token");
+
+    if (!sessionCookie) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)"],
+  // Exclude Next.js internals, static files, and auth API routes
+  matcher: ["/((?!_next|api/auth|.*\\..*).*)"],
 };

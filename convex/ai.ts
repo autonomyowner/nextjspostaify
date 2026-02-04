@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, action } from "./_generated/server";
 import { api } from "./_generated/api";
-import { auth } from "./auth";
+import { authComponent } from "./auth";
 
 type Platform = "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "TIKTOK" | "FACEBOOK";
 type ContentStyle =
@@ -115,8 +115,8 @@ export const generateContent = action({
     model: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) {
       throw new Error("Not authenticated");
     }
 
@@ -239,8 +239,8 @@ export const videoToPosts = action({
     model: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) {
       throw new Error("Not authenticated");
     }
 

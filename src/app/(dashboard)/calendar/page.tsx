@@ -5,7 +5,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import { useConvexAuth } from "@/hooks/useCurrentUser"
-import { useAuthActions } from "@convex-dev/auth/react"
+import { authClient } from "@/lib/auth-client"
 import { useData, type Post, type Platform } from "@/context/DataContext"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/Logo"
@@ -83,7 +83,7 @@ export default function CalendarPage() {
   const { t } = useTranslation()
   const { posts, brands, deletePost, user } = useData()
   const { isAuthenticated } = useConvexAuth()
-  const { signOut } = useAuthActions()
+  const signOut = () => authClient.signOut().then(() => window.location.href = '/')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date())
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | 'all'>('all')

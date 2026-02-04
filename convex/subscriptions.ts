@@ -1,17 +1,21 @@
 import { query } from "./_generated/server";
 import { getPlanLimits } from "./lib/planLimits";
-import { auth } from "./auth";
+import { authComponent } from "./auth";
 
 // Get current subscription
 export const getCurrent = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return null;
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return null;
     }

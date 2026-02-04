@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useAuthActions } from "@convex-dev/auth/react"
+import { authClient } from "@/lib/auth-client"
 import { useQuery, useMutation, useAction } from "convex/react"
 import { api as convexApi } from "../../../convex/_generated/api"
 import { Card } from "@/components/ui/card"
@@ -24,7 +24,6 @@ interface TelegramStatus {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { t } = useTranslation()
-  const { signOut } = useAuthActions()
   const { user } = useData()
   const { subscription, currentLimits, openBillingPortal } = useSubscription()
   const { brands, deleteBrand } = useData()
@@ -90,7 +89,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const handleSignOut = async () => {
     setIsSigningOut(true)
     try {
-      await signOut()
+      await authClient.signOut()
       window.location.href = '/'
     } catch (err) {
       console.error('Sign out error:', err)

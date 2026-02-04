@@ -1,15 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuthActions } from '@convex-dev/auth/react'
-import { useRouter } from 'next/navigation'
+import { authClient } from '@/lib/auth-client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/Logo'
 
 export function SignInForm() {
-  const { signIn } = useAuthActions()
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -21,15 +18,19 @@ export function SignInForm() {
     setIsLoading(true)
 
     try {
-      const formData = new FormData()
-      formData.set('email', email)
-      formData.set('password', password)
-      formData.set('flow', 'signIn')
+      const { error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+      })
 
-      await signIn('password', formData)
-      // Redirect immediately - don't wait
+      if (signInError) {
+        setError(signInError.message || 'Invalid email or password')
+        setIsLoading(false)
+        return
+      }
+
+      // Redirect on success
       window.location.href = '/dashboard'
-      return // Don't run finally
     } catch (err) {
       setError('Invalid email or password. Please try again.')
       setIsLoading(false)
@@ -40,9 +41,10 @@ export function SignInForm() {
     setError('')
     setIsLoading(true)
     try {
-      // Use full URL for OAuth redirect
-      const redirectUrl = `${window.location.origin}/dashboard`
-      await signIn('google', { redirectTo: redirectUrl })
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/dashboard',
+      })
     } catch (err) {
       setError('Google sign in failed. Please try again.')
       setIsLoading(false)

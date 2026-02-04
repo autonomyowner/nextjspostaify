@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { useAuthActions } from '@convex-dev/auth/react'
+import { authClient } from "@/lib/auth-client"
 import { useConvexAuth } from "@/hooks/useCurrentUser"
 import { StatsCards } from "./StatsCards"
 import { RecentPosts } from "./RecentPosts"
@@ -31,7 +31,6 @@ export function Dashboard() {
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
   const { user } = useData()
   const { isAuthenticated } = useConvexAuth()
-  const { signOut } = useAuthActions()
 
   // Handler for creating a post with a generated image
   const handleCreatePostWithImage = (imageUrl: string) => {
@@ -94,7 +93,7 @@ export function Dashboard() {
                 <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-sm font-medium">
                   {user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-xs hidden sm:inline-flex">
+                <Button variant="ghost" size="sm" onClick={() => authClient.signOut().then(() => window.location.href = '/')} className="text-xs hidden sm:inline-flex">
                   Sign Out
                 </Button>
               </div>

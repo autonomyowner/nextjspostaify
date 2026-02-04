@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getPlanLimits } from "./lib/planLimits";
-import { auth } from "./auth";
+import { authComponent, getAuthenticatedAppUser } from "./auth";
 
 const platformValidator = v.union(
   v.literal("INSTAGRAM"),
@@ -17,21 +17,6 @@ const statusValidator = v.union(
   v.literal("PUBLISHED")
 );
 
-// Helper to get authenticated user
-async function getAuthenticatedUser(ctx: any) {
-  const userId = await auth.getUserId(ctx);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-
-  const user = await ctx.db.get(userId);
-  if (!user) {
-    throw new Error("User not found. Please refresh the page.");
-  }
-
-  return user;
-}
-
 // List user's posts with optional filters
 export const list = query({
   args: {
@@ -41,12 +26,16 @@ export const list = query({
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return { posts: [], total: 0, limit: 50, offset: 0 };
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return { posts: [], total: 0, limit: 50, offset: 0 };
     }
@@ -127,12 +116,16 @@ export const list = query({
 export const getById = query({
   args: { id: v.id("posts") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return null;
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return null;
     }
@@ -183,7 +176,11 @@ export const create = mutation({
     aiModel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
     const plan = user.plan || "FREE";
     const limits = getPlanLimits(plan);
 
@@ -242,7 +239,10 @@ export const update = mutation({
     scheduledFor: v.optional(v.union(v.number(), v.null())),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     const post = await ctx.db.get(args.id);
 
@@ -281,7 +281,10 @@ export const remove = mutation({
     id: v.id("posts"),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     const post = await ctx.db.get(args.id);
 
@@ -306,12 +309,16 @@ export const getForCalendar = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return [];
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return [];
     }

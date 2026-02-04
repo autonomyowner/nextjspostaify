@@ -1,29 +1,27 @@
 'use client'
 
 import { useQuery } from 'convex/react'
-import { useAuthToken } from '@convex-dev/auth/react'
 import { api } from '../../convex/_generated/api'
+import { authClient } from '@/lib/auth-client'
 
 export function useCurrentUser() {
-  const token = useAuthToken()
-  const isAuthenticated = token !== null
+  const { data: session, isPending } = authClient.useSession()
   const user = useQuery(api.users.viewer)
 
   return {
     user,
-    isLoading: isAuthenticated && user === undefined,
-    isAuthenticated,
+    isLoading: isPending || (session && user === undefined),
+    isAuthenticated: !!session,
   }
 }
 
 // Re-export a compatible hook for components that used useConvexAuth
 export function useConvexAuth() {
-  const token = useAuthToken()
-  const isAuthenticated = token !== null
+  const { data: session, isPending } = authClient.useSession()
   const user = useQuery(api.users.viewer)
 
   return {
-    isAuthenticated,
-    isLoading: isAuthenticated && user === undefined,
+    isAuthenticated: !!session,
+    isLoading: isPending || (session && user === undefined),
   }
 }

@@ -1,33 +1,22 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getPlanLimits } from "./lib/planLimits";
-import { auth } from "./auth";
-
-// Helper to get authenticated user
-async function getAuthenticatedUser(ctx: any) {
-  const userId = await auth.getUserId(ctx);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-
-  const user = await ctx.db.get(userId);
-  if (!user) {
-    throw new Error("User not found. Please refresh the page.");
-  }
-
-  return user;
-}
+import { authComponent, getAuthenticatedAppUser } from "./auth";
 
 // List user's brands with post counts
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return [];
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return [];
     }
@@ -76,12 +65,16 @@ export const getById = query({
     id: v.id("brands"),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) {
       return null;
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+
     if (!user) {
       return null;
     }
@@ -122,7 +115,11 @@ export const create = mutation({
     topics: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
     const plan = user.plan || "FREE";
     const limits = getPlanLimits(plan);
 
@@ -174,7 +171,10 @@ export const update = mutation({
     topics: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     const brand = await ctx.db.get(args.id);
 
@@ -208,7 +208,10 @@ export const remove = mutation({
     id: v.id("brands"),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedAppUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     const brand = await ctx.db.get(args.id);
 

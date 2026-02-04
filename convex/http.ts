@@ -1,12 +1,12 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { auth } from "./auth";
+import { authComponent, createAuth } from "./auth";
 
 const http = httpRouter();
 
-// Convex Auth routes
-auth.addHttpRoutes(http);
+// Better Auth routes
+authComponent.registerRoutes(http, createAuth);
 
 // Stripe webhook handler
 http.route({

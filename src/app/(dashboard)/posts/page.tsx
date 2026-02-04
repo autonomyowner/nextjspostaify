@@ -5,7 +5,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import { useConvexAuth } from "@/hooks/useCurrentUser"
-import { useAuthActions } from "@convex-dev/auth/react"
+import { authClient } from "@/lib/auth-client"
 import { useData, type Post } from "@/context/DataContext"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +35,7 @@ export default function PostsPage() {
   const { t } = useTranslation()
   const { posts, brands, deletePost, updatePost, user } = useData()
   const { isAuthenticated } = useConvexAuth()
-  const { signOut } = useAuthActions()
+  const signOut = () => authClient.signOut().then(() => window.location.href = '/')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [filterPlatform, setFilterPlatform] = useState<FilterPlatform>('all')
   const [expandedPost, setExpandedPost] = useState<string | null>(null)
