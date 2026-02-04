@@ -35,11 +35,11 @@ export function SignUpForm() {
       formData.set('flow', 'signUp')
 
       await signIn('password', formData)
-      // Use full page reload so middleware re-evaluates auth cookies
+      // Redirect immediately - don't wait
       window.location.href = '/dashboard'
+      return // Don't run catch
     } catch (err) {
       setError('Could not create account. Email may already be in use.')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -68,13 +68,6 @@ export function SignUpForm() {
         <p className="text-muted-foreground text-center mb-6">
           Start creating AI-powered social content
         </p>
-
-        {/* Maintenance notice */}
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
-          <p className="text-yellow-400 text-sm text-center">
-            We&apos;re experiencing login issues. Our team is working on it. Please try again shortly.
-          </p>
-        </div>
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">

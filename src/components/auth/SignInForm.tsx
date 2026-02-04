@@ -27,11 +27,11 @@ export function SignInForm() {
       formData.set('flow', 'signIn')
 
       await signIn('password', formData)
-      // Use full page reload so middleware re-evaluates auth cookies
+      // Redirect immediately - don't wait
       window.location.href = '/dashboard'
+      return // Don't run finally
     } catch (err) {
       setError('Invalid email or password. Please try again.')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -60,13 +60,6 @@ export function SignInForm() {
         <p className="text-muted-foreground text-center mb-6">
           Sign in to your POSTAIFY account
         </p>
-
-        {/* Maintenance notice */}
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
-          <p className="text-yellow-400 text-sm text-center">
-            We&apos;re experiencing login issues. Our team is working on it. Please try again shortly.
-          </p>
-        </div>
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
