@@ -35,7 +35,8 @@ export function SignUpForm() {
       formData.set('flow', 'signUp')
 
       await signIn('password', formData)
-      router.push('/dashboard')
+      // Use full page reload so middleware re-evaluates auth cookies
+      window.location.href = '/dashboard'
     } catch (err) {
       setError('Could not create account. Email may already be in use.')
     } finally {

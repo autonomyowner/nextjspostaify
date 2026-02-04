@@ -27,7 +27,8 @@ export function SignInForm() {
       formData.set('flow', 'signIn')
 
       await signIn('password', formData)
-      router.push('/dashboard')
+      // Use full page reload so middleware re-evaluates auth cookies
+      window.location.href = '/dashboard'
     } catch (err) {
       setError('Invalid email or password. Please try again.')
     } finally {
