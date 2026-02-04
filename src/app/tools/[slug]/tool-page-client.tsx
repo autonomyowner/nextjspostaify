@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useAction, useMutation } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import type { ToolConfig } from '@/lib/tools-config'
 
@@ -23,9 +23,9 @@ export default function ToolPageClient({ slug, tool }: ToolPageClientProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  // Convex actions
-  const generateFromYouTube = useAction(api.tools.generateFromYouTube)
+  // Convex mutations
   const captureEmail = useMutation(api.tools.captureToolEmail)
+  const trackFeatureClick = useMutation(api.tools.trackFeatureClick)
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,29 +37,32 @@ export default function ToolPageClient({ slug, tool }: ToolPageClientProps) {
       return
     }
 
-    // Check localStorage for free usage
-    const usageKey = `postaify_tool_${slug}`
-    const hasUsed = localStorage.getItem(usageKey)
-    if (hasUsed) {
-      setError('You\'ve already used your free conversion. Sign up for unlimited access!')
-      return
-    }
-
     setStep('processing')
     setIsGenerating(true)
 
     try {
-      const result = await generateFromYouTube({
-        youtubeUrl,
-        platform: tool.platform as "LinkedIn" | "Twitter" | "Instagram" | "TikTok" | "Facebook",
+      // Use API route for server-side rate limiting
+      const response = await fetch('/api/tools/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          youtubeUrl,
+          platform: tool.platform,
+          toolSlug: slug,
+        }),
       })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate content')
+      }
 
       setGeneratedContent(result.content)
       setVideoTitle(result.videoTitle)
       setStep('result')
-
-      // Mark as used
-      localStorage.setItem(usageKey, 'true')
     } catch (err) {
       console.error('Generation error:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate content. Please try again.')
@@ -262,26 +265,41 @@ export default function ToolPageClient({ slug, tool }: ToolPageClientProps) {
               </button>
             </div>
 
-            {/* Upsell */}
-            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
-              <h3 className="font-bold text-lg mb-2">Want Unlimited Conversions?</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Get unlimited posts, AI images, voiceovers, scheduling, and more with POSTAIFY.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  href="/sign-up"
-                  className="inline-block bg-gradient-to-r from-amber-500 to-orange-500 text-black px-6 py-2.5 rounded-lg font-bold hover:from-amber-400 hover:to-orange-400 transition-all"
-                >
-                  Start Free Trial
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="inline-block bg-secondary hover:bg-secondary/80 px-6 py-2.5 rounded-lg font-medium transition-colors"
-                >
-                  See Pricing
-                </Link>
+            {/* Thumbnail Upsell - specific to this post */}
+            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Make it visual</h3>
+                  <p className="text-sm text-muted-foreground">Generate an AI thumbnail for this post</p>
+                </div>
               </div>
+
+              <p className="text-sm text-muted-foreground mb-4">
+                Posts with images get 2x more engagement. Create a matching visual in seconds.
+              </p>
+
+              <Link
+                href="/sign-up?feature=ai-images&redirect=/dashboard"
+                onClick={() => {
+                  // Track the click for analytics
+                  trackFeatureClick({
+                    feature: 'thumbnail-upsell',
+                    toolSlug: slug,
+                  })
+                }}
+                className="block w-full text-center bg-gradient-to-r from-amber-500 to-orange-500 text-black py-3 rounded-lg font-bold hover:from-amber-400 hover:to-orange-400 transition-all"
+              >
+                Generate Image - Pro Feature
+              </Link>
+
+              <p className="text-center text-xs text-muted-foreground mt-3">
+                Includes 200 AI images/month + unlimited conversions
+              </p>
             </div>
           </div>
         )}

@@ -1,7 +1,12 @@
 import { v } from "convex/values";
-import { action, mutation } from "./_generated/server";
+import { action, mutation, internalMutation, internalQuery } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 type Platform = "LinkedIn" | "Twitter" | "Instagram" | "TikTok" | "Facebook";
+
+// Rate limit configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_REQUESTS = 3; // 3 requests per hour per IP per tool
 
 // Platform-specific prompts for tool pages
 const PLATFORM_PROMPTS: Record<Platform, string> = {
@@ -101,6 +106,86 @@ async function fetchTranscript(videoId: string): Promise<string | null> {
   }
 }
 
+// Internal query to check rate limit
+export const checkRateLimit = internalQuery({
+  args: {
+    ipHash: v.string(),
+    toolSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const record = await ctx.db
+      .query("toolRateLimits")
+      .withIndex("by_ip_tool", (q) =>
+        q.eq("ipHash", args.ipHash).eq("toolSlug", args.toolSlug)
+      )
+      .first();
+
+    if (!record) {
+      return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+    }
+
+    // Check if window has expired
+    if (now - record.windowStart > RATE_LIMIT_WINDOW_MS) {
+      return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+    }
+
+    // Check if limit exceeded
+    if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+      const resetTime = record.windowStart + RATE_LIMIT_WINDOW_MS;
+      const minutesRemaining = Math.ceil((resetTime - now) / 60000);
+      return { allowed: false, remaining: 0, minutesRemaining };
+    }
+
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count - 1 };
+  },
+});
+
+// Internal mutation to record tool usage
+export const recordToolUsage = internalMutation({
+  args: {
+    ipHash: v.string(),
+    toolSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const record = await ctx.db
+      .query("toolRateLimits")
+      .withIndex("by_ip_tool", (q) =>
+        q.eq("ipHash", args.ipHash).eq("toolSlug", args.toolSlug)
+      )
+      .first();
+
+    if (!record) {
+      // Create new record
+      await ctx.db.insert("toolRateLimits", {
+        ipHash: args.ipHash,
+        toolSlug: args.toolSlug,
+        lastUsed: now,
+        count: 1,
+        windowStart: now,
+      });
+      return;
+    }
+
+    // Check if window has expired - reset if so
+    if (now - record.windowStart > RATE_LIMIT_WINDOW_MS) {
+      await ctx.db.patch(record._id, {
+        lastUsed: now,
+        count: 1,
+        windowStart: now,
+      });
+      return;
+    }
+
+    // Increment count in current window
+    await ctx.db.patch(record._id, {
+      lastUsed: now,
+      count: record.count + 1,
+    });
+  },
+});
+
 // Generate content from YouTube video (no auth required)
 export const generateFromYouTube = action({
   args: {
@@ -112,8 +197,23 @@ export const generateFromYouTube = action({
       v.literal("TikTok"),
       v.literal("Facebook")
     ),
+    ipHash: v.optional(v.string()), // Hashed IP for rate limiting
+    toolSlug: v.optional(v.string()), // Tool slug for rate limiting
   },
   handler: async (ctx, args) => {
+    // Check rate limit if ipHash is provided
+    if (args.ipHash && args.toolSlug) {
+      const rateLimit = await ctx.runQuery(internal.tools.checkRateLimit, {
+        ipHash: args.ipHash,
+        toolSlug: args.toolSlug,
+      });
+
+      if (!rateLimit.allowed) {
+        throw new Error(
+          `You've reached the limit (${RATE_LIMIT_MAX_REQUESTS} conversions/hour). Try again in ${rateLimit.minutesRemaining} minutes or sign up for unlimited access!`
+        );
+      }
+    }
     const videoId = extractVideoId(args.youtubeUrl);
     if (!videoId) {
       throw new Error("Invalid YouTube URL. Please enter a valid YouTube video link.");
@@ -187,6 +287,14 @@ IMPORTANT RULES:
     const content = data.choices[0]?.message?.content;
     if (!content) {
       throw new Error("No content generated. Please try again.");
+    }
+
+    // Record successful usage for rate limiting
+    if (args.ipHash && args.toolSlug) {
+      await ctx.runMutation(internal.tools.recordToolUsage, {
+        ipHash: args.ipHash,
+        toolSlug: args.toolSlug,
+      });
     }
 
     return {
@@ -319,5 +427,21 @@ export const captureToolEmail = mutation({
     });
 
     return { success: true, isNew: true };
+  },
+});
+
+// Track feature clicks for conversion analytics
+export const trackFeatureClick = mutation({
+  args: {
+    feature: v.string(), // e.g., "thumbnail-upsell"
+    toolSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("featureClicks", {
+      feature: args.feature,
+      toolSlug: args.toolSlug,
+      timestamp: Date.now(),
+    });
+    return { success: true };
   },
 });

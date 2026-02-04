@@ -112,4 +112,20 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_capturedAt", ["capturedAt"]),
+
+  // Rate limiting for free tools (IP-based)
+  toolRateLimits: defineTable({
+    ipHash: v.string(), // SHA-256 hashed IP for privacy
+    toolSlug: v.string(),
+    lastUsed: v.number(), // Timestamp of last request
+    count: v.number(), // Requests in current window
+    windowStart: v.number(), // When the current window started
+  }).index("by_ip_tool", ["ipHash", "toolSlug"]),
+
+  // Feature click tracking for conversion analytics
+  featureClicks: defineTable({
+    feature: v.string(), // e.g., "thumbnail-upsell"
+    toolSlug: v.string(),
+    timestamp: v.number(),
+  }).index("by_feature", ["feature"]),
 });
