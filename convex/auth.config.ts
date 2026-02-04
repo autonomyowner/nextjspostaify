@@ -1,8 +1,9 @@
 export default {
   providers: [
     {
-      domain: "https://accounts.google.com",
-      applicationID: "836810651745-vs6ptbgctcl7hfmv9sglvhj27sdpu98l.apps.googleusercontent.com",
+      // Convex Auth issues its own tokens from this domain
+      domain: process.env.CONVEX_SITE_URL,
+      applicationID: "convex",
     },
   ],
 };

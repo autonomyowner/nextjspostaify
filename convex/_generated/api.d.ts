@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as ai from "../ai.js";
+import type * as auth from "../auth.js";
 import type * as brands from "../brands.js";
 import type * as chatbot from "../chatbot.js";
 import type * as chatbotAction from "../chatbotAction.js";
@@ -37,6 +38,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   ai: typeof ai;
+  auth: typeof auth;
   brands: typeof brands;
   chatbot: typeof chatbot;
   chatbotAction: typeof chatbotAction;

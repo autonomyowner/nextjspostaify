@@ -28,7 +28,7 @@ export default defineSchema({
     telegramEnabled: v.optional(v.boolean()),
     telegramLinkedAt: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
+    .index("email", ["email"]) // Required by Convex Auth
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_telegramChatId", ["telegramChatId"]),
 
