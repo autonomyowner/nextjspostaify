@@ -14,6 +14,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     baseURL: siteUrl,
     database: authComponent.adapter(ctx),
+    trustedOrigins: [
+      "https://www.postaify.com",
+      "https://postaify.com",
+      "http://localhost:3000",
+    ],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
