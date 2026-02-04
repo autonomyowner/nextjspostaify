@@ -1,29 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Better-auth handles sessions via cookies automatically
-// This middleware protects routes and redirects unauthenticated users
+// Middleware is disabled for route protection
+// Client-side auth handles redirects in dashboard layout
+// This is because better-auth session tokens are managed client-side
 export function middleware(request: NextRequest) {
-  // Protected routes that require auth
-  const protectedPaths = ["/dashboard", "/posts", "/calendar", "/admin"];
-
-  const isProtected = protectedPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (isProtected) {
-    // Check for better-auth session cookie
-    const sessionCookie = request.cookies.get("better-auth.session_token");
-
-    if (!sessionCookie) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
-    }
-  }
-
+  // Just pass through - client-side auth handles protection
   return NextResponse.next();
 }
 
 export const config = {
-  // Exclude Next.js internals, static files, and auth API routes
-  matcher: ["/((?!_next|api/auth|.*\\..*).*)"],
+  // Only match API routes if needed for headers, etc.
+  matcher: [],
 };
