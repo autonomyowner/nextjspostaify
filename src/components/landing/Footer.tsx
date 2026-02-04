@@ -8,21 +8,21 @@ export function Footer() {
 
   const footerLinks = {
     [t('footer.product.title')]: [
-      t('footer.product.features'),
-      t('footer.product.pricing'),
-      t('footer.product.docs'),
-      t('footer.product.changelog')
+      { label: t('footer.product.features'), href: '/#features' },
+      { label: t('footer.product.pricing'), href: '/pricing' },
+      { label: t('footer.product.docs'), href: '#' },
+      { label: t('footer.product.changelog'), href: '/roadmap' }
     ],
     [t('footer.company.title')]: [
-      t('footer.company.about'),
-      t('footer.company.blog'),
-      t('footer.company.careers'),
-      t('footer.company.contact')
+      { label: t('footer.company.about'), href: '#' },
+      { label: t('footer.company.blog'), href: '#' },
+      { label: t('footer.company.careers'), href: '#' },
+      { label: t('footer.company.contact'), href: '#' }
     ],
     [t('footer.legal.title')]: [
-      t('footer.legal.privacy'),
-      t('footer.legal.terms'),
-      t('footer.legal.security')
+      { label: t('footer.legal.privacy'), href: '/privacy' },
+      { label: t('footer.legal.terms'), href: '/terms' },
+      { label: t('footer.legal.security'), href: '#' }
     ]
   }
 
@@ -80,13 +80,13 @@ export function Footer() {
               <h4 className="font-semibold mb-4 text-sm">{category}</h4>
               <ul className="space-y-2">
                 {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
                       className="text-sm text-muted-foreground hover:text-white transition-colors"
                     >
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

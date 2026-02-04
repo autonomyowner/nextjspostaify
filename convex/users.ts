@@ -77,6 +77,10 @@ export const getByClerkId = query({
       usage: {
         postsThisMonth: user.postsThisMonth,
         postsLimit: limits.maxPostsPerMonth,
+        imagesThisMonth: user.imagesThisMonth ?? 0,
+        imagesLimit: limits.maxImagesPerMonth,
+        voiceoversThisMonth: user.voiceoversThisMonth ?? 0,
+        voiceoversLimit: limits.maxVoiceoversPerMonth,
         brands: brandCount,
         brandsLimit: limits.maxBrands,
         totalPosts: postCount,
@@ -134,6 +138,10 @@ export const getMe = query({
       usage: {
         postsThisMonth: user.postsThisMonth,
         postsLimit: limits.maxPostsPerMonth,
+        imagesThisMonth: user.imagesThisMonth ?? 0,
+        imagesLimit: limits.maxImagesPerMonth,
+        voiceoversThisMonth: user.voiceoversThisMonth ?? 0,
+        voiceoversLimit: limits.maxVoiceoversPerMonth,
         brands: brandCount,
         brandsLimit: limits.maxBrands,
         totalPosts: postCount,
@@ -170,6 +178,66 @@ export const updateMe = mutation({
 
     await ctx.db.patch(user._id, {
       name: args.name,
+    });
+
+    return { success: true };
+  },
+});
+
+// Increment image usage count
+export const incrementImageUsage = mutation({
+  args: {
+    clerkId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const userClerkId = identity?.subject || args.clerkId;
+
+    if (!userClerkId) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      imagesThisMonth: (user.imagesThisMonth ?? 0) + 1,
+    });
+
+    return { success: true };
+  },
+});
+
+// Increment voiceover usage count
+export const incrementVoiceoverUsage = mutation({
+  args: {
+    clerkId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const userClerkId = identity?.subject || args.clerkId;
+
+    if (!userClerkId) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      voiceoversThisMonth: (user.voiceoversThisMonth ?? 0) + 1,
     });
 
     return { success: true };
@@ -381,6 +449,8 @@ export const resetMonthlyUsage = internalMutation({
       if (nowMonth !== resetMonth || nowYear !== resetYear) {
         await ctx.db.patch(user._id, {
           postsThisMonth: 0,
+          imagesThisMonth: 0,
+          voiceoversThisMonth: 0,
           usageResetDate: now,
         });
       }

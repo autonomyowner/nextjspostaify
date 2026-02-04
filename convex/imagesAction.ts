@@ -179,7 +179,7 @@ export const generate = action({
       throw new Error("Not authenticated");
     }
 
-    // Check feature access
+    // Check feature access and limits
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
@@ -187,6 +187,13 @@ export const generate = action({
     if (!user.features.hasImageGeneration) {
       throw new Error(
         "Image generation is not available on your plan. Upgrade to Pro."
+      );
+    }
+
+    // Check image limit
+    if (user.usage.imagesThisMonth >= user.usage.imagesLimit) {
+      throw new Error(
+        `You've reached your monthly image limit (${user.usage.imagesLimit}). Upgrade your plan for more.`
       );
     }
 
@@ -256,6 +263,9 @@ export const generate = action({
 
     const generatedImageUrl = result.images[0].url;
 
+    // Increment usage after successful generation
+    await ctx.runMutation(api.users.incrementImageUsage, { clerkId: userClerkId });
+
     return {
       url: generatedImageUrl,
       prompt: args.prompt,
@@ -300,7 +310,7 @@ export const generateProductShot = action({
       throw new Error("Not authenticated");
     }
 
-    // Check feature access
+    // Check feature access and limits
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
@@ -308,6 +318,13 @@ export const generateProductShot = action({
     if (!user.features.hasImageGeneration) {
       throw new Error(
         "Product photography is not available on your plan. Upgrade to Pro."
+      );
+    }
+
+    // Check image limit
+    if (user.usage.imagesThisMonth >= user.usage.imagesLimit) {
+      throw new Error(
+        `You've reached your monthly image limit (${user.usage.imagesLimit}). Upgrade your plan for more.`
       );
     }
 
@@ -412,6 +429,9 @@ export const generateProductShot = action({
     if (!result.images || result.images.length === 0) {
       throw new Error("No product shot was generated");
     }
+
+    // Increment usage after successful generation
+    await ctx.runMutation(api.users.incrementImageUsage, { clerkId: userClerkId });
 
     return {
       url: result.images[0].url,

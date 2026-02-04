@@ -9,6 +9,7 @@ import { useUser } from '@clerk/nextjs'
 import { api as convexApi } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { UsageWarning } from '@/components/ui/UsageWarning'
 
 interface VoiceoverModalProps {
   isOpen: boolean
@@ -286,6 +287,9 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
                 </svg>
               </button>
             </div>
+
+            {/* Usage Warning */}
+            <UsageWarning type="voiceover" className="mb-4" />
 
             <div className="overflow-y-auto flex-1 pe-2 -me-2">
               {/* Script Section */}

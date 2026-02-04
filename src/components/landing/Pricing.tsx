@@ -419,15 +419,15 @@ export function Pricing() {
                   </tr>
                   <tr className="hover:bg-muted/20 transition-colors">
                     <td className="py-4 px-6 text-muted-foreground">AI Image Generation</td>
-                    <td className="py-4 px-6 text-center text-muted-foreground/50">—</td>
-                    <td className="py-4 px-6 text-center bg-primary/5 border-x border-primary/10 text-primary font-medium">✓</td>
-                    <td className="py-4 px-6 text-center text-primary font-medium">✓</td>
+                    <td className="py-4 px-6 text-center font-medium">5/mo</td>
+                    <td className="py-4 px-6 text-center bg-primary/5 border-x border-primary/10 text-primary font-medium">100/mo</td>
+                    <td className="py-4 px-6 text-center text-primary font-medium">500/mo</td>
                   </tr>
                   <tr className="hover:bg-muted/20 transition-colors">
                     <td className="py-4 px-6 text-muted-foreground">AI Voiceover</td>
-                    <td className="py-4 px-6 text-center text-muted-foreground/50">—</td>
-                    <td className="py-4 px-6 text-center bg-primary/5 border-x border-primary/10 text-primary font-medium">✓</td>
-                    <td className="py-4 px-6 text-center text-primary font-medium">✓</td>
+                    <td className="py-4 px-6 text-center font-medium">2/mo</td>
+                    <td className="py-4 px-6 text-center bg-primary/5 border-x border-primary/10 text-primary font-medium">30/mo</td>
+                    <td className="py-4 px-6 text-center text-primary font-medium">150/mo</td>
                   </tr>
                   <tr className="hover:bg-muted/20 transition-colors">
                     <td className="py-4 px-6 text-muted-foreground">YouTube Repurposing</td>

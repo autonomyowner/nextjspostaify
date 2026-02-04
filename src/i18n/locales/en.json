@@ -163,8 +163,8 @@
       "cta": "Start Creating Now",
       "feature1": "2 brand profiles",
       "feature2": "20 posts/month",
-      "feature3": "Smart scheduling",
-      "feature4": "All platforms included"
+      "feature3": "5 AI images/month",
+      "feature4": "2 AI voiceovers/month"
     },
     "pro": {
       "name": "Pro",
@@ -175,8 +175,8 @@
       "cta": "Unlock Pro",
       "feature1": "5 brand profiles",
       "feature2": "1,000 posts/month",
-      "feature3": "AI image generation",
-      "feature4": "AI voiceovers",
+      "feature3": "100 AI images/month",
+      "feature4": "30 AI voiceovers/month",
       "feature5": "YouTube repurposing"
     },
     "enterprise": {
@@ -188,9 +188,9 @@
       "cta": "Scale My Agency",
       "feature1": "Unlimited brands",
       "feature2": "90,000 posts/month",
-      "feature3": "Everything in Pro",
-      "feature4": "Team collaboration",
-      "feature5": "API access",
+      "feature3": "500 AI images/month",
+      "feature4": "150 AI voiceovers/month",
+      "feature5": "Team collaboration & API",
       "feature6": "Dedicated support"
     }
   },

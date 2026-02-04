@@ -8,6 +8,7 @@ import { useUser } from '@clerk/nextjs'
 import { api as convexApi } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { UsageWarning } from '@/components/ui/UsageWarning'
 
 interface ImageGeneratorModalProps {
   isOpen: boolean
@@ -414,6 +415,9 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
             {step === 'configure' && (
               <>
+                {/* Usage Warning */}
+                <UsageWarning type="image" className="mb-4" />
+
                 {/* IMAGE MODE */}
                 {mode === 'image' && (
                   <>

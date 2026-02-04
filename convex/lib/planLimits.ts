@@ -2,9 +2,11 @@ export const PLAN_LIMITS = {
   FREE: {
     maxBrands: 2,
     maxPostsPerMonth: 20,
-    hasImageGeneration: false,
-    hasVoiceover: false,
+    hasImageGeneration: true, // Limited to 5/month - taste to convert
+    hasVoiceover: true, // Limited to 2/month - taste to convert
     hasVideoRepurpose: false,
+    maxImagesPerMonth: 5,
+    maxVoiceoversPerMonth: 2,
   },
   PRO: {
     maxBrands: 5,
@@ -12,6 +14,8 @@ export const PLAN_LIMITS = {
     hasImageGeneration: true,
     hasVoiceover: true,
     hasVideoRepurpose: true,
+    maxImagesPerMonth: 100,
+    maxVoiceoversPerMonth: 30,
   },
   BUSINESS: {
     maxBrands: 999,
@@ -19,6 +23,8 @@ export const PLAN_LIMITS = {
     hasImageGeneration: true,
     hasVoiceover: true,
     hasVideoRepurpose: true,
+    maxImagesPerMonth: 500,
+    maxVoiceoversPerMonth: 150,
   },
 } as const;
 

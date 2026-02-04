@@ -10,6 +10,8 @@ export default defineSchema({
     plan: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS")),
     stripeCustomerId: v.optional(v.string()),
     postsThisMonth: v.number(),
+    imagesThisMonth: v.optional(v.number()), // AI image generation count
+    voiceoversThisMonth: v.optional(v.number()), // AI voiceover generation count
     usageResetDate: v.number(), // timestamp
     telegramChatId: v.optional(v.string()),
     telegramEnabled: v.boolean(),

@@ -24,8 +24,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   free: {
     maxBrands: 2,
     maxPostsPerMonth: 20,
-    hasImageGeneration: false,
-    hasVoiceover: false,
+    hasImageGeneration: true,
+    hasVoiceover: true,
     hasVideoRepurpose: false,
     hasApiAccess: false,
     supportLevel: 'community'
@@ -57,6 +57,10 @@ interface SubscriptionState {
   plan: PlanType
   postsThisMonth: number
   postsLimit: number
+  imagesThisMonth: number
+  imagesLimit: number
+  voiceoversThisMonth: number
+  voiceoversLimit: number
   brandsCount: number
   brandsLimit: number
   hasSeenWelcome: boolean
@@ -103,6 +107,10 @@ const DEFAULT_SUBSCRIPTION: SubscriptionState = {
   plan: 'free',
   postsThisMonth: 0,
   postsLimit: 20,
+  imagesThisMonth: 0,
+  imagesLimit: 5,
+  voiceoversThisMonth: 0,
+  voiceoversLimit: 2,
   brandsCount: 0,
   brandsLimit: 2,
   hasSeenWelcome: false
@@ -147,6 +155,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       plan: planKey,
       postsThisMonth: userData.usage.postsThisMonth,
       postsLimit: userData.usage.postsLimit,
+      imagesThisMonth: userData.usage.imagesThisMonth,
+      imagesLimit: userData.usage.imagesLimit,
+      voiceoversThisMonth: userData.usage.voiceoversThisMonth,
+      voiceoversLimit: userData.usage.voiceoversLimit,
       brandsCount: userData.usage.brands,
       brandsLimit: userData.usage.brandsLimit,
       hasSeenWelcome

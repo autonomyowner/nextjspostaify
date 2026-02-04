@@ -156,13 +156,20 @@ export const generate = action({
       throw new Error("Not authenticated");
     }
 
-    // Check feature access
+    // Check feature access and limits
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
     if (!user.features.hasVoiceover) {
       throw new Error("Voiceover is not available on your plan. Upgrade to Pro.");
+    }
+
+    // Check voiceover limit
+    if (user.usage.voiceoversThisMonth >= user.usage.voiceoversLimit) {
+      throw new Error(
+        `You've reached your monthly voiceover limit (${user.usage.voiceoversLimit}). Upgrade your plan for more.`
+      );
     }
 
     const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
@@ -221,6 +228,9 @@ export const generate = action({
     const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     const dataUrl = `data:audio/mpeg;base64,${base64}`;
+
+    // Increment usage after successful generation
+    await ctx.runMutation(api.users.incrementVoiceoverUsage, { clerkId: userClerkId });
 
     return {
       url: dataUrl,
