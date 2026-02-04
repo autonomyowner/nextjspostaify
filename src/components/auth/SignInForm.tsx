@@ -61,6 +61,13 @@ export function SignInForm() {
           Sign in to your POSTAIFY account
         </p>
 
+        {/* Maintenance notice */}
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
+          <p className="text-yellow-400 text-sm text-center">
+            We&apos;re experiencing login issues. Our team is working on it. Please try again shortly.
+          </p>
+        </div>
+
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
             <p className="text-red-400 text-sm text-center">{error}</p>
