@@ -33,27 +33,39 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    return authComponent.getAuthUser(ctx);
+    try {
+      return await authComponent.getAuthUser(ctx);
+    } catch {
+      return null;
+    }
   },
 });
 
 // Helper function to get authenticated user in Convex functions
 export async function getAuthenticatedUserId(ctx: QueryCtx | MutationCtx): Promise<string | null> {
-  const authUser = await authComponent.getAuthUser(ctx);
-  if (!authUser) return null;
-  return authUser._id;
+  try {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) return null;
+    return authUser._id;
+  } catch {
+    return null;
+  }
 }
 
 // Helper to get authenticated user's app profile by email
 export async function getAuthenticatedAppUser(ctx: QueryCtx | MutationCtx) {
-  const authUser = await authComponent.getAuthUser(ctx);
-  if (!authUser || !authUser.email) return null;
+  try {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser || !authUser.email) return null;
 
-  // Get app user record by email
-  const user = await ctx.db
-    .query("users")
-    .withIndex("email", (q) => q.eq("email", authUser.email))
-    .first();
+    // Get app user record by email
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
 
-  return user;
+    return user;
+  } catch {
+    return null;
+  }
 }

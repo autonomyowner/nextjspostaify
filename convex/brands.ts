@@ -7,7 +7,12 @@ import { authComponent, getAuthenticatedAppUser } from "./auth";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const authUser = await authComponent.getAuthUser(ctx);
+    let authUser;
+    try {
+      authUser = await authComponent.getAuthUser(ctx);
+    } catch {
+      return [];
+    }
     if (!authUser || !authUser.email) {
       return [];
     }

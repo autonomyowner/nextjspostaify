@@ -26,7 +26,12 @@ export const list = query({
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const authUser = await authComponent.getAuthUser(ctx);
+    let authUser;
+    try {
+      authUser = await authComponent.getAuthUser(ctx);
+    } catch {
+      return { posts: [], total: 0, limit: 50, offset: 0 };
+    }
     if (!authUser || !authUser.email) {
       return { posts: [], total: 0, limit: 50, offset: 0 };
     }
