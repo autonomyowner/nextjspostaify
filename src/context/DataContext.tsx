@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode, useCallback, useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation } from 'convex/react'
-import { useUser } from '@clerk/nextjs'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 
@@ -127,42 +127,19 @@ const statusFromBackend = (s: string): 'draft' | 'scheduled' | 'published' => {
 export function DataProvider({ children }: { children: ReactNode }) {
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [userSynced, setUserSynced] = useState(false)
 
-  // Get Clerk user
-  const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
-  const clerkId = clerkUser?.id
+  // Get auth state from Convex Auth
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
 
-  // Sync user mutation
-  const syncUserMutation = useMutation(api.users.syncUser)
-
-  // Sync user on load
-  useEffect(() => {
-    if (clerkLoaded && clerkUser && !userSynced) {
-      syncUserMutation({
-        clerkId: clerkUser.id,
-        email: clerkUser.primaryEmailAddress?.emailAddress || '',
-        name: clerkUser.fullName || undefined,
-        avatarUrl: clerkUser.imageUrl || undefined,
-      }).then(() => {
-        setUserSynced(true)
-      }).catch(console.error)
-    }
-  }, [clerkLoaded, clerkUser, userSynced, syncUserMutation])
-
-  // Convex queries - pass clerkId as fallback
-  const userData = useQuery(api.users.getByClerkId, clerkId ? { clerkId } : "skip")
-  const brandsData = useQuery(api.brands.list, clerkId ? { clerkId } : "skip")
+  // Convex queries - only run when authenticated
+  const userData = useQuery(api.users.viewer)
+  const brandsData = useQuery(api.brands.list)
   // Fetch posts filtered by selected brand (if any)
   const postsData = useQuery(
     api.posts.list,
-    clerkId
-      ? {
-          clerkId,
-          limit: 1000,
-          ...(selectedBrandId ? { brandId: selectedBrandId as Id<"brands"> } : {})
-        }
-      : "skip"
+    selectedBrandId
+      ? { limit: 1000, brandId: selectedBrandId as Id<"brands"> }
+      : { limit: 1000 }
   )
 
   // Convex mutations
@@ -174,17 +151,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const deletePostMutation = useMutation(api.posts.remove)
 
   // Determine loading state
-  const isLoading = userData === undefined || brandsData === undefined || postsData === undefined
+  const isLoading = authLoading || (isAuthenticated && (userData === undefined || brandsData === undefined || postsData === undefined))
 
   // Transform user data
   const user: UserProfile | null = useMemo(() => {
     if (!userData) return null
     return {
       id: userData._id,
-      email: userData.email,
+      email: userData.email ?? '',
       name: userData.name ?? null,
       avatarUrl: userData.avatarUrl ?? null,
-      plan: userData.plan
+      plan: userData.plan as 'FREE' | 'PRO' | 'BUSINESS'
     }
   }, [userData])
 
@@ -228,7 +205,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [postsData])
 
   // Auto-select first brand if none selected
-  useMemo(() => {
+  useEffect(() => {
     if (brands.length > 0 && !selectedBrandId) {
       setSelectedBrandId(brands[0].id)
     }
@@ -245,7 +222,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         initials: brandData.initials,
         voice: brandData.voice,
         topics: brandData.topics,
-        clerkId: clerkId || undefined,
       })
 
       // Return a temporary brand object - the real one will come from the query
@@ -259,7 +235,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setError(message)
       throw err
     }
-  }, [createBrandMutation, clerkId])
+  }, [createBrandMutation])
 
   const updateBrand = useCallback(async (id: string, updates: Partial<Brand>) => {
     try {
@@ -285,7 +261,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setError(null)
       await deleteBrandMutation({
         id: id as Id<"brands">,
-        clerkId: clerkId || undefined,
       })
 
       // If the deleted brand was selected, select another one
@@ -298,7 +273,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setError(message)
       throw err
     }
-  }, [deleteBrandMutation, selectedBrandId, brands, clerkId])
+  }, [deleteBrandMutation, selectedBrandId, brands])
 
   const selectBrand = useCallback((id: string | null) => {
     setSelectedBrandId(id)
@@ -316,7 +291,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         voiceUrl: postData.voiceUrl,
         status: statusToBackend(postData.status),
         scheduledFor: postData.scheduledFor ? new Date(postData.scheduledFor).getTime() : undefined,
-        clerkId: clerkId || undefined, // Pass clerkId for auth fallback
       })
 
       // Return a temporary post object - the real one will come from the query
@@ -330,7 +304,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setError(message)
       throw err
     }
-  }, [createPostMutation, clerkId])
+  }, [createPostMutation])
 
   const updatePost = useCallback(async (id: string, updates: Partial<Post>) => {
     try {
@@ -345,28 +319,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
         scheduledFor: updates.scheduledFor === undefined
           ? undefined
           : (updates.scheduledFor ? new Date(updates.scheduledFor).getTime() : null),
-        clerkId: clerkId || undefined, // Pass clerkId for auth fallback
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update post'
       setError(message)
       throw err
     }
-  }, [updatePostMutation, clerkId])
+  }, [updatePostMutation])
 
   const deletePost = useCallback(async (id: string) => {
     try {
       setError(null)
       await deletePostMutation({
         id: id as Id<"posts">,
-        clerkId: clerkId || undefined, // Pass clerkId for auth fallback
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete post'
       setError(message)
       throw err
     }
-  }, [deletePostMutation, clerkId])
+  }, [deletePostMutation])
 
   // Stats calculation
   const getStats = useCallback((): Stats => {

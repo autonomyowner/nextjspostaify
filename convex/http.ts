@@ -1,112 +1,12 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { auth } from "./auth";
 
 const http = httpRouter();
 
-// Clerk webhook handler
-http.route({
-  path: "/webhooks/clerk",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      return new Response("Webhook secret not configured", { status: 500 });
-    }
-
-    // Get headers
-    const svixId = request.headers.get("svix-id");
-    const svixTimestamp = request.headers.get("svix-timestamp");
-    const svixSignature = request.headers.get("svix-signature");
-
-    if (!svixId || !svixTimestamp || !svixSignature) {
-      return new Response("Missing svix headers", { status: 400 });
-    }
-
-    // Get raw body
-    const payload = await request.text();
-
-    // Verify signature (basic check - in production use svix library in action)
-    // For now, we'll parse the payload and trust the request came from Clerk
-    // A proper implementation would call an internal action to verify with svix
-
-    let evt: {
-      type: string;
-      data: {
-        id: string;
-        email_addresses: Array<{ email_address: string }>;
-        first_name: string | null;
-        last_name: string | null;
-        image_url: string | null;
-      };
-    };
-
-    try {
-      evt = JSON.parse(payload);
-    } catch (err) {
-      console.error("Invalid webhook payload:", err);
-      return new Response("Invalid payload", { status: 400 });
-    }
-
-    const eventType = evt.type;
-    const userData = evt.data;
-
-    // Handle different event types
-    switch (eventType) {
-      case "user.created": {
-        const email = userData.email_addresses[0]?.email_address;
-        if (!email) {
-          return new Response("No email provided", { status: 400 });
-        }
-
-        const name =
-          [userData.first_name, userData.last_name].filter(Boolean).join(" ") ||
-          undefined;
-
-        await ctx.runMutation(internal.users.getOrCreateUser, {
-          clerkId: userData.id,
-          email,
-          name,
-          avatarUrl: userData.image_url || undefined,
-        });
-
-        console.log(`User synced: ${email}`);
-        break;
-      }
-
-      case "user.updated": {
-        const email = userData.email_addresses[0]?.email_address;
-        const name =
-          [userData.first_name, userData.last_name].filter(Boolean).join(" ") ||
-          undefined;
-
-        await ctx.runMutation(internal.users.updateUserFromWebhook, {
-          clerkId: userData.id,
-          email,
-          name,
-          avatarUrl: userData.image_url || undefined,
-        });
-
-        console.log(`User updated: ${email}`);
-        break;
-      }
-
-      case "user.deleted": {
-        await ctx.runMutation(internal.users.deleteUserFromWebhook, {
-          clerkId: userData.id,
-        });
-
-        console.log(`User deleted: ${userData.id}`);
-        break;
-      }
-
-      default:
-        console.log(`Unhandled Clerk event type: ${eventType}`);
-    }
-
-    return new Response(JSON.stringify({ received: true }), { status: 200 });
-  }),
-});
+// Convex Auth routes
+auth.addHttpRoutes(http);
 
 // Stripe webhook handler
 http.route({
@@ -162,33 +62,33 @@ http.route({
           if (priceId) {
             const plan = getPlanFromPriceId(priceId);
 
-            // Try to find user by clerkId from metadata first
-            const clerkId = session.metadata?.clerkId;
-            if (clerkId) {
-              await ctx.runMutation(internal.users.updateUserPlan, {
-                clerkId,
+            // Try to find user by userId from metadata first
+            const userId = session.metadata?.userId;
+            if (userId) {
+              await ctx.runMutation(internal.users.updateUserPlanById, {
+                userId,
                 plan,
               });
 
-              await ctx.runMutation(internal.users.setStripeCustomerId, {
-                clerkId,
+              await ctx.runMutation(internal.users.setStripeCustomerIdById, {
+                userId,
                 stripeCustomerId: customerId,
               });
 
-              console.log(`User ${clerkId} upgraded to ${plan}`);
+              console.log(`User ${userId} upgraded to ${plan}`);
             } else if (session.customer_email) {
               const user = await ctx.runQuery(internal.internal.getUserByEmail, {
                 email: session.customer_email,
               });
 
               if (user) {
-                await ctx.runMutation(internal.users.updateUserPlan, {
-                  clerkId: user.clerkId,
+                await ctx.runMutation(internal.users.updateUserPlanById, {
+                  userId: user._id,
                   plan,
                 });
 
-                await ctx.runMutation(internal.users.setStripeCustomerId, {
-                  clerkId: user.clerkId,
+                await ctx.runMutation(internal.users.setStripeCustomerIdById, {
+                  userId: user._id,
                   stripeCustomerId: customerId,
                 });
 
@@ -280,10 +180,10 @@ http.route({
         const linkCode = text.split(" ")[1];
 
         if (linkCode) {
-          // Parse the link token to get clerkId
+          // Parse the link token to get userId
           try {
             const payload = atob(linkCode.replace(/-/g, "+").replace(/_/g, "/"));
-            const [clerkId, timestamp] = payload.split(":");
+            const [userId, timestamp] = payload.split(":");
 
             // Check if token is expired (24 hours)
             const tokenAge = Date.now() - parseInt(timestamp);
@@ -291,8 +191,8 @@ http.route({
               await sendMessage(chatId, "This link has expired. Please generate a new one from your dashboard.");
             } else {
               // Link the account
-              await ctx.runMutation(internal.telegram.linkAccount, {
-                clerkId,
+              await ctx.runMutation(internal.telegram.linkAccountById, {
+                userId,
                 telegramChatId: chatId,
               });
               await sendMessage(chatId, "Your account has been linked successfully! You will now receive notifications here.");

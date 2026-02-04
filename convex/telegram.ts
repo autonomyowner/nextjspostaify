@@ -1,24 +1,17 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
+import { auth } from "./auth";
 
 // Get Telegram connection status
 export const getStatus = query({
-  args: {
-    clerkId: v.optional(v.string()), // Fallback for auth
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       return null;
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       return null;
     }
@@ -28,7 +21,7 @@ export const getStatus = query({
     return {
       configured: !!botToken,
       connected: !!user.telegramChatId,
-      enabled: user.telegramEnabled,
+      enabled: user.telegramEnabled ?? false,
       linkedAt: user.telegramLinkedAt,
     };
   },
@@ -36,22 +29,14 @@ export const getStatus = query({
 
 // Disconnect Telegram
 export const disconnect = mutation({
-  args: {
-    clerkId: v.optional(v.string()), // Fallback for auth
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
@@ -95,21 +80,14 @@ export const disconnectByWebhook = internalMutation({
 export const toggle = mutation({
   args: {
     enabled: v.boolean(),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
@@ -126,17 +104,20 @@ export const toggle = mutation({
   },
 });
 
-// Internal: Link Telegram account (from webhook /start command)
-export const linkAccount = internalMutation({
+// Internal: Link Telegram account by userId (from webhook /start command)
+export const linkAccountById = internalMutation({
   args: {
-    clerkId: v.string(),
+    userId: v.string(),
     telegramChatId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
+    // Try to get user by ID
+    let user;
+    try {
+      user = await ctx.db.get(args.userId as any);
+    } catch {
+      return { success: false, error: "Invalid user ID" };
+    }
 
     if (!user) {
       return { success: false, error: "User not found" };
@@ -167,5 +148,26 @@ export const linkAccount = internalMutation({
     });
 
     return { success: true };
+  },
+});
+
+// Generate a link code for the user to connect their Telegram account
+export const generateLinkCode = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Create a simple link code containing userId and timestamp
+    const timestamp = Date.now().toString();
+    const payload = `${userId}:${timestamp}`;
+    const linkCode = btoa(payload).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME || "PostaifyBot";
+    const linkUrl = `https://t.me/${botUsername}?start=${linkCode}`;
+
+    return { linkCode, linkUrl };
   },
 });

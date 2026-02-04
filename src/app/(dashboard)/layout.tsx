@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@clerk/nextjs'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -9,17 +9,17 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isLoaded, isSignedIn } = useAuth()
+  const { isAuthenticated, isLoading } = useConvexAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/sign-in')
     }
-  }, [isLoaded, isSignedIn, router])
+  }, [isLoading, isAuthenticated, router])
 
   // Show loading state while checking auth
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -28,7 +28,7 @@ export default function DashboardLayout({
   }
 
   // Don't render children if not signed in
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return null
   }
 

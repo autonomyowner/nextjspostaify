@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { useQuery, useAction } from 'convex/react'
-import { useUser } from '@clerk/nextjs'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
 import { api } from '../../convex/_generated/api'
 
 // Plan types
@@ -119,9 +119,8 @@ const DEFAULT_SUBSCRIPTION: SubscriptionState = {
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null)
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  // Get Clerk user for auth fallback
-  const { user: clerkUser } = useUser()
-  const clerkId = clerkUser?.id
+  // Get auth state from Convex Auth
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
 
   // Upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
@@ -133,15 +132,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem('t21-welcome-seen') === 'true'
   })
 
-  // Convex query for user data - use getByClerkId for auth fallback
-  const userData = useQuery(api.users.getByClerkId, clerkId ? { clerkId } : "skip")
+  // Convex query for user data
+  const userData = useQuery(api.users.viewer)
 
   // Convex actions for Stripe
   const createCheckoutAction = useAction(api.subscriptionsAction.createCheckout)
   const createPortalAction = useAction(api.subscriptionsAction.createPortal)
 
   // Determine loading state
-  const isLoading = userData === undefined
+  const isLoading = authLoading || (isAuthenticated && userData === undefined)
 
   // Build subscription state from user data
   const subscription: SubscriptionState = useMemo(() => {
@@ -149,7 +148,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return { ...DEFAULT_SUBSCRIPTION, hasSeenWelcome }
     }
 
-    const planKey = userData.plan.toLowerCase() as PlanType
+    const planKey = (userData.plan ?? 'FREE').toLowerCase() as PlanType
 
     return {
       plan: planKey,
@@ -247,28 +246,26 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         plan,
         successUrl: `${window.location.origin}/dashboard?success=true`,
         cancelUrl: `${window.location.origin}/dashboard?cancelled=true`,
-        clerkId: clerkId || undefined, // Pass clerkId for auth fallback
       })
       window.location.href = result.url
     } catch (err) {
       console.error('Failed to create checkout:', err)
       throw err
     }
-  }, [createCheckoutAction, clerkId])
+  }, [createCheckoutAction])
 
   // Open billing portal
   const openBillingPortal = useCallback(async () => {
     try {
       const result = await createPortalAction({
         returnUrl: `${window.location.origin}/dashboard`,
-        clerkId: clerkId || undefined, // Pass clerkId for auth fallback
       })
       window.location.href = result.url
     } catch (err) {
       console.error('Failed to open billing portal:', err)
       throw err
     }
-  }, [createPortalAction, clerkId])
+  }, [createPortalAction])
 
   // Refresh subscription - no-op in Convex (data is real-time)
   const refreshSubscription = useCallback(async () => {

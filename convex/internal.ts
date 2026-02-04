@@ -1,17 +1,6 @@
 import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
 
-// Get user by clerkId (internal use only)
-export const getUserByClerkId = internalQuery({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-  },
-});
-
 // Get user by stripeCustomerId (internal use only)
 export const getUserByStripeCustomerId = internalQuery({
   args: { stripeCustomerId: v.string() },
@@ -78,7 +67,7 @@ export const getAdminStats = internalQuery({
     ]);
 
     // Calculate user stats
-    const freeUsers = allUsers.filter((u) => u.plan === "FREE").length;
+    const freeUsers = allUsers.filter((u) => (u.plan ?? "FREE") === "FREE").length;
     const proUsers = allUsers.filter((u) => u.plan === "PRO").length;
     const businessUsers = allUsers.filter((u) => u.plan === "BUSINESS").length;
     const recentSignups = allUsers.filter((u) => u._creationTime > thirtyDaysAgo).length;
@@ -151,10 +140,10 @@ export const getAdminUsers = internalQuery({
           id: user._id,
           email: user.email,
           name: user.name,
-          plan: user.plan,
+          plan: user.plan ?? "FREE",
           brandsCount: brands.length,
           postsCount: posts.length,
-          postsThisMonth: user.postsThisMonth,
+          postsThisMonth: user.postsThisMonth ?? 0,
           createdAt: user._creationTime,
         };
       })

@@ -4,7 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
-import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs"
+import { useConvexAuth } from "@/hooks/useCurrentUser"
+import { useAuthActions } from "@convex-dev/auth/react"
 import { useData, type Post } from "@/context/DataContext"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -32,7 +33,9 @@ type FilterPlatform = 'all' | 'Instagram' | 'Twitter' | 'LinkedIn' | 'TikTok' | 
 
 export default function PostsPage() {
   const { t } = useTranslation()
-  const { posts, brands, deletePost, updatePost } = useData()
+  const { posts, brands, deletePost, updatePost, user } = useData()
+  const { isAuthenticated } = useConvexAuth()
+  const { signOut } = useAuthActions()
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [filterPlatform, setFilterPlatform] = useState<FilterPlatform>('all')
   const [expandedPost, setExpandedPost] = useState<string | null>(null)
@@ -132,14 +135,20 @@ export default function PostsPage() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-            <SignedOut>
-              <SignInButton mode="modal">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-sm font-medium">
+                  {user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-xs">
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link href="/sign-in">
                 <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
+              </Link>
+            )}
           </div>
         </div>
       </header>

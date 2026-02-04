@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { auth } from "./auth";
 
 type Platform = "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "TIKTOK" | "FACEBOOK";
 type ContentStyle =
@@ -112,25 +113,21 @@ export const generateContent = action({
       )
     ),
     model: v.optional(v.string()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Verify user exists
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(api.users.viewer);
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
 
     // Get brand details
-    const brand = await ctx.runQuery(api.brands.getById, { id: args.brandId, clerkId: userClerkId });
+    const brand = await ctx.runQuery(api.brands.getById, { id: args.brandId });
     if (!brand) {
       throw new Error("Brand not found");
     }
@@ -240,19 +237,15 @@ export const videoToPosts = action({
       )
     ),
     model: v.optional(v.string()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Check feature access - need to get user and check plan
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(api.users.viewer);
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
@@ -263,7 +256,7 @@ export const videoToPosts = action({
     }
 
     // Get brand details
-    const brand = await ctx.runQuery(api.brands.getById, { id: args.brandId, clerkId: userClerkId });
+    const brand = await ctx.runQuery(api.brands.getById, { id: args.brandId });
     if (!brand) {
       throw new Error("Brand not found");
     }

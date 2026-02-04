@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs"
+import { useAuthActions } from '@convex-dev/auth/react'
+import { useConvexAuth } from "@/hooks/useCurrentUser"
 import { StatsCards } from "./StatsCards"
 import { RecentPosts } from "./RecentPosts"
 import { QuickActions } from "./QuickActions"
@@ -29,6 +30,8 @@ export function Dashboard() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
   const { user } = useData()
+  const { isAuthenticated } = useConvexAuth()
+  const { signOut } = useAuthActions()
 
   // Handler for creating a post with a generated image
   const handleCreatePostWithImage = (imageUrl: string) => {
@@ -86,14 +89,20 @@ export function Dashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </Button>
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-            <SignedOut>
-              <SignInButton mode="modal">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-sm font-medium">
+                  {user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-xs hidden sm:inline-flex">
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link href="/sign-in">
                 <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
+              </Link>
+            )}
           </div>
         </div>
       </header>

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getPlanLimits } from "./lib/planLimits";
+import { auth } from "./auth";
 
 const platformValidator = v.union(
   v.literal("INSTAGRAM"),
@@ -16,20 +17,14 @@ const statusValidator = v.union(
   v.literal("PUBLISHED")
 );
 
-// Helper to get authenticated user (with clerkId fallback)
-async function getAuthenticatedUser(ctx: any, clerkId?: string) {
-  const identity = await ctx.auth.getUserIdentity();
-  const userClerkId = identity?.subject || clerkId;
-
-  if (!userClerkId) {
+// Helper to get authenticated user
+async function getAuthenticatedUser(ctx: any) {
+  const userId = await auth.getUserId(ctx);
+  if (!userId) {
     throw new Error("Not authenticated");
   }
 
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerkId", (q: any) => q.eq("clerkId", userClerkId))
-    .unique();
-
+  const user = await ctx.db.get(userId);
   if (!user) {
     throw new Error("User not found. Please refresh the page.");
   }
@@ -44,21 +39,14 @@ export const list = query({
     status: v.optional(statusValidator),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       return { posts: [], total: 0, limit: 50, offset: 0 };
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       return { posts: [], total: 0, limit: 50, offset: 0 };
     }
@@ -139,16 +127,12 @@ export const list = query({
 export const getById = query({
   args: { id: v.id("posts") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       return null;
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       return null;
     }
@@ -197,16 +181,17 @@ export const create = mutation({
     scheduledFor: v.optional(v.number()),
     aiGenerated: v.optional(v.boolean()),
     aiModel: v.optional(v.string()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx, args.clerkId);
-    const limits = getPlanLimits(user.plan);
+    const user = await getAuthenticatedUser(ctx);
+    const plan = user.plan || "FREE";
+    const limits = getPlanLimits(plan);
 
     // Check post quota
-    if (user.postsThisMonth >= limits.maxPostsPerMonth) {
+    const postsThisMonth = user.postsThisMonth ?? 0;
+    if (postsThisMonth >= limits.maxPostsPerMonth) {
       throw new Error(
-        `Post quota exceeded. Your ${user.plan} plan allows ${limits.maxPostsPerMonth} posts per month.`
+        `Post quota exceeded. Your ${plan} plan allows ${limits.maxPostsPerMonth} posts per month.`
       );
     }
 
@@ -238,7 +223,7 @@ export const create = mutation({
 
     // Increment user's post count
     await ctx.db.patch(user._id, {
-      postsThisMonth: user.postsThisMonth + 1,
+      postsThisMonth: postsThisMonth + 1,
     });
 
     return postId;
@@ -255,10 +240,9 @@ export const update = mutation({
     voiceUrl: v.optional(v.union(v.string(), v.null())),
     status: v.optional(statusValidator),
     scheduledFor: v.optional(v.union(v.number(), v.null())),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx, args.clerkId);
+    const user = await getAuthenticatedUser(ctx);
 
     const post = await ctx.db.get(args.id);
 
@@ -270,7 +254,7 @@ export const update = mutation({
       throw new Error("You do not have access to this post");
     }
 
-    const { id, clerkId: _clerkId, ...updates } = args;
+    const { id, ...updates } = args;
 
     // Filter out undefined values
     const filteredUpdates: Record<string, any> = {};
@@ -295,10 +279,9 @@ export const update = mutation({
 export const remove = mutation({
   args: {
     id: v.id("posts"),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx, args.clerkId);
+    const user = await getAuthenticatedUser(ctx);
 
     const post = await ctx.db.get(args.id);
 
@@ -323,16 +306,12 @@ export const getForCalendar = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       return [];
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       return [];
     }

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useSubscription } from '@/context/SubscriptionContext'
 import { useAction } from 'convex/react'
-import { useUser } from '@clerk/nextjs'
 import { api as convexApi } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -43,7 +42,6 @@ type VoiceoverStyle = typeof VOICEOVER_STYLES[number]['value']
 export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverModalProps) {
   const { t } = useTranslation()
   const { canUseFeature, openUpgradeModal } = useSubscription()
-  const { user: clerkUser } = useUser()
 
   // Convex actions
   const getVoicesAction = useAction(convexApi.voice.getVoices)
@@ -108,9 +106,7 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
     setError('')
 
     try {
-      const fetchedVoices = await getVoicesAction({
-        clerkId: clerkUser?.id, // Pass clerkId for auth fallback
-      })
+      const fetchedVoices = await getVoicesAction({})
       setVoices(fetchedVoices)
       if (fetchedVoices.length > 0 && !selectedVoiceId) {
         setSelectedVoiceId(fetchedVoices[0].id)
@@ -148,7 +144,6 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
         text: script,
         voiceId: selectedVoiceId,
         style: voiceStyle,
-        clerkId: clerkUser?.id, // Pass clerkId for auth fallback
       })
       setAudioUrl(result.url)
     } catch (err) {

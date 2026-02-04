@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { auth } from "./auth";
 
 // Style-specific enhancements
 const styleEnhancements: Record<string, string> = {
@@ -168,19 +169,15 @@ export const generate = action({
       )
     ),
     style: v.optional(v.string()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Check feature access and limits
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(api.users.viewer);
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
@@ -264,7 +261,7 @@ export const generate = action({
     const generatedImageUrl = result.images[0].url;
 
     // Increment usage after successful generation
-    await ctx.runMutation(api.users.incrementImageUsage, { clerkId: userClerkId });
+    await ctx.runMutation(api.users.incrementImageUsage);
 
     return {
       url: generatedImageUrl,
@@ -299,19 +296,15 @@ export const generateProductShot = action({
     customScene: v.optional(v.string()), // Custom scene description
     aspectRatio: v.optional(v.string()), // Output size
     closeUp: v.optional(v.boolean()), // Close-up framing (product fills more of frame)
-    clerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Auth check
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Check feature access and limits
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(api.users.viewer);
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
@@ -431,7 +424,7 @@ export const generateProductShot = action({
     }
 
     // Increment usage after successful generation
-    await ctx.runMutation(api.users.incrementImageUsage, { clerkId: userClerkId });
+    await ctx.runMutation(api.users.incrementImageUsage);
 
     return {
       url: result.images[0].url,

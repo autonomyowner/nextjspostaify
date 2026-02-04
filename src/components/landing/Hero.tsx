@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -95,7 +95,7 @@ function ConnectionLine({ startX, startY, endX, endY, delay }: {
 
 export function Hero() {
   const { t } = useTranslation()
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const reduceMotion = useReducedMotion()
 
   return (
@@ -301,7 +301,7 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          {isSignedIn ? (
+          {isAuthenticated ? (
             // Signed in - show dashboard button
             <Button size="lg" className="w-full sm:w-auto min-w-[200px]" asChild>
               <Link href="/dashboard">

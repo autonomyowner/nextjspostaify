@@ -2,7 +2,8 @@
 
 import { v } from "convex/values";
 import { action } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
+import { auth } from "./auth";
 
 // Helper for Stripe API calls
 async function stripeRequest(
@@ -54,8 +55,8 @@ async function stripeRequest(
 }
 
 // Helper to get Stripe customer ID from database
-async function getStripeCustomerId(ctx: any, clerkId: string): Promise<string | null> {
-  const user = await ctx.runQuery(internal.internal.getUserByClerkId, { clerkId });
+async function getStripeCustomerId(ctx: any, userId: string): Promise<string | null> {
+  const user = await ctx.runQuery(internal.internal.getUserById, { userId });
   return user?.stripeCustomerId || null;
 }
 
@@ -65,14 +66,10 @@ export const createCheckout = action({
     plan: v.union(v.literal("PRO"), v.literal("BUSINESS")),
     successUrl: v.optional(v.string()),
     cancelUrl: v.optional(v.string()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
@@ -90,15 +87,15 @@ export const createCheckout = action({
     }
 
     // Get user
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(internal.internal.getUserById, { userId });
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
 
     // Get or create Stripe customer
-    let customerId = user._id ? await getStripeCustomerId(ctx, userClerkId) : null;
+    let customerId = await getStripeCustomerId(ctx, userId);
 
-    if (!customerId) {
+    if (!customerId && user.email) {
       // Search for existing customer by email
       const existingCustomers = await stripeRequest(
         `/customers?email=${encodeURIComponent(user.email)}&limit=1`,
@@ -130,13 +127,13 @@ export const createCheckout = action({
       "line_items[0][quantity]": 1,
       success_url: successUrl,
       cancel_url: cancelUrl,
-      "metadata[clerkId]": userClerkId,
+      "metadata[userId]": userId,
       "metadata[priceId]": priceId,
     };
 
     if (customerId) {
       sessionParams.customer = customerId;
-    } else {
+    } else if (user.email) {
       sessionParams.customer_email = user.email;
     }
 
@@ -154,14 +151,10 @@ export const createCheckout = action({
 export const createPortal = action({
   args: {
     returnUrl: v.optional(v.string()),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
@@ -171,12 +164,12 @@ export const createPortal = action({
     }
 
     // Get user with Stripe customer ID
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(internal.internal.getUserById, { userId });
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
 
-    const customerId = await getStripeCustomerId(ctx, userClerkId);
+    const customerId = await getStripeCustomerId(ctx, userId);
     if (!customerId) {
       throw new Error("No active subscription");
     }

@@ -4,7 +4,9 @@ import { useState, useEffect, memo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
-import { useAuth, useUser } from '@clerk/nextjs'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/Logo'
 import { LanguageSwitcher } from './LanguageSwitcher'
@@ -13,8 +15,8 @@ import { cn } from '@/lib/utils'
 export const Navbar = memo(function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const { t } = useTranslation()
-  const { isSignedIn, isLoaded } = useAuth()
-  const { user } = useUser()
+  const { isAuthenticated, isLoading } = useConvexAuth()
+  const user = useQuery(api.users.viewer)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,10 +57,10 @@ export const Navbar = memo(function Navbar() {
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
 
-          {!isLoaded ? (
+          {isLoading ? (
             // Loading state
             <div className="w-20 h-8 bg-muted/20 rounded animate-pulse" />
-          ) : isSignedIn ? (
+          ) : isAuthenticated ? (
             // Signed in state
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
@@ -66,11 +68,11 @@ export const Navbar = memo(function Navbar() {
                   {t('nav.dashboard') || 'Dashboard'}
                 </Button>
               </Link>
-              {user?.imageUrl && (
+              {user?.avatarUrl && (
                 <Link href="/dashboard" className="hidden sm:block">
                   <Image
-                    src={user.imageUrl}
-                    alt={user.firstName || 'User'}
+                    src={user.avatarUrl}
+                    alt={user.name || 'User'}
                     width={32}
                     height={32}
                     className="rounded-full border border-border hover:border-primary transition-colors"

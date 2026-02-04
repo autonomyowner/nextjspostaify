@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useData, PLATFORMS, type Platform } from '@/context/DataContext'
 import { useSubscription } from '@/context/SubscriptionContext'
 import { useAction, useQuery } from 'convex/react'
-import { useUser } from '@clerk/nextjs'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { api as convexApi } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,7 @@ function GenerateModalComponent({ isOpen, onClose, initialImageUrl }: GenerateMo
   const { t } = useTranslation()
   const { brands, selectedBrandId, addPost } = useData()
   const { canCreatePost, incrementPostCount, openUpgradeModal, getUsagePercentage, getRemainingCount } = useSubscription()
-  const { user: clerkUser } = useUser()
+  const { user } = useCurrentUser()
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('Instagram')
   const [selectedStyle, setSelectedStyle] = useState<ContentStyle>('viral')
   const [topic, setTopic] = useState('')
@@ -113,7 +113,6 @@ function GenerateModalComponent({ isOpen, onClose, initialImageUrl }: GenerateMo
           topic: topic || undefined,
           style: selectedStyle,
           model: selectedModel,
-          clerkId: clerkUser?.id, // Pass clerkId for auth fallback
         }),
         30000
       )

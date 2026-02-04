@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { ClerkProvider } from '@clerk/nextjs'
 import { ConvexClientProvider } from '@/components/providers/convex-provider'
 import { I18nProvider } from '@/components/providers/i18n-provider'
 import { DataProvider } from '@/context/DataContext'
@@ -73,62 +72,60 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <head>
-          {/* JSON-LD Organization Schema */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'Organization',
-                name: 'POSTAIFY',
-                url: 'https://www.postaify.com',
-                logo: 'https://www.postaify.com/logo.png',
-                sameAs: [
-                  'https://twitter.com/postaify',
-                ],
-                description: 'AI-powered social media content automation platform',
-              }),
-            }}
-          />
-          {/* JSON-LD Software Application Schema */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'SoftwareApplication',
-                name: 'POSTAIFY',
-                applicationCategory: 'BusinessApplication',
-                operatingSystem: 'Web',
-                offers: {
-                  '@type': 'Offer',
-                  price: '0',
-                  priceCurrency: 'USD',
-                },
-                aggregateRating: {
-                  '@type': 'AggregateRating',
-                  ratingValue: '4.8',
-                  ratingCount: '150',
-                },
-              }),
-            }}
-          />
-        </head>
-        <body className="antialiased">
-          <ConvexClientProvider>
-            <I18nProvider>
-              <DataProvider>
-                <SubscriptionProvider>
-                  {children}
-                </SubscriptionProvider>
-              </DataProvider>
-            </I18nProvider>
-          </ConvexClientProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <head>
+        {/* JSON-LD Organization Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'POSTAIFY',
+              url: 'https://www.postaify.com',
+              logo: 'https://www.postaify.com/logo.png',
+              sameAs: [
+                'https://twitter.com/postaify',
+              ],
+              description: 'AI-powered social media content automation platform',
+            }),
+          }}
+        />
+        {/* JSON-LD Software Application Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: 'POSTAIFY',
+              applicationCategory: 'BusinessApplication',
+              operatingSystem: 'Web',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '4.8',
+                ratingCount: '150',
+              },
+            }),
+          }}
+        />
+      </head>
+      <body className="antialiased">
+        <ConvexClientProvider>
+          <I18nProvider>
+            <DataProvider>
+              <SubscriptionProvider>
+                {children}
+              </SubscriptionProvider>
+            </DataProvider>
+          </I18nProvider>
+        </ConvexClientProvider>
+      </body>
+    </html>
   )
 }

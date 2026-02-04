@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useClerk, useUser } from "@clerk/nextjs"
+import { useAuthActions } from "@convex-dev/auth/react"
 import { useQuery, useMutation, useAction } from "convex/react"
 import { api as convexApi } from "../../../convex/_generated/api"
 import { Card } from "@/components/ui/card"
@@ -24,9 +24,8 @@ interface TelegramStatus {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { t } = useTranslation()
-  const { signOut } = useClerk()
-  const { user } = useUser()
-  const clerkId = user?.id
+  const { signOut } = useAuthActions()
+  const { user } = useData()
   const { subscription, currentLimits, openBillingPortal } = useSubscription()
   const { brands, deleteBrand } = useData()
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -34,10 +33,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Convex hooks for Telegram
-  const telegramStatus = useQuery(
-    convexApi.telegram.getStatus,
-    clerkId ? { clerkId } : "skip"
-  )
+  const telegramStatus = useQuery(convexApi.telegram.getStatus)
   const connectTelegramAction = useAction(convexApi.telegramAction.connect)
   const disconnectTelegramMutation = useMutation(convexApi.telegram.disconnect)
   const toggleTelegramMutation = useMutation(convexApi.telegram.toggle)
@@ -47,11 +43,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [telegramError, setTelegramError] = useState<string | null>(null)
 
   const handleConnectTelegram = async () => {
-    if (!clerkId) return
     setTelegramLoading(true)
     setTelegramError(null)
     try {
-      const result = await connectTelegramAction({ clerkId })
+      const result = await connectTelegramAction({})
       // Open the Telegram connect link in a new window
       window.open(result.connectUrl, '_blank')
       // Polling not needed - Convex query is reactive
@@ -66,10 +61,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   }
 
   const handleDisconnectTelegram = async () => {
-    if (!clerkId) return
     setTelegramLoading(true)
     try {
-      await disconnectTelegramMutation({ clerkId })
+      await disconnectTelegramMutation({})
       setTelegramError(null)
     } catch (err) {
       setTelegramError('Failed to disconnect')
@@ -79,10 +73,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   }
 
   const handleToggleTelegram = async () => {
-    if (!telegramStatus || !clerkId) return
+    if (!telegramStatus) return
     setTelegramLoading(true)
     try {
-      await toggleTelegramMutation({ enabled: !telegramStatus.enabled, clerkId })
+      await toggleTelegramMutation({ enabled: !telegramStatus.enabled })
       setTelegramError(null)
     } catch (err) {
       setTelegramError('Failed to toggle notifications')
@@ -103,6 +97,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setIsSigningOut(false)
     }
   }
+
+  // Get user display info
+  const userInitial = user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'
+  const userName = user?.name || 'User'
+  const userEmail = user?.email || ''
 
   const handleManageBilling = async () => {
     try {
@@ -157,14 +156,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2 sm:gap-4 p-2 sm:p-4 bg-card/50 rounded-lg border border-white/10">
                 <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-sm sm:text-lg font-medium">
-                  {user?.firstName?.slice(0, 1) || user?.emailAddresses?.[0]?.emailAddress?.slice(0, 1)?.toUpperCase() || 'U'}
+                  {userInitial}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-xs sm:text-base truncate">
-                    {user?.fullName || user?.firstName || 'User'}
+                    {userName}
                   </p>
                   <p className="text-[10px] sm:text-sm text-muted-foreground truncate">
-                    {user?.emailAddresses?.[0]?.emailAddress}
+                    {userEmail}
                   </p>
                 </div>
               </div>

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSubscription } from '@/context/SubscriptionContext'
 import { useQuery, useAction } from 'convex/react'
-import { useUser } from '@clerk/nextjs'
 import { api as convexApi } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -99,7 +98,6 @@ const PRODUCT_ASPECT_RATIOS = [
 
 function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGeneratorModalProps) {
   const { canUseFeature, openUpgradeModal } = useSubscription()
-  const { user: clerkUser } = useUser()
 
   // Convex hooks
   const availableModels = useQuery(convexApi.images.getModels) || []
@@ -232,7 +230,6 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
           customScene: customScenePrompt || undefined,
           aspectRatio: productAspectRatio,
           closeUp: productCloseUp,
-          clerkId: clerkUser?.id,
         })
         setGeneratedImageUrl(result.url)
       } else {
@@ -244,7 +241,6 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
           model: mode === 'logo' ? selectedLogoModel : selectedModel,
           aspectRatio: mode === 'logo' ? '1:1' : selectedAspectRatio,
           style: mode === 'image' && selectedStyle !== 'none' ? selectedStyle : undefined,
-          clerkId: clerkUser?.id,
         })
         setGeneratedImageUrl(result.url)
       }

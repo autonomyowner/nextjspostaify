@@ -219,26 +219,34 @@ export const updateUserPlan = action({
       throw new Error("Access denied");
     }
 
-    // Find user by email
-    const user = await ctx.runQuery(internal.internal.getUserByEmail, { email: args.email });
+    try {
+      // Find user by email
+      const user = await ctx.runQuery(internal.internal.getUserByEmail, { email: args.email }) as { _id: string } | null;
 
-    if (!user) {
+      if (!user) {
+        return {
+          success: false,
+          message: `User with email ${args.email} not found`,
+        };
+      }
+
+      // Update the user's plan
+      await ctx.runMutation(internal.users.updateUserPlanById, {
+        userId: user._id,
+        plan: args.plan,
+      });
+
+      return {
+        success: true,
+        message: `Successfully updated ${args.email} to ${args.plan} plan`,
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       return {
         success: false,
-        message: `User with email ${args.email} not found`,
+        message: `Failed to update plan: ${errorMessage}`,
       };
     }
-
-    // Update the user's plan
-    await ctx.runMutation(internal.users.updateUserPlan, {
-      clerkId: user.clerkId,
-      plan: args.plan,
-    });
-
-    return {
-      success: true,
-      message: `Successfully updated ${args.email} to ${args.plan} plan`,
-    };
   },
 });
 

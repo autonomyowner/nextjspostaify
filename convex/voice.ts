@@ -3,23 +3,19 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { auth } from "./auth";
 
 // Get available voices from ElevenLabs
 export const getVoices = action({
-  args: {
-    clerkId: v.optional(v.string()), // Fallback for auth
-  },
-  handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Verify user exists
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(api.users.viewer);
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
@@ -145,19 +141,15 @@ export const generate = action({
         v.literal("calm")
       )
     ),
-    clerkId: v.optional(v.string()), // Fallback for auth
   },
   handler: async (ctx, args) => {
-    // Try Convex auth first, fall back to clerkId
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
     // Check feature access and limits
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: userClerkId });
+    const user = await ctx.runQuery(api.users.viewer);
     if (!user) {
       throw new Error("User not found. Please refresh the page.");
     }
@@ -230,7 +222,7 @@ export const generate = action({
     const dataUrl = `data:audio/mpeg;base64,${base64}`;
 
     // Increment usage after successful generation
-    await ctx.runMutation(api.users.incrementVoiceoverUsage, { clerkId: userClerkId });
+    await ctx.runMutation(api.users.incrementVoiceoverUsage);
 
     return {
       url: dataUrl,

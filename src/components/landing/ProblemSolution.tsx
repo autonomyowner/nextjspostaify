@@ -35,8 +35,8 @@ function ChaoticElements({ isActive }: { isActive: boolean }) {
               opacity: [0.3, 0.6, 0.3],
               scale: 1,
               rotate: [0, -5, 5, 0],
-              x: [0, Math.random() * 10 - 5, 0],
-              y: [0, Math.random() * 10 - 5, 0]
+              x: [0, ((i * 3) % 10) - 5, 0],
+              y: [0, ((i * 7) % 10) - 5, 0]
             } : { opacity: 0, scale: 0 }}
             transition={{
               duration: 3,

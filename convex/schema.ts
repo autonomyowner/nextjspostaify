@@ -1,23 +1,33 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+  ...authTables,
+
+  // Override the users table with app-specific fields
+  // Convex Auth will add: email, emailVerificationTime, image, name, isAnonymous
   users: defineTable({
-    clerkId: v.string(),
-    email: v.string(),
+    // Convex Auth fields
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    image: v.optional(v.string()),
     name: v.optional(v.string()),
+    isAnonymous: v.optional(v.boolean()),
+    // Legacy fields (for backward compatibility with existing Clerk data)
+    clerkId: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
-    plan: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS")),
+    // App-specific fields
+    plan: v.optional(v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS"))),
     stripeCustomerId: v.optional(v.string()),
-    postsThisMonth: v.number(),
-    imagesThisMonth: v.optional(v.number()), // AI image generation count
-    voiceoversThisMonth: v.optional(v.number()), // AI voiceover generation count
-    usageResetDate: v.number(), // timestamp
+    postsThisMonth: v.optional(v.number()),
+    imagesThisMonth: v.optional(v.number()),
+    voiceoversThisMonth: v.optional(v.number()),
+    usageResetDate: v.optional(v.number()),
     telegramChatId: v.optional(v.string()),
-    telegramEnabled: v.boolean(),
+    telegramEnabled: v.optional(v.boolean()),
     telegramLinkedAt: v.optional(v.number()),
   })
-    .index("by_clerkId", ["clerkId"])
     .index("by_email", ["email"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_telegramChatId", ["telegramChatId"]),

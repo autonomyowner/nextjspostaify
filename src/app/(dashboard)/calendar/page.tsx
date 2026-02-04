@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
-import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs"
+import { useConvexAuth } from "@/hooks/useCurrentUser"
+import { useAuthActions } from "@convex-dev/auth/react"
 import { useData, type Post, type Platform } from "@/context/DataContext"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/Logo"
@@ -80,7 +81,9 @@ function AnimatedCounter({ value, duration = 1000 }: { value: number; duration?:
 
 export default function CalendarPage() {
   const { t } = useTranslation()
-  const { posts, brands, deletePost } = useData()
+  const { posts, brands, deletePost, user } = useData()
+  const { isAuthenticated } = useConvexAuth()
+  const { signOut } = useAuthActions()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date())
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | 'all'>('all')
@@ -236,14 +239,20 @@ export default function CalendarPage() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-            <SignedOut>
-              <SignInButton mode="modal">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-sm font-medium">
+                  {user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-xs">
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link href="/sign-in">
                 <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
+              </Link>
+            )}
           </div>
         </div>
       </header>

@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { useData, type Platform } from '@/context/DataContext'
 import { useSubscription } from '@/context/SubscriptionContext'
 import { useAction } from 'convex/react'
-import { useUser } from '@clerk/nextjs'
 import { api as convexApi } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
@@ -36,7 +35,6 @@ export function VideoToPostsModal({ isOpen, onClose }: VideoToPostsModalProps) {
   const { t } = useTranslation()
   const { brands, selectedBrandId, addPost } = useData()
   const { canUseFeature, openUpgradeModal } = useSubscription()
-  const { user: clerkUser } = useUser()
   const videoToPostsAction = useAction(convexApi.ai.videoToPosts)
 
   // State
@@ -111,7 +109,6 @@ export function VideoToPostsModal({ isOpen, onClose }: VideoToPostsModalProps) {
         videoTitle: videoUrl || 'Video content',
         numberOfPosts,
         style: selectedStyle as 'viral' | 'storytelling' | 'educational' | 'controversial' | 'inspirational',
-        clerkId: clerkUser?.id,
       })
 
       setGeneratedPosts(result.posts)

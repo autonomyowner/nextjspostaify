@@ -1,53 +1,18 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
 import { getPlanLimits } from "./lib/planLimits";
+import { auth } from "./auth";
 
-// Sync user from frontend (workaround for JWT template issues)
-export const syncUser = mutation({
-  args: {
-    clerkId: v.string(),
-    email: v.string(),
-    name: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    // Check if user exists
-    let user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user) {
-      // Create new user
-      const now = Date.now();
-      const userId = await ctx.db.insert("users", {
-        clerkId: args.clerkId,
-        email: args.email,
-        name: args.name,
-        avatarUrl: args.avatarUrl,
-        plan: "FREE",
-        postsThisMonth: 0,
-        usageResetDate: now,
-        telegramEnabled: false,
-      });
-      user = await ctx.db.get(userId);
+// Get current viewer (authenticated user)
+export const viewer = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      return null;
     }
 
-    return user?._id;
-  },
-});
-
-// Get user by clerkId (public - for workaround)
-export const getByClerkId = query({
-  args: {
-    clerkId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       return null;
     }
@@ -66,16 +31,17 @@ export const getByClerkId = query({
       .collect();
     const postCount = posts.length;
 
-    const limits = getPlanLimits(user.plan);
+    const plan = user.plan || "FREE";
+    const limits = getPlanLimits(plan);
 
     return {
       _id: user._id,
       email: user.email,
       name: user.name,
-      avatarUrl: user.avatarUrl,
-      plan: user.plan,
+      avatarUrl: user.image,
+      plan,
       usage: {
-        postsThisMonth: user.postsThisMonth,
+        postsThisMonth: user.postsThisMonth ?? 0,
         postsLimit: limits.maxPostsPerMonth,
         imagesThisMonth: user.imagesThisMonth ?? 0,
         imagesLimit: limits.maxImagesPerMonth,
@@ -95,20 +61,16 @@ export const getByClerkId = query({
   },
 });
 
-// Get current user with usage stats
+// Get current user with usage stats (alias for viewer)
 export const getMe = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       return null;
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       return null;
     }
@@ -127,16 +89,17 @@ export const getMe = query({
       .collect();
     const postCount = posts.length;
 
-    const limits = getPlanLimits(user.plan);
+    const plan = user.plan || "FREE";
+    const limits = getPlanLimits(plan);
 
     return {
       _id: user._id,
       email: user.email,
       name: user.name,
-      avatarUrl: user.avatarUrl,
-      plan: user.plan,
+      avatarUrl: user.image,
+      plan,
       usage: {
-        postsThisMonth: user.postsThisMonth,
+        postsThisMonth: user.postsThisMonth ?? 0,
         postsLimit: limits.maxPostsPerMonth,
         imagesThisMonth: user.imagesThisMonth ?? 0,
         imagesLimit: limits.maxImagesPerMonth,
@@ -162,16 +125,12 @@ export const updateMe = mutation({
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
@@ -186,22 +145,14 @@ export const updateMe = mutation({
 
 // Increment image usage count
 export const incrementImageUsage = mutation({
-  args: {
-    clerkId: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
@@ -216,22 +167,14 @@ export const incrementImageUsage = mutation({
 
 // Increment voiceover usage count
 export const incrementVoiceoverUsage = mutation({
-  args: {
-    clerkId: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userClerkId = identity?.subject || args.clerkId;
-
-    if (!userClerkId) {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", userClerkId))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
@@ -244,154 +187,45 @@ export const incrementVoiceoverUsage = mutation({
   },
 });
 
-// Internal: Get or create user (called from auth flow or webhook)
-export const getOrCreateUser = internalMutation({
+// Internal: Update user plan by ID (called from Stripe webhook)
+export const updateUserPlanById = internalMutation({
   args: {
-    clerkId: v.string(),
-    email: v.string(),
-    name: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
+    userId: v.string(),
+    plan: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS")),
   },
   handler: async (ctx, args) => {
-    // Check if user exists
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (existingUser) {
-      return existingUser._id;
+    // Try to get user by ID first
+    try {
+      const user = await ctx.db.get(args.userId as any);
+      if (user) {
+        await ctx.db.patch(user._id, { plan: args.plan });
+        return { success: true };
+      }
+    } catch {
+      // Not a valid ID, fall through
     }
 
-    // Handle email uniqueness - check if email already exists with different clerkId
-    let email = args.email;
-    const existingByEmail = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
-
-    if (existingByEmail && existingByEmail.clerkId !== args.clerkId) {
-      // Different Clerk user with same email exists - make email unique
-      email = `${args.clerkId}@postaify.user`;
-    }
-
-    // Create new user
-    const userId = await ctx.db.insert("users", {
-      clerkId: args.clerkId,
-      email: email,
-      name: args.name,
-      avatarUrl: args.avatarUrl,
-      plan: "FREE",
-      postsThisMonth: 0,
-      usageResetDate: Date.now(),
-      telegramEnabled: false,
-    });
-
-    return userId;
+    throw new Error("User not found");
   },
 });
 
-// Internal: Update user from webhook
-export const updateUserFromWebhook = internalMutation({
-  args: {
-    clerkId: v.string(),
-    email: v.optional(v.string()),
-    name: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user) {
-      return null;
-    }
-
-    const updates: Partial<{
-      email: string;
-      name: string | undefined;
-      avatarUrl: string | undefined;
-    }> = {};
-
-    if (args.email !== undefined) updates.email = args.email;
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.avatarUrl !== undefined) updates.avatarUrl = args.avatarUrl;
-
-    if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(user._id, updates);
-    }
-
-    return user._id;
-  },
-});
-
-// Internal: Delete user from webhook
-export const deleteUserFromWebhook = internalMutation({
-  args: {
-    clerkId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user) {
-      return null;
-    }
-
-    // Delete all user's posts
-    const posts = await ctx.db
-      .query("posts")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
-
-    for (const post of posts) {
-      await ctx.db.delete(post._id);
-    }
-
-    // Delete all user's brands
-    const brands = await ctx.db
-      .query("brands")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
-
-    for (const brand of brands) {
-      await ctx.db.delete(brand._id);
-    }
-
-    // Delete the user
-    await ctx.db.delete(user._id);
-
-    return { success: true };
-  },
-});
-
-// Internal: Update user plan (called from Stripe webhook)
+// Internal: Update user plan by stripeCustomerId
 export const updateUserPlan = internalMutation({
   args: {
-    clerkId: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
     plan: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS")),
   },
   handler: async (ctx, args) => {
-    let user = null;
-
-    if (args.clerkId) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId!))
-        .unique();
-    } else if (args.stripeCustomerId) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_stripeCustomerId", (q) =>
-          q.eq("stripeCustomerId", args.stripeCustomerId!)
-        )
-        .unique();
+    if (!args.stripeCustomerId) {
+      throw new Error("stripeCustomerId required");
     }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_stripeCustomerId", (q) =>
+        q.eq("stripeCustomerId", args.stripeCustomerId!)
+      )
+      .unique();
 
     if (!user) {
       throw new Error("User not found");
@@ -405,27 +239,26 @@ export const updateUserPlan = internalMutation({
   },
 });
 
-// Internal: Set Stripe customer ID
-export const setStripeCustomerId = internalMutation({
+// Internal: Set Stripe customer ID by user ID
+export const setStripeCustomerIdById = internalMutation({
   args: {
-    clerkId: v.string(),
+    userId: v.string(),
     stripeCustomerId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user) {
-      throw new Error("User not found");
+    try {
+      const user = await ctx.db.get(args.userId as any);
+      if (user) {
+        await ctx.db.patch(user._id, {
+          stripeCustomerId: args.stripeCustomerId,
+        });
+        return { success: true };
+      }
+    } catch {
+      // Not a valid ID, fall through
     }
 
-    await ctx.db.patch(user._id, {
-      stripeCustomerId: args.stripeCustomerId,
-    });
-
-    return { success: true };
+    throw new Error("User not found");
   },
 });
 
@@ -442,7 +275,7 @@ export const resetMonthlyUsage = internalMutation({
     const users = await ctx.db.query("users").collect();
 
     for (const user of users) {
-      const resetDate = new Date(user.usageResetDate);
+      const resetDate = new Date(user.usageResetDate ?? 0);
       const resetMonth = resetDate.getUTCMonth();
       const resetYear = resetDate.getUTCFullYear();
 
@@ -454,6 +287,34 @@ export const resetMonthlyUsage = internalMutation({
           usageResetDate: now,
         });
       }
+    }
+
+    return { success: true };
+  },
+});
+
+// Internal: Initialize new user defaults (called after user creation)
+export const initializeUserDefaults = internalMutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Only set defaults if they're not already set
+    const updates: Record<string, any> = {};
+    if (user.plan === undefined) updates.plan = "FREE";
+    if (user.postsThisMonth === undefined) updates.postsThisMonth = 0;
+    if (user.imagesThisMonth === undefined) updates.imagesThisMonth = 0;
+    if (user.voiceoversThisMonth === undefined) updates.voiceoversThisMonth = 0;
+    if (user.usageResetDate === undefined) updates.usageResetDate = Date.now();
+    if (user.telegramEnabled === undefined) updates.telegramEnabled = false;
+
+    if (Object.keys(updates).length > 0) {
+      await ctx.db.patch(args.userId, updates);
     }
 
     return { success: true };
