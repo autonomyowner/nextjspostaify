@@ -1,18 +1,92 @@
 import { query } from "./_generated/server";
+import { v } from "convex/values";
 
-// Available image models
-export const AVAILABLE_MODELS = [
-  { id: "fal-ai/flux/schnell", name: "Flux Schnell", speed: "fast" },
-  { id: "fal-ai/flux/dev", name: "Flux Dev", speed: "slow" },
-  { id: "fal-ai/stable-diffusion-v3-medium", name: "SD3 Medium", speed: "medium" },
+// Plan types for model access
+export type PlanTier = "FREE" | "PRO" | "BUSINESS";
+
+// Model configuration with tier access
+export interface ImageModel {
+  id: string;
+  name: string;
+  speed: "fast" | "medium" | "slow";
+  description?: string;
+  requiredPlan: PlanTier;
+  provider: "runware" | "fal";
+  costPerImage: number; // Approximate cost for reference
+}
+
+// Available image models with tier access
+export const AVAILABLE_MODELS: ImageModel[] = [
+  {
+    id: "fal-ai/flux/schnell",
+    name: "Flux Schnell",
+    speed: "fast",
+    description: "Fast generation, good quality",
+    requiredPlan: "FREE",
+    provider: "runware",
+    costPerImage: 0.0006,
+  },
+  {
+    id: "fal-ai/flux/dev",
+    name: "Flux Dev",
+    speed: "medium",
+    description: "Higher quality, slower",
+    requiredPlan: "PRO",
+    provider: "runware",
+    costPerImage: 0.0025,
+  },
+  {
+    id: "fal-ai/flux-pro/v1.1",
+    name: "Flux Pro 1.1",
+    speed: "slow",
+    description: "Best quality Flux model",
+    requiredPlan: "PRO",
+    provider: "runware",
+    costPerImage: 0.0038,
+  },
+  {
+    id: "fal-ai/recraft-v3",
+    name: "Recraft V3",
+    speed: "medium",
+    description: "Premium creative model",
+    requiredPlan: "BUSINESS",
+    provider: "runware",
+    costPerImage: 0.005,
+  },
 ];
 
 // Logo-optimized models (Ideogram excels at logos and text)
-export const LOGO_MODELS = [
-  { id: "fal-ai/ideogram/v2/turbo", name: "Ideogram Turbo", speed: "fast", description: "Best for logos" },
-  { id: "fal-ai/ideogram/v2", name: "Ideogram V2", speed: "medium", description: "High quality logos" },
-  { id: "fal-ai/flux/dev", name: "Flux Dev", speed: "slow", description: "Alternative" },
+export const LOGO_MODELS: ImageModel[] = [
+  {
+    id: "fal-ai/ideogram/v2/turbo",
+    name: "Ideogram Turbo",
+    speed: "fast",
+    description: "Best for logos",
+    requiredPlan: "PRO",
+    provider: "fal",
+    costPerImage: 0.02,
+  },
+  {
+    id: "fal-ai/ideogram/v2",
+    name: "Ideogram V2",
+    speed: "medium",
+    description: "High quality logos",
+    requiredPlan: "PRO",
+    provider: "fal",
+    costPerImage: 0.025,
+  },
 ];
+
+// Product photography - always uses Bria on Fal.ai
+export const PRODUCT_MODEL: ImageModel = {
+  id: "fal-ai/bria/product-shot",
+  name: "Bria Product Shot",
+  speed: "medium",
+  description: "Professional product photography",
+  requiredPlan: "PRO",
+  provider: "fal",
+  costPerImage: 0.04,
+};
 
 // Product photography scene presets
 export const PRODUCT_SCENES = [
@@ -85,19 +159,42 @@ export const ASPECT_RATIOS = [
   { value: "3:4", label: "Portrait (3:4)" },
 ];
 
-// Get available models
+// Check if user's plan can access a model
+export function canAccessModel(userPlan: PlanTier, requiredPlan: PlanTier): boolean {
+  const planHierarchy: Record<PlanTier, number> = {
+    FREE: 0,
+    PRO: 1,
+    BUSINESS: 2,
+  };
+  return planHierarchy[userPlan] >= planHierarchy[requiredPlan];
+}
+
+// Get available models for a user's plan
 export const getModels = query({
-  args: {},
-  handler: async () => {
-    return AVAILABLE_MODELS;
+  args: {
+    userPlan: v.optional(v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS"))),
+  },
+  handler: async (_ctx, args) => {
+    const plan = args.userPlan || "FREE";
+    // Return all models but mark which ones are accessible
+    return AVAILABLE_MODELS.map(model => ({
+      ...model,
+      accessible: canAccessModel(plan, model.requiredPlan),
+    }));
   },
 });
 
-// Get logo-optimized models
+// Get logo-optimized models for a user's plan
 export const getLogoModels = query({
-  args: {},
-  handler: async () => {
-    return LOGO_MODELS;
+  args: {
+    userPlan: v.optional(v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS"))),
+  },
+  handler: async (_ctx, args) => {
+    const plan = args.userPlan || "FREE";
+    return LOGO_MODELS.map(model => ({
+      ...model,
+      accessible: canAccessModel(plan, model.requiredPlan),
+    }));
   },
 });
 
@@ -106,5 +203,28 @@ export const getAspectRatios = query({
   args: {},
   handler: async () => {
     return ASPECT_RATIOS;
+  },
+});
+
+// Check if a specific model is accessible for a plan
+export const checkModelAccess = query({
+  args: {
+    modelId: v.string(),
+    userPlan: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("BUSINESS")),
+  },
+  handler: async (_ctx, args) => {
+    const allModels = [...AVAILABLE_MODELS, ...LOGO_MODELS];
+    const model = allModels.find(m => m.id === args.modelId);
+
+    if (!model) {
+      return { accessible: false, reason: "Model not found" };
+    }
+
+    const accessible = canAccessModel(args.userPlan, model.requiredPlan);
+    return {
+      accessible,
+      reason: accessible ? null : `This model requires ${model.requiredPlan} plan`,
+      requiredPlan: model.requiredPlan,
+    };
   },
 });

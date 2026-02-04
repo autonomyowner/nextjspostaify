@@ -5,6 +5,8 @@ export const PLAN_LIMITS = {
     hasImageGeneration: true, // Limited to 5/month - taste to convert
     hasVoiceover: true, // Limited to 2/month - taste to convert
     hasVideoRepurpose: false,
+    hasLogoGeneration: false, // Logo mode requires PRO
+    hasProductPhotography: false, // Product mode requires PRO
     maxImagesPerMonth: 5,
     maxVoiceoversPerMonth: 2,
   },
@@ -14,7 +16,9 @@ export const PLAN_LIMITS = {
     hasImageGeneration: true,
     hasVoiceover: true,
     hasVideoRepurpose: true,
-    maxImagesPerMonth: 100,
+    hasLogoGeneration: true,
+    hasProductPhotography: true,
+    maxImagesPerMonth: 200, // Doubled from 100 due to cost savings
     maxVoiceoversPerMonth: 30,
   },
   BUSINESS: {
@@ -23,7 +27,9 @@ export const PLAN_LIMITS = {
     hasImageGeneration: true,
     hasVoiceover: true,
     hasVideoRepurpose: true,
-    maxImagesPerMonth: 500,
+    hasLogoGeneration: true,
+    hasProductPhotography: true,
+    maxImagesPerMonth: 1000, // Doubled from 500 due to cost savings
     maxVoiceoversPerMonth: 150,
   },
 } as const;
@@ -33,4 +39,32 @@ export type PlanLimits = (typeof PLAN_LIMITS)[Plan];
 
 export function getPlanLimits(plan: Plan): PlanLimits {
   return PLAN_LIMITS[plan];
+}
+
+// Model tier requirements
+export const MODEL_TIERS = {
+  // Image models
+  "fal-ai/flux/schnell": "FREE",
+  "fal-ai/flux/dev": "PRO",
+  "fal-ai/flux-pro/v1.1": "PRO",
+  "fal-ai/recraft-v3": "BUSINESS",
+  // Logo models
+  "fal-ai/ideogram/v2/turbo": "PRO",
+  "fal-ai/ideogram/v2": "PRO",
+  // Product photography
+  "fal-ai/bria/product-shot": "PRO",
+} as const;
+
+export function getModelRequiredPlan(modelId: string): Plan {
+  return MODEL_TIERS[modelId as keyof typeof MODEL_TIERS] || "FREE";
+}
+
+export function canAccessModel(userPlan: Plan, modelId: string): boolean {
+  const requiredPlan = getModelRequiredPlan(modelId);
+  const planHierarchy: Record<Plan, number> = {
+    FREE: 0,
+    PRO: 1,
+    BUSINESS: 2,
+  };
+  return planHierarchy[userPlan] >= planHierarchy[requiredPlan];
 }

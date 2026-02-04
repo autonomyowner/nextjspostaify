@@ -126,11 +126,20 @@ Defined in `convex/lib/planLimits.ts`:
 |---------|------|--------------|-------------------|
 | Brands | 2 | 5 | Unlimited |
 | Posts/Month | 20 | 1,000 | 90,000 |
-| AI Images/Month | 5 | 100 | 500 |
+| AI Images/Month | 5 | **200** | **1,000** |
 | AI Voiceovers/Month | 2 | 30 | 150 |
 | YouTube Repurpose | No | Yes | Yes |
+| Logo Generation | No | Yes | Yes |
+| Product Photography | No | Yes | Yes |
+| Premium Models | No | Yes | Yes (Recraft V3) |
 
 **Pricing Strategy:** $19/mo kept as sweet spot for solopreneurs. 90%+ users are light/medium = excellent margins.
+
+### Tiered Model Access
+Models are restricted by plan tier:
+- **FREE:** Flux Schnell only
+- **PRO:** Flux Schnell, Flux Dev, Flux Pro 1.1, Ideogram (logos)
+- **BUSINESS:** All above + Recraft V3 (premium creative model)
 
 ### Usage Tracking
 User usage tracked in `convex/schema.ts` users table:
@@ -162,8 +171,10 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 CLERK_SECRET_KEY=sk_...
 
 # Convex Dashboard (set there, not in .env)
-OPENROUTER_API_KEY, ELEVENLABS_API_KEY, FAL_API_KEY, STRIPE_*
+OPENROUTER_API_KEY, ELEVENLABS_API_KEY, FAL_API_KEY, RUNWARE_API_KEY, STRIPE_*
 ```
+
+**Note:** RUNWARE_API_KEY is used for Flux models (93% cost savings vs Fal.ai). FAL_API_KEY is still required for Ideogram logos and Bria product shots.
 
 ## Import Conventions
 
@@ -192,12 +203,16 @@ Legal page with:
 - Monthly/yearly toggle with 20% savings
 
 ## API Cost Reference (for pricing decisions)
-| Feature | Cost to POSTAIFY |
-|---------|------------------|
-| Image (Flux Schnell) | $0.008-0.012 |
-| Logo (Ideogram) | $0.02-0.03 |
-| Product Shot (Bria) | $0.04 |
-| Voiceover (ElevenLabs) | ~$0.015/clip |
-| AI Content (OpenRouter) | ~$0.001/post |
+| Feature | Provider | Cost to POSTAIFY |
+|---------|----------|------------------|
+| Image (Flux Schnell) | Runware | **$0.0006** (was $0.008) |
+| Image (Flux Dev) | Runware | **$0.0025** |
+| Image (Flux Pro 1.1) | Runware | **$0.0038** |
+| Logo (Ideogram) | Fal.ai | $0.02-0.03 |
+| Product Shot (Bria) | Fal.ai | $0.04 |
+| Voiceover (ElevenLabs) | ElevenLabs | ~$0.015/clip |
+| AI Content (OpenRouter) | OpenRouter | ~$0.001/post |
 
-**Pro Plan Economics:** Light user (~$0.50 cost) = 97% margin. Heavy user (~$8 cost) = 58% margin.
+**Hybrid Provider Strategy:** Runware for Flux models (93% savings), Fal.ai for Ideogram/Bria.
+
+**Pro Plan Economics:** Light user (~$0.20 cost) = 99% margin. Heavy user (~$2 cost) = 89% margin.

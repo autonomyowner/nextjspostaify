@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSubscription } from '@/context/SubscriptionContext'
+import { useData } from '@/context/DataContext'
 import { useQuery, useAction } from 'convex/react'
 import { api as convexApi } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { UsageWarning } from '@/components/ui/UsageWarning'
+import { PromptTemplateSelector } from './PromptTemplateSelector'
 
 interface ImageGeneratorModalProps {
   isOpen: boolean
@@ -96,12 +98,26 @@ const PRODUCT_ASPECT_RATIOS = [
   { value: '9:16', label: '9:16', description: 'Portrait - Mobile/Stories' },
 ] as const
 
-function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGeneratorModalProps) {
-  const { canUseFeature, openUpgradeModal } = useSubscription()
+// Social media formats for multi-format resize
+const SOCIAL_FORMATS = [
+  { key: 'instagram-square', label: 'Instagram Square', size: '1080x1080' },
+  { key: 'instagram-story', label: 'Instagram Story', size: '1080x1920' },
+  { key: 'twitter-post', label: 'Twitter/X Post', size: '1200x675' },
+  { key: 'linkedin-post', label: 'LinkedIn Post', size: '1200x627' },
+  { key: 'facebook-post', label: 'Facebook Post', size: '1200x630' },
+  { key: 'youtube-thumbnail', label: 'YouTube Thumbnail', size: '1280x720' },
+] as const
 
-  // Convex hooks
-  const availableModels = useQuery(convexApi.images.getModels) || []
-  const logoModels = useQuery(convexApi.images.getLogoModels) || []
+function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGeneratorModalProps) {
+  const { canUseFeature, openUpgradeModal, subscription } = useSubscription()
+  const { brands, selectedBrandId } = useData()
+
+  // Map plan from lowercase to uppercase for Convex queries
+  const userPlan = subscription.plan === 'pro' ? 'PRO' : subscription.plan === 'business' ? 'BUSINESS' : 'FREE'
+
+  // Convex hooks - pass user plan for tiered access
+  const availableModels = useQuery(convexApi.images.getModels, { userPlan }) || []
+  const logoModels = useQuery(convexApi.images.getLogoModels, { userPlan }) || []
   const generateImageAction = useAction(convexApi.imagesAction.generate)
   const generateProductShotAction = useAction(convexApi.imagesAction.generateProductShot)
 
@@ -113,6 +129,12 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const [selectedModel, setSelectedModel] = useState('fal-ai/flux/schnell')
   const [selectedStyle, setSelectedStyle] = useState('none')
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<'1:1' | '16:9' | '9:16' | '4:3' | '3:4'>('1:1')
+
+  // Brand color injection
+  const [applyBrandColors, setApplyBrandColors] = useState(false)
+
+  // Template selector
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false)
 
   // Logo-specific state
   const [brandName, setBrandName] = useState('')
@@ -127,7 +149,12 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const [customScenePrompt, setCustomScenePrompt] = useState('')
   const [productAspectRatio, setProductAspectRatio] = useState('1:1')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
-  const [productCloseUp, setProductCloseUp] = useState(true) // Default to close-up
+  const [productCloseUp, setProductCloseUp] = useState(true)
+
+  // Multi-format resize state (feature available after deploying imageResize action)
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([])
+  const [resizedImages, setResizedImages] = useState<Array<{ format: string; name: string; url: string }>>([])
+  const [isResizing, setIsResizing] = useState(false)
 
   // Shared state
   const [generatedImageUrl, setGeneratedImageUrl] = useState('')
@@ -137,10 +164,24 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
   const hasAccess = canUseFeature('image')
 
+  // Check if logo/product modes are available (requires PRO)
+  const hasLogoAccess = userPlan === 'PRO' || userPlan === 'BUSINESS'
+  const hasProductAccess = userPlan === 'PRO' || userPlan === 'BUSINESS'
+
+  // Get current brand for color injection
+  const currentBrand = useMemo(() => {
+    if (!selectedBrandId || !brands) return null
+    return brands.find(b => b.id === selectedBrandId)
+  }, [selectedBrandId, brands])
+
   // Set default model when models are loaded
   useEffect(() => {
-    if (availableModels.length > 0 && !availableModels.find(m => m.id === selectedModel)) {
-      setSelectedModel(availableModels[0].id)
+    if (availableModels.length > 0) {
+      // Select first accessible model
+      const accessibleModel = availableModels.find(m => m.accessible)
+      if (accessibleModel && !availableModels.find(m => m.id === selectedModel && m.accessible)) {
+        setSelectedModel(accessibleModel.id)
+      }
     }
   }, [availableModels, selectedModel])
 
@@ -153,18 +194,24 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       .replace('{color}', brandColor)
   }, [brandName, brandColor, logoStyle])
 
+  // Handle template selection
+  const handleTemplateSelect = useCallback((templatePrompt: string, aspectRatio: string) => {
+    setPrompt(templatePrompt)
+    if (['1:1', '16:9', '9:16', '4:3', '3:4'].includes(aspectRatio)) {
+      setSelectedAspectRatio(aspectRatio as '1:1' | '16:9' | '9:16' | '4:3' | '3:4')
+    }
+  }, [])
+
   // Handle image file upload for product photography
   const handleProductImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
       setError('Please upload a JPEG, PNG, or WebP image.')
       return
     }
 
-    // Validate file size (max 12MB for Bria API)
     if (file.size > 12 * 1024 * 1024) {
       setError('Image must be smaller than 12MB.')
       return
@@ -174,15 +221,11 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setError('')
 
     try {
-      // Create preview
       const previewUrl = URL.createObjectURL(file)
       setProductImagePreview(previewUrl)
 
-      // Convert to base64 data URL for now (in production, upload to storage)
       const reader = new FileReader()
       reader.onloadend = () => {
-        // For Fal.ai, we need a public URL. Using base64 data URL as fallback
-        // In production, you'd upload to Convex storage or a CDN
         setProductImageUrl(reader.result as string)
         setIsUploadingImage(false)
       }
@@ -201,6 +244,16 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     if (!hasAccess) {
       handleClose()
       openUpgradeModal('image')
+      return
+    }
+
+    // Check mode access
+    if (mode === 'logo' && !hasLogoAccess) {
+      setError('Logo generation requires a PRO plan. Please upgrade.')
+      return
+    }
+    if (mode === 'product' && !hasProductAccess) {
+      setError('Product photography requires a PRO plan. Please upgrade.')
       return
     }
 
@@ -223,7 +276,6 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
     try {
       if (mode === 'product') {
-        // Product photography mode
         const result = await generateProductShotAction({
           imageUrl: productImageUrl,
           scenePreset: selectedScene,
@@ -233,23 +285,40 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
         })
         setGeneratedImageUrl(result.url)
       } else {
-        // Image or Logo mode
         const finalPrompt = mode === 'logo' ? buildLogoPrompt() : prompt
+
+        // Build brand colors object if applying brand colors
+        const brandColors = applyBrandColors && currentBrand ? {
+          name: currentBrand.name,
+          primaryColor: currentBrand.color,
+          style: currentBrand.voice,
+        } : undefined
 
         const result = await generateImageAction({
           prompt: finalPrompt,
           model: mode === 'logo' ? selectedLogoModel : selectedModel,
           aspectRatio: mode === 'logo' ? '1:1' : selectedAspectRatio,
           style: mode === 'image' && selectedStyle !== 'none' ? selectedStyle : undefined,
+          applyBrandColors: applyBrandColors && !!currentBrand,
+          brandColors,
         })
         setGeneratedImageUrl(result.url)
       }
       setStep('result')
+      setResizedImages([]) // Reset resized images
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate. Please try again.')
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  // Handle multi-format resize (placeholder - requires imageResize action to be deployed)
+  const handleGenerateAllFormats = async () => {
+    if (!generatedImageUrl) return
+    // Note: This feature requires the imageResize action to be deployed to Convex
+    // After running 'npx convex deploy', this will work with the generateAllFormats action
+    setError('Multi-format resize will be available after deploying the imageResize action. Run: npx convex deploy')
   }
 
   const handleDownload = useCallback(async () => {
@@ -267,24 +336,26 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setPrompt('')
     setGeneratedImageUrl('')
     setError('')
-    // Reset logo state
+    setApplyBrandColors(false)
     setBrandName('')
     setBrandColor('blue')
     setLogoStyle('minimal')
     setSelectedLogoModel('fal-ai/ideogram/v2/turbo')
-    // Reset product state
     setProductImageUrl('')
     setProductImagePreview('')
     setSelectedScene('studio-white')
     setCustomScenePrompt('')
     setProductAspectRatio('1:1')
     setProductCloseUp(true)
+    setResizedImages([])
+    setSelectedFormats([])
     onClose()
   }, [onClose])
 
   const handleRegenerate = useCallback(() => {
     setStep('configure')
     setGeneratedImageUrl('')
+    setResizedImages([])
   }, [])
 
   const currentModel = useMemo(() => availableModels.find(m => m.id === selectedModel), [availableModels, selectedModel])
@@ -336,522 +407,649 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   }
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={handleClose}
-        />
+    <>
+      <AnimatePresence>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={handleClose}
+          />
 
-        {/* Modal */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full mx-4 max-w-2xl"
-        >
-          <Card className="p-6 bg-card border-border">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">
-                {step === 'result'
-                  ? (mode === 'logo' ? 'Generated Logo' : mode === 'product' ? 'Product Shot' : 'Generated Image')
-                  : (mode === 'logo' ? 'Generate Logo' : mode === 'product' ? 'Product Photography' : 'Generate Image')
-                }
-              </h2>
-              <button
-                onClick={handleClose}
-                className="text-muted-foreground hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Mode Tabs */}
-            {step === 'configure' && (
-              <div className="flex gap-2 mb-6 p-1 bg-background rounded-lg">
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full mx-4 max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <Card className="p-6 bg-card border-border">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">
+                  {step === 'result'
+                    ? (mode === 'logo' ? 'Generated Logo' : mode === 'product' ? 'Product Shot' : 'Generated Image')
+                    : (mode === 'logo' ? 'Generate Logo' : mode === 'product' ? 'Product Photography' : 'Generate Image')
+                  }
+                </h2>
                 <button
-                  onClick={() => setMode('image')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    mode === 'image'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-white'
-                  }`}
+                  onClick={handleClose}
+                  className="text-muted-foreground hover:text-white transition-colors"
                 >
-                  Image
-                </button>
-                <button
-                  onClick={() => setMode('logo')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    mode === 'logo'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-white'
-                  }`}
-                >
-                  Logo
-                </button>
-                <button
-                  onClick={() => setMode('product')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    mode === 'product'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-white'
-                  }`}
-                >
-                  Product
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-            )}
 
-            {step === 'configure' && (
-              <>
-                {/* Usage Warning */}
-                <UsageWarning type="image" className="mb-4" />
-
-                {/* IMAGE MODE */}
-                {mode === 'image' && (
-                  <>
-                    {/* Prompt Input */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Prompt</label>
-                      <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Describe the image you want to generate..."
-                        rows={3}
-                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary resize-none"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Be specific about subjects, style, lighting, and composition.
-                      </p>
-                    </div>
-
-                    {/* Model Selection */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Model</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {availableModels.map((model) => (
-                          <button
-                            key={model.id}
-                            onClick={() => setSelectedModel(model.id)}
-                            className={`p-3 rounded-lg text-left transition-colors ${
-                              selectedModel === model.id
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                          >
-                            <span className="block text-sm font-medium">{model.name}</span>
-                            <span className={`block text-xs mt-1 ${
-                              selectedModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                            }`}>
-                              {model.speed}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Style Selection */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Style Enhancement</label>
-                      <select
-                        value={selectedStyle}
-                        onChange={(e) => setSelectedStyle(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
-                      >
-                        {IMAGE_STYLES.map((style) => (
-                          <option key={style.value} value={style.value}>
-                            {style.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Aspect Ratio Selection */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
-                      <div className="grid grid-cols-5 gap-2">
-                        {ASPECT_RATIOS.map((ratio) => (
-                          <button
-                            key={ratio.value}
-                            onClick={() => setSelectedAspectRatio(ratio.value as '1:1' | '16:9' | '9:16' | '4:3' | '3:4')}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              selectedAspectRatio === ratio.value
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                            title={ratio.description}
-                          >
-                            {ratio.label}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {currentAspectRatioDescription}
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {/* LOGO MODE */}
-                {mode === 'logo' && (
-                  <>
-                    {/* Brand Name Input */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Brand Name</label>
-                      <input
-                        type="text"
-                        value={brandName}
-                        onChange={(e) => setBrandName(e.target.value)}
-                        placeholder="Enter your brand name..."
-                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    {/* Color Selection */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Brand Color</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {PRESET_COLORS.map((color) => (
-                          <button
-                            key={color.value}
-                            onClick={() => setBrandColor(color.value)}
-                            className={`p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
-                              brandColor === color.value
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                          >
-                            <span
-                              className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0"
-                              style={{ backgroundColor: color.hex }}
-                            />
-                            <span className="text-sm font-medium">{color.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Logo Style Selection */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Logo Style</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {LOGO_STYLES.map((style) => (
-                          <button
-                            key={style.value}
-                            onClick={() => setLogoStyle(style.value)}
-                            className={`p-3 rounded-lg text-left transition-colors ${
-                              logoStyle === style.value
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                          >
-                            <span className="block text-sm font-medium">{style.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Model Selection for Logo */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium mb-2">Model</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {logoModels.map((model) => (
-                          <button
-                            key={model.id}
-                            onClick={() => setSelectedLogoModel(model.id)}
-                            className={`p-3 rounded-lg text-left transition-colors ${
-                              selectedLogoModel === model.id
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                          >
-                            <span className="block text-sm font-medium">{model.name}</span>
-                            <span className={`block text-xs mt-1 ${
-                              selectedLogoModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                            }`}>
-                              {model.description || model.speed}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* PRODUCT MODE */}
-                {mode === 'product' && (
-                  <>
-                    {/* Product Image Upload */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Product Image</label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-white/30 transition-colors">
-                        {productImagePreview ? (
-                          <div className="relative">
-                            <img
-                              src={productImagePreview}
-                              alt="Product preview"
-                              className="max-h-40 mx-auto rounded-lg object-contain"
-                            />
-                            <button
-                              onClick={() => {
-                                setProductImageUrl('')
-                                setProductImagePreview('')
-                              }}
-                              className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="cursor-pointer block">
-                            <input
-                              type="file"
-                              accept="image/jpeg,image/png,image/webp"
-                              onChange={handleProductImageUpload}
-                              className="hidden"
-                              disabled={isUploadingImage}
-                            />
-                            {isUploadingImage ? (
-                              <div className="py-4">
-                                <svg className="animate-spin h-8 w-8 mx-auto text-muted-foreground" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                <p className="text-sm text-muted-foreground mt-2">Processing...</p>
-                              </div>
-                            ) : (
-                              <div className="py-4">
-                                <svg className="w-10 h-10 mx-auto text-muted-foreground mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <p className="text-sm text-muted-foreground">Click to upload product image</p>
-                                <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP (max 12MB)</p>
-                              </div>
-                            )}
-                          </label>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Scene Selection */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Background Scene</label>
-                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                        {PRODUCT_SCENES.map((scene) => (
-                          <button
-                            key={scene.value}
-                            onClick={() => setSelectedScene(scene.value)}
-                            className={`p-3 rounded-lg text-left transition-colors ${
-                              selectedScene === scene.value
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                          >
-                            <span className="block text-sm font-medium">{scene.label}</span>
-                            <span className={`block text-xs mt-0.5 ${
-                              selectedScene === scene.value ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                            }`}>
-                              {scene.description}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Custom Scene Prompt (Optional) */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">
-                        Custom Details <span className="text-muted-foreground font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={customScenePrompt}
-                        onChange={(e) => setCustomScenePrompt(e.target.value)}
-                        placeholder="Add specific details... e.g., 'with coffee beans', 'morning light'"
-                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    {/* Framing Options */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">Product Framing</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => setProductCloseUp(true)}
-                          className={`p-3 rounded-lg text-left transition-colors ${
-                            productCloseUp
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-background border border-border hover:border-white/20'
-                          }`}
-                        >
-                          <span className="block text-sm font-medium">Close-up</span>
-                          <span className={`block text-xs mt-0.5 ${
-                            productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                          }`}>
-                            Product fills frame (recommended)
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => setProductCloseUp(false)}
-                          className={`p-3 rounded-lg text-left transition-colors ${
-                            !productCloseUp
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-background border border-border hover:border-white/20'
-                          }`}
-                        >
-                          <span className="block text-sm font-medium">Wide Shot</span>
-                          <span className={`block text-xs mt-0.5 ${
-                            !productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                          }`}>
-                            More background visible
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Aspect Ratio for Product */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium mb-2">Output Size</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {PRODUCT_ASPECT_RATIOS.map((ratio) => (
-                          <button
-                            key={ratio.value}
-                            onClick={() => setProductAspectRatio(ratio.value)}
-                            className={`p-3 rounded-lg text-left transition-colors ${
-                              productAspectRatio === ratio.value
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background border border-border hover:border-white/20'
-                            }`}
-                          >
-                            <span className="block text-sm font-medium">{ratio.label}</span>
-                            <span className={`block text-xs mt-0.5 ${
-                              productAspectRatio === ratio.value ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                            }`}>
-                              {ratio.description}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Error */}
-                {error && (
-                  <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {/* Generate Button */}
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || isUploadingImage || (mode === 'image' ? !prompt.trim() : mode === 'logo' ? !brandName.trim() : !productImageUrl)}
-                  className="w-full"
-                >
-                  {isGenerating ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Generating... (this may take up to 30 seconds)
-                    </span>
-                  ) : (
-                    mode === 'logo' ? 'Generate Logo' : mode === 'product' ? 'Generate Product Shot' : 'Generate Image'
-                  )}
-                </Button>
-              </>
-            )}
-
-            {step === 'result' && generatedImageUrl && (
-              <>
-                {/* Generated Image Display */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3 flex-wrap">
-                    <span className="text-sm text-muted-foreground">
-                      {mode === 'product' ? 'Bria Product Shot' : mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                      {mode === 'logo' ? '1:1' : mode === 'product' ? productAspectRatio : selectedAspectRatio}
-                    </span>
-                    {mode === 'image' && selectedStyle !== 'none' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                        {IMAGE_STYLES.find(s => s.value === selectedStyle)?.label}
-                      </span>
+              {/* Mode Tabs */}
+              {step === 'configure' && (
+                <div className="flex gap-2 mb-6 p-1 bg-background rounded-lg">
+                  <button
+                    onClick={() => setMode('image')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      mode === 'image'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-white'
+                    }`}
+                  >
+                    Image
+                  </button>
+                  <button
+                    onClick={() => setMode('logo')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors relative ${
+                      mode === 'logo'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-white'
+                    } ${!hasLogoAccess ? 'opacity-60' : ''}`}
+                  >
+                    Logo
+                    {!hasLogoAccess && (
+                      <span className="absolute -top-1 -right-1 text-[10px] px-1 py-0.5 bg-yellow-500 text-black rounded">PRO</span>
                     )}
-                    {mode === 'logo' && (
-                      <>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                          {LOGO_STYLES.find(s => s.value === logoStyle)?.label}
-                        </span>
+                  </button>
+                  <button
+                    onClick={() => setMode('product')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors relative ${
+                      mode === 'product'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-white'
+                    } ${!hasProductAccess ? 'opacity-60' : ''}`}
+                  >
+                    Product
+                    {!hasProductAccess && (
+                      <span className="absolute -top-1 -right-1 text-[10px] px-1 py-0.5 bg-yellow-500 text-black rounded">PRO</span>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {step === 'configure' && (
+                <>
+                  {/* Usage Warning */}
+                  <UsageWarning type="image" className="mb-4" />
+
+                  {/* IMAGE MODE */}
+                  {mode === 'image' && (
+                    <>
+                      {/* Template Button */}
+                      <div className="mb-4">
+                        <button
+                          onClick={() => setShowTemplateSelector(true)}
+                          className="w-full p-3 rounded-lg bg-background border border-dashed border-border hover:border-white/30 transition-colors text-center"
+                        >
+                          <span className="text-sm text-muted-foreground">Use a template for {' '}</span>
+                          <span className="text-sm font-medium text-primary">Instagram, LinkedIn, TikTok...</span>
+                        </button>
+                      </div>
+
+                      {/* Prompt Input */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Prompt</label>
+                        <textarea
+                          value={prompt}
+                          onChange={(e) => setPrompt(e.target.value)}
+                          placeholder="Describe the image you want to generate..."
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary resize-none"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Be specific about subjects, style, lighting, and composition.
+                        </p>
+                      </div>
+
+                      {/* Brand Color Toggle */}
+                      {currentBrand && (
+                        <div className="mb-4 p-3 rounded-lg bg-background border border-border">
+                          <label className="flex items-center justify-between cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-4 h-4 rounded-full border border-white/20"
+                                style={{ backgroundColor: currentBrand.color }}
+                              />
+                              <span className="text-sm">Apply {currentBrand.name} brand colors</span>
+                            </div>
+                            <div
+                              className={`w-10 h-6 rounded-full transition-colors ${
+                                applyBrandColors ? 'bg-primary' : 'bg-muted'
+                              }`}
+                              onClick={() => setApplyBrandColors(!applyBrandColors)}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded-full bg-white mt-1 transition-transform ${
+                                  applyBrandColors ? 'translate-x-5' : 'translate-x-1'
+                                }`}
+                              />
+                            </div>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Model Selection */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Model</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {availableModels.map((model) => (
+                            <button
+                              key={model.id}
+                              onClick={() => model.accessible && setSelectedModel(model.id)}
+                              disabled={!model.accessible}
+                              className={`p-3 rounded-lg text-left transition-colors relative ${
+                                selectedModel === model.id
+                                  ? 'bg-primary text-primary-foreground'
+                                  : model.accessible
+                                  ? 'bg-background border border-border hover:border-white/20'
+                                  : 'bg-background/50 border border-border opacity-60 cursor-not-allowed'
+                              }`}
+                            >
+                              <span className="block text-sm font-medium">{model.name}</span>
+                              <span className={`block text-xs mt-1 ${
+                                selectedModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              }`}>
+                                {model.description || model.speed}
+                              </span>
+                              {!model.accessible && (
+                                <span className="absolute top-2 right-2 text-[10px] px-1 py-0.5 bg-yellow-500 text-black rounded">
+                                  {model.requiredPlan}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Style Selection */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Style Enhancement</label>
+                        <select
+                          value={selectedStyle}
+                          onChange={(e) => setSelectedStyle(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                        >
+                          {IMAGE_STYLES.map((style) => (
+                            <option key={style.value} value={style.value}>
+                              {style.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Aspect Ratio Selection */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
+                        <div className="grid grid-cols-5 gap-2">
+                          {ASPECT_RATIOS.map((ratio) => (
+                            <button
+                              key={ratio.value}
+                              onClick={() => setSelectedAspectRatio(ratio.value as '1:1' | '16:9' | '9:16' | '4:3' | '3:4')}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                selectedAspectRatio === ratio.value
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-background border border-border hover:border-white/20'
+                              }`}
+                              title={ratio.description}
+                            >
+                              {ratio.label}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {currentAspectRatioDescription}
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {/* LOGO MODE */}
+                  {mode === 'logo' && (
+                    <>
+                      {/* Brand Name Input */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Brand Name</label>
+                        <input
+                          type="text"
+                          value={brandName}
+                          onChange={(e) => setBrandName(e.target.value)}
+                          placeholder="Enter your brand name..."
+                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                        />
+                      </div>
+
+                      {/* Color Selection */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Brand Color</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {PRESET_COLORS.map((color) => (
+                            <button
+                              key={color.value}
+                              onClick={() => setBrandColor(color.value)}
+                              className={`p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
+                                brandColor === color.value
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-background border border-border hover:border-white/20'
+                              }`}
+                            >
+                              <span
+                                className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0"
+                                style={{ backgroundColor: color.hex }}
+                              />
+                              <span className="text-sm font-medium">{color.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Logo Style Selection */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Logo Style</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {LOGO_STYLES.map((style) => (
+                            <button
+                              key={style.value}
+                              onClick={() => setLogoStyle(style.value)}
+                              className={`p-3 rounded-lg text-left transition-colors ${
+                                logoStyle === style.value
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-background border border-border hover:border-white/20'
+                              }`}
+                            >
+                              <span className="block text-sm font-medium">{style.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Model Selection for Logo */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium mb-2">Model</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {logoModels.map((model) => (
+                            <button
+                              key={model.id}
+                              onClick={() => model.accessible && setSelectedLogoModel(model.id)}
+                              disabled={!model.accessible}
+                              className={`p-3 rounded-lg text-left transition-colors ${
+                                selectedLogoModel === model.id
+                                  ? 'bg-primary text-primary-foreground'
+                                  : model.accessible
+                                  ? 'bg-background border border-border hover:border-white/20'
+                                  : 'bg-background/50 border border-border opacity-60 cursor-not-allowed'
+                              }`}
+                            >
+                              <span className="block text-sm font-medium">{model.name}</span>
+                              <span className={`block text-xs mt-1 ${
+                                selectedLogoModel === model.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              }`}>
+                                {model.description || model.speed}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* PRODUCT MODE */}
+                  {mode === 'product' && (
+                    <>
+                      {/* Product Image Upload */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Product Image</label>
+                        <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-white/30 transition-colors">
+                          {productImagePreview ? (
+                            <div className="relative">
+                              <img
+                                src={productImagePreview}
+                                alt="Product preview"
+                                className="max-h-40 mx-auto rounded-lg object-contain"
+                              />
+                              <button
+                                onClick={() => {
+                                  setProductImageUrl('')
+                                  setProductImagePreview('')
+                                }}
+                                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="cursor-pointer block">
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleProductImageUpload}
+                                className="hidden"
+                                disabled={isUploadingImage}
+                              />
+                              {isUploadingImage ? (
+                                <div className="py-4">
+                                  <svg className="animate-spin h-8 w-8 mx-auto text-muted-foreground" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  <p className="text-sm text-muted-foreground mt-2">Processing...</p>
+                                </div>
+                              ) : (
+                                <div className="py-4">
+                                  <svg className="w-10 h-10 mx-auto text-muted-foreground mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <p className="text-sm text-muted-foreground">Click to upload product image</p>
+                                  <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP (max 12MB)</p>
+                                </div>
+                              )}
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Scene Selection */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Background Scene</label>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                          {PRODUCT_SCENES.map((scene) => (
+                            <button
+                              key={scene.value}
+                              onClick={() => setSelectedScene(scene.value)}
+                              className={`p-3 rounded-lg text-left transition-colors ${
+                                selectedScene === scene.value
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-background border border-border hover:border-white/20'
+                              }`}
+                            >
+                              <span className="block text-sm font-medium">{scene.label}</span>
+                              <span className={`block text-xs mt-0.5 ${
+                                selectedScene === scene.value ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              }`}>
+                                {scene.description}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Custom Scene Prompt */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">
+                          Custom Details <span className="text-muted-foreground font-normal">(optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customScenePrompt}
+                          onChange={(e) => setCustomScenePrompt(e.target.value)}
+                          placeholder="Add specific details... e.g., 'with coffee beans', 'morning light'"
+                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                        />
+                      </div>
+
+                      {/* Framing Options */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Product Framing</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => setProductCloseUp(true)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              productCloseUp
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">Close-up</span>
+                            <span className={`block text-xs mt-0.5 ${
+                              productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              Product fills frame (recommended)
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => setProductCloseUp(false)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              !productCloseUp
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">Wide Shot</span>
+                            <span className={`block text-xs mt-0.5 ${
+                              !productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              More background visible
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Aspect Ratio for Product */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium mb-2">Output Size</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {PRODUCT_ASPECT_RATIOS.map((ratio) => (
+                            <button
+                              key={ratio.value}
+                              onClick={() => setProductAspectRatio(ratio.value)}
+                              className={`p-3 rounded-lg text-left transition-colors ${
+                                productAspectRatio === ratio.value
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-background border border-border hover:border-white/20'
+                              }`}
+                            >
+                              <span className="block text-sm font-medium">{ratio.label}</span>
+                              <span className={`block text-xs mt-0.5 ${
+                                productAspectRatio === ratio.value ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              }`}>
+                                {ratio.description}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Error */}
+                  {error && (
+                    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Generate Button */}
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || isUploadingImage || (mode === 'image' ? !prompt.trim() : mode === 'logo' ? !brandName.trim() : !productImageUrl)}
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Generating...
+                      </span>
+                    ) : (
+                      mode === 'logo' ? 'Generate Logo' : mode === 'product' ? 'Generate Product Shot' : 'Generate Image'
+                    )}
+                  </Button>
+                </>
+              )}
+
+              {step === 'result' && generatedImageUrl && (
+                <>
+                  {/* Generated Image Display */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <span className="text-sm text-muted-foreground">
+                        {mode === 'product' ? 'Bria Product Shot' : mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                        {mode === 'logo' ? '1:1' : mode === 'product' ? productAspectRatio : selectedAspectRatio}
+                      </span>
+                      {applyBrandColors && currentBrand && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 flex items-center gap-1">
                           <span
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: PRESET_COLORS.find(c => c.value === brandColor)?.hex }}
+                            style={{ backgroundColor: currentBrand.color }}
                           />
-                          {PRESET_COLORS.find(c => c.value === brandColor)?.label}
+                          {currentBrand.name}
                         </span>
-                      </>
-                    )}
-                    {mode === 'product' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                        {PRODUCT_SCENES.find(s => s.value === selectedScene)?.label}
-                      </span>
+                      )}
+                    </div>
+                    <div className="rounded-lg overflow-hidden bg-background border border-border">
+                      <img
+                        src={generatedImageUrl}
+                        alt={mode === 'logo' ? `Generated logo for ${brandName}` : mode === 'product' ? 'Product shot' : 'Generated image'}
+                        className="w-full h-auto"
+                      />
+                    </div>
+                    {mode === 'image' && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                        Prompt: {prompt}
+                      </p>
                     )}
                   </div>
-                  <div className="rounded-lg overflow-hidden bg-background border border-border">
-                    <img
-                      src={generatedImageUrl}
-                      alt={mode === 'logo' ? `Generated logo for ${brandName}` : mode === 'product' ? 'Product shot' : 'Generated image'}
-                      className="w-full h-auto"
-                    />
-                  </div>
-                  {mode === 'logo' ? (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Logo for: <span className="font-medium text-foreground">{brandName}</span>
-                    </p>
-                  ) : mode === 'product' ? (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Scene: <span className="font-medium text-foreground">{PRODUCT_SCENES.find(s => s.value === selectedScene)?.label}</span>
-                      {customScenePrompt && <span> + {customScenePrompt}</span>}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                      Prompt: {prompt}
-                    </p>
-                  )}
-                </div>
 
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={handleRegenerate} className="flex-1">
-                    {mode === 'logo' ? 'New Logo' : mode === 'product' ? 'New Shot' : 'New Image'}
-                  </Button>
-                  <Button variant="outline" onClick={handleDownload} className="flex-1">
-                    Download
-                  </Button>
-                  {onCreatePost && (
-                    <Button onClick={() => onCreatePost(generatedImageUrl)} className="flex-1">
-                      Create Post
-                    </Button>
+                  {/* Multi-Format Resize Section */}
+                  {resizedImages.length === 0 && (
+                    <div className="mb-4 p-4 rounded-lg bg-background border border-border">
+                      <h3 className="text-sm font-medium mb-3">Create all social media sizes</h3>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {SOCIAL_FORMATS.map(format => (
+                          <label
+                            key={format.key}
+                            className="flex items-center gap-2 text-sm cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedFormats.includes(format.key)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedFormats(prev => [...prev, format.key])
+                                } else {
+                                  setSelectedFormats(prev => prev.filter(f => f !== format.key))
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <span>{format.label}</span>
+                            <span className="text-xs text-muted-foreground">({format.size})</span>
+                          </label>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={handleGenerateAllFormats}
+                        disabled={isResizing}
+                        className="w-full"
+                      >
+                        {isResizing ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Creating formats...
+                          </span>
+                        ) : selectedFormats.length > 0 ? (
+                          `Create ${selectedFormats.length} formats`
+                        ) : (
+                          'Create all formats'
+                        )}
+                      </Button>
+                    </div>
                   )}
-                </div>
-              </>
-            )}
-          </Card>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+
+                  {/* Resized Images Grid */}
+                  {resizedImages.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium mb-3">Generated Formats</h3>
+                      <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                        {resizedImages.map((img, idx) => (
+                          <div key={idx} className="rounded-lg overflow-hidden bg-background border border-border">
+                            <img
+                              src={img.url}
+                              alt={img.name}
+                              className="w-full h-24 object-cover"
+                            />
+                            <div className="p-2 flex items-center justify-between">
+                              <span className="text-xs">{img.name}</span>
+                              <a
+                                href={img.url}
+                                download={`${img.format}-${Date.now()}.webp`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline"
+                              >
+                                Download
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {error && (
+                    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={handleRegenerate} className="flex-1">
+                      {mode === 'logo' ? 'New Logo' : mode === 'product' ? 'New Shot' : 'New Image'}
+                    </Button>
+                    <Button variant="outline" onClick={handleDownload} className="flex-1">
+                      Download
+                    </Button>
+                    {onCreatePost && (
+                      <Button onClick={() => onCreatePost(generatedImageUrl)} className="flex-1">
+                        Create Post
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            </Card>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+
+      {/* Template Selector Modal */}
+      <PromptTemplateSelector
+        isOpen={showTemplateSelector}
+        onClose={() => setShowTemplateSelector(false)}
+        onSelect={handleTemplateSelect}
+      />
+    </>
   )
 }
 
