@@ -307,7 +307,21 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       setStep('result')
       setResizedImages([]) // Reset resized images
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate. Please try again.')
+      // Extract error message from Convex error or standard Error
+      let errorMessage = 'Failed to generate. Please try again.'
+      if (err instanceof Error) {
+        // Convex errors may have nested message structure
+        errorMessage = err.message
+        // Clean up Convex error prefix if present
+        if (errorMessage.includes('Uncaught Error:')) {
+          errorMessage = errorMessage.split('Uncaught Error:').pop()?.trim() || errorMessage
+        }
+      } else if (typeof err === 'object' && err !== null && 'data' in err) {
+        // Handle Convex ConvexError format
+        const convexErr = err as { data?: string; message?: string }
+        errorMessage = convexErr.data || convexErr.message || errorMessage
+      }
+      setError(errorMessage)
     } finally {
       setIsGenerating(false)
     }
@@ -894,8 +908,20 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
                   {/* Error */}
                   {error && (
-                    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                      {error}
+                    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm">
+                      <p className="text-red-400">
+                        {error.includes('LIMIT_REACHED:') ? error.replace('LIMIT_REACHED: ', '') : error}
+                      </p>
+                      {(error.includes('LIMIT_REACHED') || error.includes('Upgrade')) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { handleClose(); openUpgradeModal('image'); }}
+                          className="mt-2 w-full border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                        >
+                          Upgrade Plan
+                        </Button>
+                      )}
                     </div>
                   )}
 

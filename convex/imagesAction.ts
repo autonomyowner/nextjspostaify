@@ -416,7 +416,7 @@ export const generate = action({
     // Check image limit
     if (user.usage.imagesThisMonth >= user.usage.imagesLimit) {
       throw new Error(
-        `You've reached your monthly image limit (${user.usage.imagesLimit}). Upgrade your plan for more.`
+        `LIMIT_REACHED: You've used all ${user.usage.imagesLimit} images this month. Upgrade your plan to generate more images.`
       );
     }
 
@@ -543,7 +543,7 @@ export const generateProductShot = action({
     // Check image limit
     if (user.usage.imagesThisMonth >= user.usage.imagesLimit) {
       throw new Error(
-        `You've reached your monthly image limit (${user.usage.imagesLimit}). Upgrade your plan for more.`
+        `LIMIT_REACHED: You've used all ${user.usage.imagesLimit} images this month. Upgrade your plan to generate more images.`
       );
     }
 
