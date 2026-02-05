@@ -53,6 +53,7 @@ Key Convex files:
 - `voiceAnalysis.ts` - Voice cloning: analyze posts to extract writing style
 - `voice.ts` - ElevenLabs voiceovers
 - `imagesAction.ts` - Image generation (Runware for Flux, Fal.ai for Ideogram/Bria)
+- `imageResize.ts` - Multi-format resize for social media sizes (Instagram, Twitter, LinkedIn, etc.)
 - `images.ts` - Image model configurations
 - `subscriptionsAction.ts` - Stripe integration
 - `tools.ts` - Free YouTube converter tool actions
@@ -143,9 +144,13 @@ Defined in `convex/lib/planLimits.ts`:
 | Product Photography | No | Yes | Yes |
 
 ### Tiered Model Access
-- **FREE:** Flux Schnell only
-- **PRO:** Flux Schnell, Flux Dev, Flux Pro 1.1, Ideogram (logos)
-- **BUSINESS:** All above + Recraft V3 (premium creative model)
+- **FREE:** FLUX.2 Klein 4B only (via Runware, $0.0006/image)
+- **PRO:** FLUX.2 Klein, Flux Dev, Flux Pro 1.1, Ideogram (logos), Bria (product shots)
+- **BUSINESS:** All above + Recraft V3 (premium creative model, outputs WebP only)
+
+### Image Output Format
+- All models output **PNG** (lossless) except Recraft V3 which outputs WebP
+- Configured in `imagesAction.ts`: `outputFormat: "png"`, `outputQuality: 95`
 
 ### Usage Tracking
 User usage tracked in `users` table:
@@ -192,12 +197,19 @@ Explicitly allows: GPTBot, ChatGPT-User, PerplexityBot, ClaudeBot, Google-Extend
 ## API Cost Reference
 | Feature | Provider | Cost |
 |---------|----------|------|
-| Image (Flux Schnell) | Runware | $0.0006 |
-| Image (Flux Dev) | Runware | $0.0025 |
+| Image (FLUX.2 Klein 4B) | Runware | $0.0006 |
+| Image (Flux Dev) | Runware | $0.0038 |
 | Image (Flux Pro 1.1) | Runware | $0.0038 |
+| Image (Recraft V3) | Runware | $0.005 |
 | Logo (Ideogram) | Fal.ai | $0.02-0.03 |
 | Product Shot (Bria) | Fal.ai | $0.04 |
 | Voiceover (ElevenLabs) | ElevenLabs | ~$0.015/clip |
 | AI Content (OpenRouter) | OpenRouter | ~$0.001/post |
 
-**Hybrid Provider Strategy:** Runware for Flux (93% savings), Fal.ai for Ideogram/Bria.
+**Hybrid Provider Strategy:** Runware for Flux models (93% savings vs Fal.ai), Fal.ai for Ideogram/Bria.
+
+**Runware Model IDs:**
+- FLUX.2 Klein 4B: `runware:400@4` (FREE tier)
+- Flux Dev: `runware:101@1`
+- Flux Pro 1.1: `civitai:618692@691639`
+- Recraft V3: `runware:2@1`
