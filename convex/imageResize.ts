@@ -104,7 +104,12 @@ export const generateAllFormats = action({
 
     const runwareApiKey = process.env.RUNWARE_API_KEY;
     if (!runwareApiKey) {
-      throw new Error("Image resize service not configured");
+      throw new Error("RUNWARE_API_KEY not configured. Set it in Convex dashboard.");
+    }
+
+    // Validate image URL
+    if (!args.imageUrl || !args.imageUrl.startsWith('http')) {
+      throw new Error("Invalid image URL. Must be a valid HTTP/HTTPS URL.");
     }
 
     // Determine which formats to generate
@@ -134,7 +139,7 @@ export const generateAllFormats = action({
               taskUUID: crypto.randomUUID(),
               inputImage: args.imageUrl,
               positivePrompt: "same image, high quality",
-              model: "runware:100@1", // Flux Schnell for fast processing
+              model: "runware:400@4", // FLUX.2 klein 4B - fastest, cheapest
               width: format.width,
               height: format.height,
               numberResults: 1,
@@ -147,14 +152,23 @@ export const generateAllFormats = action({
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to resize for ${format.name}`);
+          const errorText = await response.text().catch(() => "");
+          console.error(`Runware error for ${format.name}:`, errorText);
+          throw new Error(`Failed to resize for ${format.name}: ${response.status}`);
         }
 
         const result = (await response.json()) as {
           data?: Array<{ imageURL?: string }>;
+          error?: string;
         };
 
+        if (result.error) {
+          console.error(`Runware API error for ${format.name}:`, result.error);
+          throw new Error(`API error for ${format.name}: ${result.error}`);
+        }
+
         if (!result.data?.[0]?.imageURL) {
+          console.error(`No image in response for ${format.name}:`, result);
           throw new Error(`No image returned for ${format.name}`);
         }
 
