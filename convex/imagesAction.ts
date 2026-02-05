@@ -59,7 +59,8 @@ async function generateWithRunware(
         width,
         height,
         numberResults: 1,
-        outputFormat: "PNG", // Runware accepts uppercase
+        outputFormat: "png",
+        outputQuality: 95,
         outputType: "URL",
         includeCost: false,
         CFGScale: 7,
