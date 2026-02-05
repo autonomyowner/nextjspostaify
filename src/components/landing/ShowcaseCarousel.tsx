@@ -6,7 +6,7 @@ import Image from 'next/image'
 // Showcase images generated with POSTAIFY
 const SHOWCASE_IMAGES = [
   { src: '/showcase/car.png', alt: 'Luxury Sports Car - AI Generated' },
-  { src: '/showcase/cloud.png', alt: 'Surreal Aqueduct in Clouds' },
+  { src: '/showcase/cload2.png', alt: 'Abstract Chrome Sculpture' },
   { src: '/showcase/pCEV-To8xMkakPUnW9-Ah_image.png', alt: 'AI Generated Logo - NEXUS' },
   { src: '/showcase/pd5DdD40hb8AIhaZNFaSv_image.png', alt: 'AI Generated Logo - SPARK' },
   { src: '/showcase/tcWPiVvM-wF4lz7Pnrv-A_image.png', alt: 'AI Generated Logo - AURA' },
