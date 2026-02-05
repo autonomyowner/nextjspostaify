@@ -5,12 +5,12 @@ import Image from 'next/image'
 
 // Showcase images generated with POSTAIFY
 const SHOWCASE_IMAGES = [
-  { src: '/showcase/2u927olyrcPKOG_RUL0i1_image.webp', alt: 'AI Generated Art 1' },
-  { src: '/showcase/3g_Kme12Lh0hFAbJ5yutx_image.webp', alt: 'AI Generated Art 2' },
-  { src: '/showcase/pCEV-To8xMkakPUnW9-Ah_image.png', alt: 'AI Generated Logo 1' },
-  { src: '/showcase/pd5DdD40hb8AIhaZNFaSv_image.png', alt: 'AI Generated Logo 2' },
-  { src: '/showcase/tcWPiVvM-wF4lz7Pnrv-A_image.png', alt: 'AI Generated Logo 3' },
-  { src: '/showcase/ylmPui2FjNHpEi_3x8zL0_2fe6ae340f9b4c19a2d7decf7693967b.jpg', alt: 'AI Generated Art 3' },
+  { src: '/showcase/aqueduct-clouds.webp', alt: 'Surreal Aqueduct in Clouds' },
+  { src: '/showcase/headphones-product.webp', alt: 'Premium Headphones Product Shot' },
+  { src: '/showcase/pCEV-To8xMkakPUnW9-Ah_image.png', alt: 'AI Generated Logo - NEXUS' },
+  { src: '/showcase/pd5DdD40hb8AIhaZNFaSv_image.png', alt: 'AI Generated Logo - SPARK' },
+  { src: '/showcase/tcWPiVvM-wF4lz7Pnrv-A_image.png', alt: 'AI Generated Logo - AURA' },
+  { src: '/showcase/ylmPui2FjNHpEi_3x8zL0_2fe6ae340f9b4c19a2d7decf7693967b.jpg', alt: 'AI Generated Landscape' },
 ]
 
 export function ShowcaseCarousel() {

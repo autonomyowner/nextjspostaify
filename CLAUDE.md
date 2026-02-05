@@ -21,7 +21,7 @@ npx convex deploy    # Deploy Convex functions to production
 ### Tech Stack
 - **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS v4
 - **Backend:** Convex (serverless DB + functions)
-- **Auth:** Clerk with Next.js middleware
+- **Auth:** Better-Auth with `@convex-dev/better-auth`
 - **i18n:** react-i18next (en, ar, fr)
 
 ### Route Structure
@@ -30,27 +30,29 @@ npx convex deploy    # Deploy Convex functions to production
 src/app/
 ├── (auth)/           # Auth pages (sign-in, sign-up, sso-callback)
 ├── (dashboard)/      # Protected routes (dashboard, posts, calendar, admin)
-├── (marketing)/      # Public pages (pricing, roadmap)
+├── (marketing)/      # Public pages (pricing, roadmap, terms, waitlist)
+├── compare/[competitor]/  # SEO comparison pages (vs Buffer, Hootsuite, etc.)
 ├── tools/[slug]/     # Programmatic SEO pages (YouTube converters)
+├── api/auth/[...all]/  # Better-Auth API routes
 ├── sitemap.ts        # Dynamic sitemap
-└── robots.ts         # Robots.txt
+└── robots.ts         # Robots.txt with AI bot allowlisting
 ```
-
-Route protection is handled by Clerk middleware in `middleware.ts`.
 
 ### Convex Backend
 
 Database tables defined in `convex/schema.ts`:
-- `users` - User profiles with plan info, indexed by clerkId
-- `brands` - Brand profiles per user
+- `users` - User profiles with plan info, indexed by email
+- `brands` - Brand profiles per user (with optional voiceProfile for AI voice cloning)
 - `posts` - Content posts with platform, status, scheduling
 - `emailCaptures` - Marketing email captures
 - `chatSessions`, `botLeads` - Chatbot data
 
 Key Convex files:
-- `ai.ts` - Content generation via OpenRouter
+- `auth.ts` - Better-Auth integration with `getAuthenticatedAppUser()` helper
+- `ai.ts` - Content generation via OpenRouter (injects voice profile if available)
+- `voiceAnalysis.ts` - Voice cloning: analyze posts to extract writing style
 - `voice.ts` - ElevenLabs voiceovers
-- `imagesAction.ts` - Fal.ai image generation (Flux + Ideogram)
+- `imagesAction.ts` - Image generation (Runware for Flux, Fal.ai for Ideogram/Bria)
 - `images.ts` - Image model configurations
 - `subscriptionsAction.ts` - Stripe integration
 - `tools.ts` - Free YouTube converter tool actions
@@ -60,24 +62,26 @@ Key Convex files:
 Three modes in `ImageGeneratorModal.tsx`:
 
 **Image Mode:** Uses Flux models with auto prompt enhancement
-- Simple prompts auto-enhanced with quality, lighting, subject-specific terms
 - Subject detection: portrait, landscape, animal, food, product, architecture
+- Models: Flux Schnell (8s), Flux Dev, Flux Pro 1.1
 
-**Logo Mode:** Uses Ideogram models (optimized for logos/text)
+**Logo Mode:** Uses Ideogram V2 Turbo
 - Pre-built expert prompt templates (Minimal, Modern Tech, Lettermark, etc.)
 - User provides: brand name + color + style
-- System builds professional prompt automatically
 
-**Product Mode:** Uses Bria Product Shot API (for e-commerce)
+**Product Mode:** Uses Bria Product Shot API
 - Upload product image, select background scene
-- 10 preset scenes: Studio White, Marble, Wood, Kitchen, Living Room, Nature, etc.
-- Optional custom scene prompt for additional details
-- No studio/camera needed - AI places product in professional scenes
+- 10 preset scenes: Studio White, Marble, Wood, Kitchen, etc.
 
-Models configured in `convex/images.ts`:
-- `fal-ai/flux/schnell` - Fast image generation
-- `fal-ai/ideogram/v2/turbo` - Fast logo generation (default for logos)
-- `fal-ai/bria/product-shot` - Product photography (e-commerce)
+### Voice Cloning (Brand Voice Analyzer)
+
+Users can paste 3-20 posts to clone any writing style. Located in `VoiceAnalyzerModal.tsx`.
+
+**Flow:** Edit brand → "Analyze Voice" → Paste posts → AI extracts voice profile → Save
+
+**Voice profile fields:** formality, energy, humor, directness (1-10), sentenceStyle, vocabularyLevel, emojiUsage, hashtagStyle, keyTraits, ctaPatterns
+
+When generating content, `ai.ts` injects voice profile + sample posts into the prompt for few-shot learning.
 
 ### State Management
 
@@ -87,23 +91,28 @@ Two React contexts (both client components):
 
 ## Key Patterns
 
-### Client vs Server Components
-- Components using hooks (React, Convex, Clerk) need `'use client'`
-- Context providers are client components
-- Pages default to server components for SEO
-
-### Auth Pattern with Convex
-Clerk JWT tokens don't always work with Convex auth. Use clerkId fallback:
+### Better-Auth Pattern
 
 ```typescript
-// Backend (Convex)
-const identity = await ctx.auth.getUserIdentity();
-const userClerkId = identity?.subject || args.clerkId;
+// Frontend - use authClient hooks
+import { authClient } from '@/lib/auth-client'
+const { data: session, isPending } = authClient.useSession()
 
-// Frontend - pass clerkId explicitly
-const { user } = useUser()
-await someAction({ ...data, clerkId: user?.id })
+// Sign in/up
+await authClient.signIn.email({ email, password })
+await authClient.signUp.email({ email, password, name })
+await authClient.signIn.social({ provider: 'google', callbackURL: '/dashboard' })
+
+// Backend (Convex) - wrap getAuthUser in try-catch (it throws when unauthenticated)
+import { getAuthenticatedAppUser } from './auth'
+const user = await getAuthenticatedAppUser(ctx)
+if (!user) throw new Error('Unauthorized')
 ```
+
+### Client vs Server Components
+- Components using hooks (React, Convex, auth) need `'use client'`
+- Context providers are client components
+- Pages default to server components for SEO
 
 ### Case Conventions
 Frontend uses Title Case, Convex uses UPPERCASE:
@@ -126,93 +135,69 @@ Defined in `convex/lib/planLimits.ts`:
 |---------|------|--------------|-------------------|
 | Brands | 2 | 5 | Unlimited |
 | Posts/Month | 20 | 1,000 | 90,000 |
-| AI Images/Month | 5 | **200** | **1,000** |
+| AI Images/Month | 5 | 200 | 1,000 |
 | AI Voiceovers/Month | 2 | 30 | 150 |
+| Voice Profiles | 1 | 3 | Unlimited |
 | YouTube Repurpose | No | Yes | Yes |
 | Logo Generation | No | Yes | Yes |
 | Product Photography | No | Yes | Yes |
-| Premium Models | No | Yes | Yes (Recraft V3) |
-
-**Pricing Strategy:** $19/mo kept as sweet spot for solopreneurs. 90%+ users are light/medium = excellent margins.
 
 ### Tiered Model Access
-Models are restricted by plan tier:
 - **FREE:** Flux Schnell only
 - **PRO:** Flux Schnell, Flux Dev, Flux Pro 1.1, Ideogram (logos)
 - **BUSINESS:** All above + Recraft V3 (premium creative model)
 
 ### Usage Tracking
-User usage tracked in `convex/schema.ts` users table:
-- `postsThisMonth` - Content posts created
-- `imagesThisMonth` - AI images generated
-- `voiceoversThisMonth` - AI voiceovers generated
+User usage tracked in `users` table:
+- `postsThisMonth`, `imagesThisMonth`, `voiceoversThisMonth`
 - `usageResetDate` - Monthly reset timestamp
 
-**Mutations for tracking:**
-- `users.incrementImageUsage` - Called after successful image generation
-- `users.incrementVoiceoverUsage` - Called after successful voiceover generation
-- `users.resetMonthlyUsage` - Resets all counters (cron job)
-
-**Usage Warning UI:** `src/components/ui/UsageWarning.tsx`
-- Shows warning at 80% usage (yellow)
-- Shows error at 100% usage (red)
-- Displays in ImageGeneratorModal and VoiceoverModal
+Mutations: `users.incrementImageUsage`, `users.incrementVoiceoverUsage`, `users.resetMonthlyUsage`
 
 ## Environment Variables
 
 ```env
 # Frontend (NEXT_PUBLIC_ prefix)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 NEXT_PUBLIC_CONVEX_URL=https://...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CONVEX_SITE_URL=https://...convex.site
 
 # Server-only
-CLERK_SECRET_KEY=sk_...
+CONVEX_SITE_URL=https://...convex.site
 
-# Convex Dashboard (set there, not in .env)
+# Convex Dashboard (set via npx convex env set)
+BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SITE_URL
 OPENROUTER_API_KEY, ELEVENLABS_API_KEY, FAL_API_KEY, RUNWARE_API_KEY, STRIPE_*
 ```
-
-**Note:** RUNWARE_API_KEY is used for Flux models (93% cost savings vs Fal.ai). FAL_API_KEY is still required for Ideogram logos and Bria product shots.
 
 ## Import Conventions
 
 - Use `@/` path alias for `src/` imports: `import { Button } from '@/components/ui/button'`
 - Convex API imports use relative path: `import { api } from '../../convex/_generated/api'`
 
-## Marketing Pages
+## SEO Infrastructure
 
-### Waitlist Campaign (`/waitlist`)
-Early-bird signup page with:
-- **50% off for 3 months** ($9.50/mo instead of $19)
-- First 100 spots urgency counter
-- Email capture to `emailCaptures` table with source: `waitlist-early-bird`
-- Success state with share/invite functionality
+### JSON-LD Schema Components (`src/components/seo/`)
+- `SoftwareSchema` - SoftwareApplication structured data
+- `FAQSchema` - FAQPage structured data
+- `OrganizationSchema` - Organization structured data
 
-### Terms of Service (`/terms`)
-Legal page with:
-- Fair use policy for AI features
-- Usage limits table
-- Prohibited uses (bulk automation, reselling, multiple accounts)
-- Soft limits explanation
+### Comparison Pages (`/compare/[competitor]`)
+Competitor data in `src/lib/competitors-config.ts`:
+- Buffer, Hootsuite, Jasper, Midjourney, Taplio
+- Each with: pricing, pros/cons, feature comparison, FAQs
 
-### Pricing (`/pricing` or `/#pricing`)
-- Value stack comparison (vs Jasper, Midjourney, ElevenLabs, Buffer)
-- Feature comparison table with actual limits
-- Monthly/yearly toggle with 20% savings
+### AI Bot Allowlisting (`robots.ts`)
+Explicitly allows: GPTBot, ChatGPT-User, PerplexityBot, ClaudeBot, Google-Extended, etc.
 
-## API Cost Reference (for pricing decisions)
-| Feature | Provider | Cost to POSTAIFY |
-|---------|----------|------------------|
-| Image (Flux Schnell) | Runware | **$0.0006** (was $0.008) |
-| Image (Flux Dev) | Runware | **$0.0025** |
-| Image (Flux Pro 1.1) | Runware | **$0.0038** |
+## API Cost Reference
+| Feature | Provider | Cost |
+|---------|----------|------|
+| Image (Flux Schnell) | Runware | $0.0006 |
+| Image (Flux Dev) | Runware | $0.0025 |
+| Image (Flux Pro 1.1) | Runware | $0.0038 |
 | Logo (Ideogram) | Fal.ai | $0.02-0.03 |
 | Product Shot (Bria) | Fal.ai | $0.04 |
 | Voiceover (ElevenLabs) | ElevenLabs | ~$0.015/clip |
 | AI Content (OpenRouter) | OpenRouter | ~$0.001/post |
 
-**Hybrid Provider Strategy:** Runware for Flux models (93% savings), Fal.ai for Ideogram/Bria.
-
-**Pro Plan Economics:** Light user (~$0.20 cost) = 99% margin. Heavy user (~$2 cost) = 89% margin.
+**Hybrid Provider Strategy:** Runware for Flux (93% savings), Fal.ai for Ideogram/Bria.
