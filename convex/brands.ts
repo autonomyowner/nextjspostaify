@@ -53,6 +53,8 @@ export const list = query({
       initials: brand.initials,
       voice: brand.voice,
       topics: brand.topics,
+      voiceProfile: brand.voiceProfile,
+      samplePosts: brand.samplePosts,
       postCount: postCountByBrand.get(brand._id.toString()) || 0,
       _creationTime: brand._creationTime,
     }));
@@ -103,6 +105,8 @@ export const getById = query({
       initials: brand.initials,
       voice: brand.voice,
       topics: brand.topics,
+      voiceProfile: brand.voiceProfile,
+      samplePosts: brand.samplePosts,
       postCount: posts.length,
       _creationTime: brand._creationTime,
     };

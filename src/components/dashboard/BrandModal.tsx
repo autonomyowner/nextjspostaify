@@ -7,6 +7,7 @@ import { useData, VOICE_OPTIONS } from '@/context/DataContext'
 import { useSubscription } from '@/context/SubscriptionContext'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { VoiceAnalyzerModal } from './VoiceAnalyzerModal'
 
 interface BrandModalProps {
   isOpen: boolean
@@ -29,6 +30,7 @@ function BrandModalComponent({ isOpen, onClose, editBrandId }: BrandModalProps) 
   const [description, setDescription] = useState(editBrand?.description || '')
   const [topicsInput, setTopicsInput] = useState(editBrand?.topics.join(', ') || '')
   const [error, setError] = useState('')
+  const [showVoiceAnalyzer, setShowVoiceAnalyzer] = useState(false)
 
   const initials = name
     .split(' ')
@@ -85,6 +87,7 @@ function BrandModalComponent({ isOpen, onClose, editBrandId }: BrandModalProps) 
     setDescription('')
     setTopicsInput('')
     setError('')
+    setShowVoiceAnalyzer(false)
     onClose()
   }, [onClose])
 
@@ -181,6 +184,45 @@ function BrandModalComponent({ isOpen, onClose, editBrandId }: BrandModalProps) 
               </select>
             </div>
 
+            {/* Voice Profile (AI Clone) - Only show for existing brands */}
+            {editBrand && (
+              <div className="mb-3 sm:mb-4 p-3 rounded-lg border border-border bg-background/50">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs sm:text-sm font-medium">{t('brandModal.voiceProfile')}</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowVoiceAnalyzer(true)}
+                    className="h-7 text-xs"
+                  >
+                    {editBrand.voiceProfile ? t('brandModal.updateVoice') : t('brandModal.analyzeVoice')}
+                  </Button>
+                </div>
+                {editBrand.voiceProfile ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                      {editBrand.voiceProfile.description}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {editBrand.voiceProfile.keyTraits.slice(0, 4).map((trait, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium"
+                        >
+                          {trait}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {t('brandModal.voiceProfileDesc')}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Topics */}
             <div className="mb-3 sm:mb-4">
               <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">{t('brandModal.topics')}</label>
@@ -225,6 +267,15 @@ function BrandModalComponent({ isOpen, onClose, editBrandId }: BrandModalProps) 
           </Card>
         </motion.div>
       </div>
+
+      {/* Voice Analyzer Modal */}
+      {editBrand && (
+        <VoiceAnalyzerModal
+          isOpen={showVoiceAnalyzer}
+          onClose={() => setShowVoiceAnalyzer(false)}
+          brand={editBrand}
+        />
+      )}
     </AnimatePresence>
   )
 }

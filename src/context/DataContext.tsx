@@ -6,6 +6,31 @@ import { useConvexAuth } from '@/hooks/useCurrentUser'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 
+// Voice profile type (AI-analyzed characteristics)
+export interface VoiceProfile {
+  formality: number       // 1-10 scale
+  energy: number          // 1-10 scale
+  humor: number           // 1-10 scale
+  directness: number      // 1-10 scale
+  sentenceStyle: string   // short_punchy | medium_balanced | long_detailed | mixed
+  vocabularyLevel: string // simple | conversational | professional | technical
+  emojiUsage: string      // none | minimal | moderate | heavy
+  hashtagStyle: string    // none | minimal | branded | trending
+  ctaPatterns: string[]
+  topicPreferences: string[]
+  description: string     // AI summary of voice
+  keyTraits: string[]
+  analyzedAt: number
+  postsAnalyzed: number
+}
+
+// Sample post for few-shot learning
+export interface SamplePost {
+  content: string
+  platform?: string
+  addedAt: number
+}
+
 // Types
 export interface Brand {
   id: string
@@ -17,6 +42,8 @@ export interface Brand {
   description: string
   createdAt: number
   postCount?: number
+  voiceProfile?: VoiceProfile
+  samplePosts?: SamplePost[]
 }
 
 export interface Post {
@@ -177,7 +204,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       topics: b.topics,
       description: b.description || '',
       createdAt: b._creationTime,
-      postCount: b.postCount
+      postCount: b.postCount,
+      voiceProfile: b.voiceProfile,
+      samplePosts: b.samplePosts
     }))
   }, [brandsData])
 

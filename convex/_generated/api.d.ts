@@ -29,6 +29,7 @@ import type * as telegramAction from "../telegramAction.js";
 import type * as tools from "../tools.js";
 import type * as users from "../users.js";
 import type * as voice from "../voice.js";
+import type * as voiceAnalysis from "../voiceAnalysis.js";
 
 import type {
   ApiFromModules,
@@ -58,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   tools: typeof tools;
   users: typeof users;
   voice: typeof voice;
+  voiceAnalysis: typeof voiceAnalysis;
 }>;
 
 /**

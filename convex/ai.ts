@@ -136,13 +136,51 @@ export const generateContent = action({
     const model = args.model || "anthropic/claude-3-haiku";
     const platform = args.platform;
 
+    // Build voice context - use AI-analyzed profile if available, otherwise use preset
+    let voiceContext = `Voice/Tone: ${brand.voice}`;
+
+    if (brand.voiceProfile) {
+      const vp = brand.voiceProfile;
+      voiceContext = `
+## BRAND VOICE PROFILE (AI-Analyzed)
+${vp.description}
+
+Key Traits: ${vp.keyTraits.join(", ")}
+
+Voice Metrics:
+- Formality: ${vp.formality}/10 ${vp.formality <= 3 ? "(casual)" : vp.formality >= 7 ? "(formal)" : "(balanced)"}
+- Energy: ${vp.energy}/10 ${vp.energy <= 3 ? "(calm)" : vp.energy >= 7 ? "(high-energy)" : "(moderate)"}
+- Humor: ${vp.humor}/10 ${vp.humor <= 3 ? "(serious)" : vp.humor >= 7 ? "(playful)" : "(occasional)"}
+- Directness: ${vp.directness}/10 ${vp.directness <= 3 ? "(subtle)" : vp.directness >= 7 ? "(blunt)" : "(balanced)"}
+
+Writing Style:
+- Sentence Style: ${vp.sentenceStyle.replace("_", " ")}
+- Vocabulary: ${vp.vocabularyLevel}
+- Emoji Usage: ${vp.emojiUsage}
+- Hashtag Style: ${vp.hashtagStyle}
+${vp.ctaPatterns.length > 0 ? `- CTA Patterns: "${vp.ctaPatterns.join('", "')}"` : ""}`;
+    }
+
+    // Add few-shot examples from sample posts (max 3)
+    let samplePostsContext = "";
+    if (brand.samplePosts && brand.samplePosts.length > 0) {
+      const examples = brand.samplePosts.slice(0, 3);
+      samplePostsContext = `
+
+## REFERENCE POSTS (Match this exact style)
+${examples.map((s, i) => `Example ${i + 1}:
+${s.content}`).join("\n\n")}
+
+IMPORTANT: Your output should sound like it was written by the same person who wrote these examples.`;
+    }
+
     const systemPrompt = `You are an elite copywriter. Create viral, high-converting social media content.
 
 ## BRAND CONTEXT
 Brand: ${brand.name}
 Description: ${brand.description || "N/A"}
-Voice/Tone: ${brand.voice}
-Core Topics: ${brand.topics.join(", ")}
+${voiceContext}
+Core Topics: ${brand.topics.join(", ")}${samplePostsContext}
 
 ## STYLE DIRECTION
 ${styleInstructions[style as ContentStyle]}

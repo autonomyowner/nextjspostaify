@@ -9,6 +9,7 @@ export const PLAN_LIMITS = {
     hasProductPhotography: false, // Product mode requires PRO
     maxImagesPerMonth: 5,
     maxVoiceoversPerMonth: 2,
+    maxVoiceProfiles: 1, // Voice cloning profiles
   },
   PRO: {
     maxBrands: 5,
@@ -20,6 +21,7 @@ export const PLAN_LIMITS = {
     hasProductPhotography: true,
     maxImagesPerMonth: 200, // Doubled from 100 due to cost savings
     maxVoiceoversPerMonth: 30,
+    maxVoiceProfiles: 3, // Voice cloning profiles
   },
   BUSINESS: {
     maxBrands: 999,
@@ -31,6 +33,7 @@ export const PLAN_LIMITS = {
     hasProductPhotography: true,
     maxImagesPerMonth: 1000, // Doubled from 500 due to cost savings
     maxVoiceoversPerMonth: 150,
+    maxVoiceProfiles: 999, // Unlimited voice cloning profiles
   },
 } as const;
 

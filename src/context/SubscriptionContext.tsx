@@ -51,7 +51,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
 }
 
 // Limit types for upgrade modal context
-export type LimitType = 'brand' | 'post' | 'image' | 'voiceover' | 'video_repurpose'
+export type LimitType = 'brand' | 'post' | 'image' | 'voiceover' | 'video_repurpose' | 'voice_profile'
 
 interface SubscriptionState {
   plan: PlanType

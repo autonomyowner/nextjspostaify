@@ -38,6 +38,29 @@ export default defineSchema({
     initials: v.string(),
     voice: v.string(),
     topics: v.array(v.string()),
+    // Voice profile (AI-analyzed characteristics)
+    voiceProfile: v.optional(v.object({
+      formality: v.number(),      // 1-10 scale
+      energy: v.number(),         // 1-10 scale
+      humor: v.number(),          // 1-10 scale
+      directness: v.number(),     // 1-10 scale
+      sentenceStyle: v.string(),  // short_punchy | medium_balanced | long_detailed | mixed
+      vocabularyLevel: v.string(), // simple | conversational | professional | technical
+      emojiUsage: v.string(),     // none | minimal | moderate | heavy
+      hashtagStyle: v.string(),   // none | minimal | branded | trending
+      ctaPatterns: v.array(v.string()),
+      topicPreferences: v.array(v.string()),
+      description: v.string(),    // AI summary of voice
+      keyTraits: v.array(v.string()),
+      analyzedAt: v.number(),
+      postsAnalyzed: v.number(),
+    })),
+    // Sample posts for few-shot learning
+    samplePosts: v.optional(v.array(v.object({
+      content: v.string(),
+      platform: v.optional(v.string()),
+      addedAt: v.number(),
+    }))),
   }).index("by_userId", ["userId"]),
 
   posts: defineTable({
