@@ -59,7 +59,9 @@ async function generateWithRunware(
         width,
         height,
         numberResults: 1,
-        outputFormat: "PNG",
+        outputFormat: "PNG", // Runware accepts uppercase
+        outputType: "URL",
+        includeCost: false,
         CFGScale: 7,
         scheduler: "FlowMatchEulerDiscreteScheduler",
         strength: 0.8,
@@ -114,6 +116,7 @@ async function generateWithFal(
       image_size: imageSize,
       num_images: 1,
       enable_safety_checker: true,
+      output_format: "png",
     };
   }
 
