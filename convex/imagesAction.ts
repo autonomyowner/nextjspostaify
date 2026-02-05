@@ -59,7 +59,7 @@ async function generateWithRunware(
         width,
         height,
         numberResults: 1,
-        outputFormat: "WEBP",
+        outputFormat: "PNG",
         CFGScale: 7,
         scheduler: "FlowMatchEulerDiscreteScheduler",
         strength: 0.8,
