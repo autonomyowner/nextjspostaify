@@ -424,9 +424,9 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full mx-4 max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full mx-2 sm:mx-4 max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
           >
-            <Card className="p-6 bg-card border-border">
+            <Card className="p-4 sm:p-6 bg-card border-border">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">
@@ -556,7 +556,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       {/* Model Selection */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">Model</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {availableModels.map((model) => (
                             <button
                               key={model.id}
@@ -605,7 +605,22 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       {/* Aspect Ratio Selection */}
                       <div className="mb-6">
                         <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
-                        <div className="grid grid-cols-5 gap-2">
+                        {/* Mobile: Dropdown */}
+                        <div className="sm:hidden">
+                          <select
+                            value={selectedAspectRatio}
+                            onChange={(e) => setSelectedAspectRatio(e.target.value as '1:1' | '16:9' | '9:16' | '4:3' | '3:4')}
+                            className="w-full px-3 py-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                          >
+                            {ASPECT_RATIOS.map((ratio) => (
+                              <option key={ratio.value} value={ratio.value}>
+                                {ratio.label} - {ratio.description}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {/* Desktop: Grid buttons */}
+                        <div className="hidden sm:grid grid-cols-5 gap-2">
                           {ASPECT_RATIOS.map((ratio) => (
                             <button
                               key={ratio.value}
@@ -646,7 +661,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       {/* Color Selection */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">Brand Color</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                           {PRESET_COLORS.map((color) => (
                             <button
                               key={color.value}
@@ -670,7 +685,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       {/* Logo Style Selection */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">Logo Style</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                           {LOGO_STYLES.map((style) => (
                             <button
                               key={style.value}
@@ -690,7 +705,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       {/* Model Selection for Logo */}
                       <div className="mb-6">
                         <label className="block text-sm font-medium mb-2">Model</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {logoModels.map((model) => (
                             <button
                               key={model.id}
@@ -777,7 +792,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                       {/* Scene Selection */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">Background Scene</label>
-                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
                           {PRODUCT_SCENES.map((scene) => (
                             <button
                               key={scene.value}
@@ -926,11 +941,12 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                         </span>
                       )}
                     </div>
-                    <div className="rounded-lg overflow-hidden bg-background border border-border">
+                    {/* Image container with max height for mobile visibility */}
+                    <div className="rounded-lg overflow-hidden bg-background border border-border flex items-center justify-center">
                       <img
                         src={generatedImageUrl}
                         alt={mode === 'logo' ? `Generated logo for ${brandName}` : mode === 'product' ? 'Product shot' : 'Generated image'}
-                        className="w-full h-auto"
+                        className="w-full h-auto max-h-[50vh] sm:max-h-[60vh] object-contain"
                       />
                     </div>
                     {mode === 'image' && (
@@ -944,7 +960,53 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   {resizedImages.length === 0 && (
                     <div className="mb-4 p-4 rounded-lg bg-background border border-border">
                       <h3 className="text-sm font-medium mb-3">Create all social media sizes</h3>
-                      <div className="grid grid-cols-2 gap-2 mb-3">
+
+                      {/* Mobile: Dropdown multi-select */}
+                      <div className="sm:hidden mb-3">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const formatKey = e.target.value
+                            if (formatKey && !selectedFormats.includes(formatKey)) {
+                              setSelectedFormats(prev => [...prev, formatKey])
+                            }
+                          }}
+                          className="w-full px-3 py-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary mb-2"
+                        >
+                          <option value="">Select format to add...</option>
+                          {SOCIAL_FORMATS.filter(f => !selectedFormats.includes(f.key)).map(format => (
+                            <option key={format.key} value={format.key}>
+                              {format.label} ({format.size})
+                            </option>
+                          ))}
+                        </select>
+                        {/* Selected formats as removable chips */}
+                        {selectedFormats.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedFormats.map(key => {
+                              const format = SOCIAL_FORMATS.find(f => f.key === key)
+                              return format ? (
+                                <span
+                                  key={key}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/20 text-primary text-xs"
+                                >
+                                  {format.label}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedFormats(prev => prev.filter(f => f !== key))}
+                                    className="w-4 h-4 flex items-center justify-center hover:bg-primary/30 rounded-full"
+                                  >
+                                    x
+                                  </button>
+                                </span>
+                              ) : null
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Desktop: Checkbox grid */}
+                      <div className="hidden sm:grid grid-cols-2 gap-2 mb-3">
                         {SOCIAL_FORMATS.map(format => (
                           <label
                             key={format.key}
@@ -967,6 +1029,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                           </label>
                         ))}
                       </div>
+
                       <Button
                         variant="outline"
                         onClick={handleGenerateAllFormats}
@@ -994,7 +1057,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   {resizedImages.length > 0 && (
                     <div className="mb-4">
                       <h3 className="text-sm font-medium mb-3">Generated Formats</h3>
-                      <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
                         {resizedImages.map((img, idx) => (
                           <div key={idx} className="rounded-lg overflow-hidden bg-background border border-border">
                             <img
@@ -1028,7 +1091,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button variant="outline" onClick={handleRegenerate} className="flex-1">
                       {mode === 'logo' ? 'New Logo' : mode === 'product' ? 'New Shot' : 'New Image'}
                     </Button>
