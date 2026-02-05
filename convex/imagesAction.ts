@@ -18,15 +18,20 @@ function getProvider(model: string): ImageProvider {
 }
 
 // Runware model ID mapping
+// Pricing: https://runware.ai/pricing
+// - FLUX.2 [klein] 4B: $0.0006/image (cheapest, sub-second, best for FREE tier)
+// - Flux Schnell: $0.0006/image (fast, good quality)
+// - Flux Dev: $0.0038/image (higher quality)
+// - HiDream-I1 Fast: $0.0032/image (good but 5x more expensive)
 function getRunwareModelId(model: string): string {
   const modelMap: Record<string, string> = {
-    "fal-ai/flux/schnell": "runware:100@1", // Flux Schnell
-    "fal-ai/flux/dev": "runware:101@1", // Flux Dev
-    "fal-ai/flux-pro": "civitai:618692@691639", // Flux Pro 1.1
-    "fal-ai/flux-pro/v1.1": "civitai:618692@691639", // Flux Pro 1.1
-    "fal-ai/recraft-v3": "runware:2@1", // Recraft V3 (premium)
+    "fal-ai/flux/schnell": "runware:400@4", // FLUX.2 [klein] 4B - $0.0006, sub-second (FREE tier)
+    "fal-ai/flux/dev": "runware:101@1", // Flux Dev - $0.0038 (PRO tier)
+    "fal-ai/flux-pro": "civitai:618692@691639", // Flux Pro 1.1 (PRO tier)
+    "fal-ai/flux-pro/v1.1": "civitai:618692@691639", // Flux Pro 1.1 (PRO tier)
+    "fal-ai/recraft-v3": "runware:2@1", // Recraft V3 (BUSINESS tier)
   };
-  return modelMap[model] || "runware:100@1"; // Default to Flux Schnell
+  return modelMap[model] || "runware:400@4"; // Default to FLUX.2 klein 4B (cheapest)
 }
 
 // Runware image generation

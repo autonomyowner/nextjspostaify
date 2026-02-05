@@ -19,12 +19,12 @@ export interface ImageModel {
 export const AVAILABLE_MODELS: ImageModel[] = [
   {
     id: "fal-ai/flux/schnell",
-    name: "Flux Schnell",
+    name: "FLUX.2 Klein",
     speed: "fast",
-    description: "Fast generation, good quality",
+    description: "Fast, high quality (FREE)",
     requiredPlan: "FREE",
     provider: "runware",
-    costPerImage: 0.0006,
+    costPerImage: 0.0006, // $0.0006/image via Runware
   },
   {
     id: "fal-ai/flux/dev",
