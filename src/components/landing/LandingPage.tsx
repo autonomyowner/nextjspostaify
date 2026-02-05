@@ -2,6 +2,7 @@
 
 import { Navbar } from './Navbar'
 import { Hero } from './Hero'
+import { ShowcaseCarousel } from './ShowcaseCarousel'
 import { ProblemSolution } from './ProblemSolution'
 import { AgentFeatures } from './AgentFeatures'
 import { HowItWorks } from './HowItWorks'
@@ -14,6 +15,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-black text-white">
       <Navbar />
       <Hero />
+      <ShowcaseCarousel />
       <ProblemSolution />
       <AgentFeatures />
       <HowItWorks />

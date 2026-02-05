@@ -2,6 +2,7 @@
 export { LandingPage } from './LandingPage'
 export { Navbar } from './Navbar'
 export { Hero } from './Hero'
+export { ShowcaseCarousel } from './ShowcaseCarousel'
 export { ProblemSolution } from './ProblemSolution'
 export { HowItWorks } from './HowItWorks'
 export { AgentFeatures } from './AgentFeatures'
