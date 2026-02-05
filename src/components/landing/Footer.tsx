@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
 
 export function Footer() {
@@ -39,8 +40,17 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <a href="/" className="text-2xl font-bold tracking-tight mb-4 block">
-              <span className="text-white">Post</span><span className="text-primary">aify</span>
+            <a href="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight mb-4">
+              <Image
+                src="/logo.png"
+                alt="Postaify"
+                width={32}
+                height={32}
+                className="rounded-full"
+              />
+              <span>
+                <span className="text-white">Post</span><span className="text-primary">aify</span>
+              </span>
             </a>
             <p className="text-sm text-muted-foreground mb-4">
               Automate your content with AI-powered tools.
