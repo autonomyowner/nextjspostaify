@@ -27,6 +27,7 @@ export function Dashboard() {
   const [isVoiceoverModalOpen, setIsVoiceoverModalOpen] = useState(false)
   const [isImageGeneratorModalOpen, setIsImageGeneratorModalOpen] = useState(false)
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
+  const [editBrandId, setEditBrandId] = useState<string | null>(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
   const { user } = useData()
@@ -74,7 +75,10 @@ export function Dashboard() {
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden sm:block">
-              <BrandSelector onAddBrand={() => setIsBrandModalOpen(true)} />
+              <BrandSelector
+                onAddBrand={() => { setEditBrandId(null); setIsBrandModalOpen(true); }}
+                onEditBrand={(id) => { setEditBrandId(id); setIsBrandModalOpen(true); }}
+              />
             </div>
             <Button
               variant="ghost"
@@ -190,7 +194,8 @@ export function Dashboard() {
       />
       <BrandModal
         isOpen={isBrandModalOpen}
-        onClose={() => setIsBrandModalOpen(false)}
+        onClose={() => { setIsBrandModalOpen(false); setEditBrandId(null); }}
+        editBrandId={editBrandId}
       />
       <SettingsModal
         isOpen={isSettingsModalOpen}
