@@ -1,12 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#000000"/>
-      <stop offset="100%" style="stop-color:#1a1a1a"/>
-    </linearGradient>
+    <!-- Background gradient matching logo -->
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" style="stop-color:#3d2e0a"/>
+      <stop offset="100%" style="stop-color:#000000"/>
+    </radialGradient>
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <!-- Black rounded square background -->
+  <!-- Background -->
   <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <!-- Yellow "P" lettermark -->
-  <path d="M160 96h152c66.3 0 120 53.7 120 120s-53.7 120-120 120H232v80c0 22.1-17.9 40-40 40h-32V136c0-22.1 17.9-40 40-40zm72 176h80c30.9 0 56-25.1 56-56s-25.1-56-56-56h-80v112z" fill="#FACC15"/>
+  <!-- Horizontal bars matching logo -->
+  <g filter="url(#glow)">
+    <!-- Bar 1 (top) -->
+    <rect x="156" y="120" width="200" height="36" rx="18" fill="#FACC15"/>
+    <!-- Bar 2 -->
+    <rect x="136" y="176" width="240" height="36" rx="18" fill="#FACC15"/>
+    <!-- Bar 3 (center/widest) -->
+    <rect x="116" y="232" width="280" height="36" rx="18" fill="#FACC15"/>
+    <!-- Bar 4 -->
+    <rect x="136" y="288" width="240" height="36" rx="18" fill="#DAA520"/>
+    <!-- Bar 5 (bottom) -->
+    <rect x="156" y="344" width="200" height="36" rx="18" fill="#B8860B"/>
+  </g>
 </svg>
