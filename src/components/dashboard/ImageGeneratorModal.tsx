@@ -120,6 +120,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const logoModels = useQuery(convexApi.images.getLogoModels, { userPlan }) || []
   const generateImageAction = useAction(convexApi.imagesAction.generate)
   const generateProductShotAction = useAction(convexApi.imagesAction.generateProductShot)
+  const generateAllFormatsAction = useAction(convexApi.imageResize.generateAllFormats)
 
   // Mode: 'image' for general, 'logo' for logos, 'product' for product photography
   const [mode, setMode] = useState<'image' | 'logo' | 'product'>('image')
@@ -333,12 +334,23 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     }
   }
 
-  // Handle multi-format resize (placeholder - requires imageResize action to be deployed)
+  // Handle multi-format resize
   const handleGenerateAllFormats = async () => {
     if (!generatedImageUrl) return
-    // Note: This feature requires the imageResize action to be deployed to Convex
-    // After running 'npx convex deploy', this will work with the generateAllFormats action
-    setError('Multi-format resize will be available after deploying the imageResize action. Run: npx convex deploy')
+    setIsResizing(true)
+    setError('')
+
+    try {
+      const results = await generateAllFormatsAction({
+        imageUrl: generatedImageUrl,
+        selectedFormats: selectedFormats.length > 0 ? selectedFormats : undefined,
+      })
+      setResizedImages(results)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate formats')
+    } finally {
+      setIsResizing(false)
+    }
   }
 
   const handleDownload = useCallback(async () => {

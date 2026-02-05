@@ -138,7 +138,7 @@ export const generateAllFormats = action({
               width: format.width,
               height: format.height,
               numberResults: 1,
-              outputFormat: "WEBP",
+              outputFormat: "PNG",
               strength: 0.3, // Low strength to preserve original image
               CFGScale: 3,
             },
@@ -226,7 +226,7 @@ export const resizeImage = action({
           width: args.width,
           height: args.height,
           numberResults: 1,
-          outputFormat: "WEBP",
+          outputFormat: "PNG",
           strength: 0.25,
           CFGScale: 2,
         },
