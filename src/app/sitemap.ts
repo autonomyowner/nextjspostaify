@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { competitorSlugs } from '@/lib/competitors-config'
 
 // Initial launch: YouTube converters only
 const tools = [
@@ -46,5 +47,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
 
-  return [...staticPages, ...toolPages]
+  // Comparison pages for AEO (Generative Engine Optimization)
+  const comparisonPages: MetadataRoute.Sitemap = competitorSlugs.map((slug) => ({
+    url: `${baseUrl}/compare/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...toolPages, ...comparisonPages]
 }

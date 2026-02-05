@@ -13,11 +13,11 @@
     "title": "30 Days of Content",
     "titleHighlight": "In 15 Minutes",
     "goToDashboard": "Go to Dashboard",
-    "subtitle": "No writers. No designers. No burnout. Just click, approve, post.",
+    "subtitle": "Generate 30 posts for 5 platforms in under 15 minutes.",
     "subtitleSecondary": "AI does the work. You take the credit.",
     "cta": "Create My Content Now",
     "ctaFree": "Create My Content Now",
-    "freePlanInfo": "See results in 5 minutes. Free forever.",
+    "freePlanInfo": "Free: 2 brands, 20 posts, 5 AI images/month. No credit card.",
     "viewPricing": "See What's Included",
     "demo": "See How It Works",
     "users": "From zero to 30 days of content in one sitting",
@@ -71,26 +71,26 @@
     "marketing": {
       "category": "Images",
       "title": "AI Image Generation",
-      "description": "Create stunning AI images with Flux & SDXL models",
-      "feature1": "Flux & SDXL models",
-      "feature2": "Custom prompts",
-      "feature3": "High-quality outputs"
+      "description": "Generate 1024x1024px photorealistic images via Flux Pro 1.1 in 8 seconds",
+      "feature1": "Flux Schnell, Dev, Pro 1.1 models",
+      "feature2": "Auto-enhanced prompts",
+      "feature3": "1024x1024 to 2048x2048 resolution"
     },
     "research": {
       "category": "Voice",
       "title": "Script + Voiceover",
-      "description": "Create scripts and generate professional AI voiceovers",
-      "feature1": "Natural voice generation",
-      "feature2": "Multiple voice options",
-      "feature3": "Script optimization"
+      "description": "Generate 15-second voiceovers with 11 ElevenLabs AI voices",
+      "feature1": "11 professional voices (5 male, 6 female)",
+      "feature2": "Natural speech patterns",
+      "feature3": "Script optimization for voice"
     },
     "content": {
       "category": "Repurpose",
       "title": "YouTube to Posts",
-      "description": "Turn any YouTube video into multiple social media posts",
+      "description": "Extract 5-10 optimized posts from a single 10-minute YouTube video",
       "feature1": "Automatic transcript extraction",
-      "feature2": "Multi-post generation",
-      "feature3": "Content repurposing"
+      "feature2": "5-10 posts per video transcript",
+      "feature3": "Platform-optimized formatting"
     },
     "data": {
       "category": "Brands",
@@ -171,13 +171,13 @@
       "price": "$19",
       "priceYearly": "$149",
       "saveAmount": "Save $79",
-      "description": "Full content machine",
+      "description": "1,000 posts + 200 AI images + 30 voiceovers per month",
       "cta": "Unlock Pro",
       "feature1": "5 brand profiles",
       "feature2": "1,000 posts/month",
-      "feature3": "100 AI images/month",
+      "feature3": "200 AI images/month (Flux Schnell, Dev, Pro 1.1)",
       "feature4": "30 AI voiceovers/month",
-      "feature5": "YouTube repurposing"
+      "feature5": "YouTube repurposing (5-10 posts/video)"
     },
     "enterprise": {
       "name": "Agency",
@@ -228,6 +228,14 @@
     "q8": {
       "question": "Can I cancel anytime?",
       "answer": "Yes! There are no long-term contracts. You can cancel or change your plan anytime from your dashboard."
+    },
+    "q9": {
+      "question": "What AI models does POSTAIFY use for image generation?",
+      "answer": "POSTAIFY uses Flux Schnell (8-second generation), Flux Dev, and Flux Pro 1.1 for 1024x1024px photorealistic images. Logos use Ideogram V2 Turbo. Product shots use Bria Product Shot AI."
+    },
+    "q10": {
+      "question": "How many posts can I generate from one YouTube video?",
+      "answer": "5-10 optimized posts from a single video. A 10-minute video yields 7-8 posts for LinkedIn, Twitter, Instagram, TikTok, and Facebook."
     },
     "stillHaveQuestions": "Still have questions?",
     "contactUs": "Contact us at"
