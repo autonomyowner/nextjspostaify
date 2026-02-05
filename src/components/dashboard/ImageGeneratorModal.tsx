@@ -247,6 +247,12 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       return
     }
 
+    // Check image limit BEFORE calling action (prevents server error)
+    if (subscription.imagesThisMonth >= subscription.imagesLimit) {
+      setError(`LIMIT_REACHED: You've used all ${subscription.imagesLimit} images this month. Upgrade your plan to generate more images.`)
+      return
+    }
+
     // Check mode access
     if (mode === 'logo' && !hasLogoAccess) {
       setError('Logo generation requires a PRO plan. Please upgrade.')
