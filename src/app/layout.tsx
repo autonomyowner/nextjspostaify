@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { DM_Sans, Syne, Noto_Sans_Arabic } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
+
+const GA_MEASUREMENT_ID = 'G-VWE8FSW324'
 
 // Optimized font loading with next/font - eliminates render-blocking CSS @imports
 const dmSans = DM_Sans({
@@ -148,6 +151,19 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        {/* Google Analytics */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
         {/* Providers are now in route group layouts:
             - (marketing)/layout.tsx: ConvexClientProvider + I18nProvider
             - (dashboard)/layout.tsx: All 4 providers
