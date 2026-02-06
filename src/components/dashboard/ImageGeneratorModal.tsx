@@ -30,32 +30,32 @@ const LOGO_STYLES = [
   {
     value: 'minimal',
     label: 'Minimal',
-    template: 'Professional minimal logo design for "{brand}". Simple bold geometric icon, {color} color, pure white background, high contrast, sharp clean edges, flat vector style, centered composition, no text'
+    template: 'Professional minimal logo design for "{brand}"{description}. Simple bold geometric icon representing the brand concept, {color} color, pure white background, high contrast, sharp clean edges, flat vector style, centered composition, no text'
   },
   {
     value: 'modern-tech',
     label: 'Modern Tech',
-    template: 'Modern tech company logo for "{brand}". Bold geometric symbol, vibrant {color} with subtle gradient, pure white background, high contrast, clean sharp lines, professional startup style, no text'
+    template: 'Modern tech company logo for "{brand}"{description}. Bold geometric symbol that represents the brand purpose, vibrant {color} with subtle gradient, pure white background, high contrast, clean sharp lines, professional startup style, no text'
   },
   {
     value: 'lettermark',
     label: 'Lettermark',
-    template: 'Bold lettermark logo using letter "{brand}" first letter. Strong {color} typography, pure white background, high contrast, modern sans-serif, thick bold strokes, centered, professional'
+    template: 'Bold lettermark logo using letter "{brand}" first letter{description}. Strong {color} typography, pure white background, high contrast, modern sans-serif, thick bold strokes, centered, professional'
   },
   {
     value: 'abstract',
     label: 'Abstract',
-    template: 'Abstract logo mark for "{brand}". Bold geometric shapes, solid {color}, pure white background, high contrast, striking modern design, clean composition, professional brand identity, no text'
+    template: 'Abstract logo mark for "{brand}"{description}. Bold geometric shapes symbolizing the brand concept, solid {color}, pure white background, high contrast, striking modern design, clean composition, professional brand identity, no text'
   },
   {
     value: 'bold-startup',
     label: 'Bold Startup',
-    template: 'Bold startup logo icon for "{brand}". Simple memorable geometric shape, solid {color}, pure white background, maximum contrast, thick lines, modern tech aesthetic, centered, no text'
+    template: 'Bold startup logo icon for "{brand}"{description}. Simple memorable geometric shape representing the brand, solid {color}, pure white background, maximum contrast, thick lines, modern tech aesthetic, centered, no text'
   },
   {
     value: 'elegant',
     label: 'Elegant',
-    template: 'Elegant premium logo for "{brand}". Refined geometric symbol, {color} with subtle gold accent, pure white background, high contrast, sophisticated minimal design, luxury brand style, no text'
+    template: 'Elegant premium logo for "{brand}"{description}. Refined geometric symbol representing the brand essence, {color} with subtle gold accent, pure white background, high contrast, sophisticated minimal design, luxury brand style, no text'
   },
 ] as const
 
@@ -139,6 +139,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
 
   // Logo-specific state
   const [brandName, setBrandName] = useState('')
+  const [brandDescription, setBrandDescription] = useState('')
   const [brandColor, setBrandColor] = useState('blue')
   const [logoStyle, setLogoStyle] = useState('minimal')
   const [selectedLogoModel, setSelectedLogoModel] = useState('fal-ai/ideogram/v2/turbo')
@@ -190,10 +191,15 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   const buildLogoPrompt = useCallback(() => {
     const style = LOGO_STYLES.find(s => s.value === logoStyle)
     if (!style) return ''
+    // Add description context if provided
+    const descriptionPart = brandDescription.trim()
+      ? `, a ${brandDescription.trim()} company`
+      : ''
     return style.template
       .replace('{brand}', brandName)
+      .replace('{description}', descriptionPart)
       .replace('{color}', brandColor)
-  }, [brandName, brandColor, logoStyle])
+  }, [brandName, brandDescription, brandColor, logoStyle])
 
   // Handle template selection
   const handleTemplateSelect = useCallback((templatePrompt: string, aspectRatio: string) => {
@@ -371,6 +377,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setError('')
     setApplyBrandColors(false)
     setBrandName('')
+    setBrandDescription('')
     setBrandColor('blue')
     setLogoStyle('minimal')
     setSelectedLogoModel('fal-ai/ideogram/v2/turbo')
@@ -689,6 +696,23 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                           placeholder="Enter your brand name..."
                           className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
                         />
+                      </div>
+
+                      {/* Brand Description Input */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">
+                          What does your brand do? <span className="text-muted-foreground font-normal">(optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={brandDescription}
+                          onChange={(e) => setBrandDescription(e.target.value)}
+                          placeholder="e.g., translation and voice calls, fitness coaching, food delivery..."
+                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Helps generate logos with relevant visual elements
+                        </p>
                       </div>
 
                       {/* Color Selection */}
