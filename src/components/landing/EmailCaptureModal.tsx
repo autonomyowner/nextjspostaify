@@ -7,7 +7,6 @@ import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useSubscription } from '@/context/SubscriptionContext'
 import { useMetaPixel } from '@/hooks/useMetaPixel'
 import { useGA4 } from '@/hooks/useGA4'
 
@@ -29,7 +28,6 @@ export function EmailCaptureModal({
   isBetaWaitlist = false
 }: EmailCaptureModalProps) {
   const { t } = useTranslation()
-  const { captureEmail } = useSubscription()
   const { trackEvent: trackMetaEvent } = useMetaPixel()
   const { trackEvent: trackGA4Event } = useGA4()
   const captureEmailMutation = useMutation(api.emails.capture)
@@ -68,7 +66,9 @@ export function EmailCaptureModal({
       })
 
       // Save to localStorage for checkout pre-fill
-      captureEmail(email)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('t21-captured-email', email)
+      }
 
       // Track email capture with Meta Pixel
       trackMetaEvent('Lead', {
