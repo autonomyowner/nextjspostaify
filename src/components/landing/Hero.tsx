@@ -9,10 +9,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 // Detect if device prefers reduced motion or is mobile for performance
+// Start with true (reduced motion) to prevent hydration mismatch, then check on mount
 const useReducedMotion = () => {
-  const [shouldReduceMotion, setShouldReduceMotion] = useState(false)
+  // Default to true (no animations) on server and initial render to prevent hydration mismatch
+  const [shouldReduceMotion, setShouldReduceMotion] = useState(true)
 
   useEffect(() => {
+    // Only check media queries and screen size on client after mount
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     const isMobile = window.innerWidth < 768
     setShouldReduceMotion(mediaQuery.matches || isMobile)
@@ -200,10 +203,11 @@ export function Hero() {
               />
             ))}
 
-            {/* Traveling particles on orbit */}
+            {/* Traveling particles on orbit - explicit initial values prevent SVG attribute errors */}
             <motion.circle
               r="3"
               fill="white"
+              initial={{ cx: 650, cy: 300 }}
               animate={{
                 cx: [650, 400, 150, 400, 650],
                 cy: [300, 200, 300, 400, 300]
@@ -218,6 +222,7 @@ export function Hero() {
             <motion.circle
               r="2"
               fill="hsl(48, 96%, 70%)"
+              initial={{ cx: 150, cy: 300 }}
               animate={{
                 cx: [150, 400, 650, 400, 150],
                 cy: [300, 380, 300, 220, 300]

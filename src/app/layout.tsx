@@ -1,9 +1,32 @@
 import type { Metadata } from 'next'
-import { ConvexClientProvider } from '@/components/providers/convex-provider'
-import { I18nProvider } from '@/components/providers/i18n-provider'
-import { DataProvider } from '@/context/DataContext'
-import { SubscriptionProvider } from '@/context/SubscriptionContext'
+import { DM_Sans, Syne, Noto_Sans_Arabic } from 'next/font/google'
 import './globals.css'
+
+// Optimized font loading with next/font - eliminates render-blocking CSS @imports
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+  preload: true,
+})
+
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-syne',
+  display: 'swap',
+  preload: true,
+})
+
+// Arabic font - lazy loaded, only needed for RTL users
+const notoArabic = Noto_Sans_Arabic({
+  subsets: ['arabic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-arabic',
+  display: 'swap',
+  preload: false,
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.postaify.com'),
@@ -81,7 +104,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${dmSans.variable} ${syne.variable} ${notoArabic.variable}`}>
       <head>
         {/* JSON-LD Organization Schema */}
         <script
@@ -125,15 +148,11 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <ConvexClientProvider>
-          <I18nProvider>
-            <DataProvider>
-              <SubscriptionProvider>
-                {children}
-              </SubscriptionProvider>
-            </DataProvider>
-          </I18nProvider>
-        </ConvexClientProvider>
+        {/* Providers are now in route group layouts:
+            - (marketing)/layout.tsx: ConvexClientProvider + I18nProvider
+            - (dashboard)/layout.tsx: All 4 providers
+            This reduces JS bundle for marketing pages */}
+        {children}
       </body>
     </html>
   )

@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 
 // Showcase images generated with POSTAIFY
@@ -14,39 +13,6 @@ const SHOWCASE_IMAGES = [
 ]
 
 export function ShowcaseCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const animationRef = useRef<number | null>(null)
-  const scrollPosition = useRef(0)
-
-  useEffect(() => {
-    const scrollContainer = scrollRef.current
-    if (!scrollContainer) return
-
-    // Speed: pixels per frame (60fps = ~16.67ms per frame)
-    const speed = 0.8
-
-    const animate = () => {
-      scrollPosition.current += speed
-
-      // Reset position for seamless loop
-      const singleSetWidth = scrollContainer.scrollWidth / 2
-      if (scrollPosition.current >= singleSetWidth) {
-        scrollPosition.current = 0
-      }
-
-      scrollContainer.style.transform = `translateX(-${scrollPosition.current}px)`
-      animationRef.current = requestAnimationFrame(animate)
-    }
-
-    animationRef.current = requestAnimationFrame(animate)
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-    }
-  }, [])
-
   // Double the images for seamless loop
   const doubledImages = [...SHOWCASE_IMAGES, ...SHOWCASE_IMAGES]
 
@@ -69,10 +35,9 @@ export function ShowcaseCarousel() {
         {/* Gradient fade right */}
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
 
-        {/* Scrolling track */}
+        {/* Scrolling track - CSS animation instead of JS requestAnimationFrame */}
         <div
-          ref={scrollRef}
-          className="flex gap-6 will-change-transform"
+          className="flex gap-6 animate-carousel"
           style={{ width: 'max-content' }}
         >
           {doubledImages.map((image, index) => (
@@ -94,6 +59,29 @@ export function ShowcaseCarousel() {
           ))}
         </div>
       </div>
+
+      {/* CSS animation - GPU accelerated, no JS overhead */}
+      <style jsx>{`
+        @keyframes carousel {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        .animate-carousel {
+          animation: carousel 40s linear infinite;
+        }
+        .animate-carousel:hover {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-carousel {
+            animation: none;
+          }
+        }
+      `}</style>
     </section>
   )
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation } from 'convex/react'
-import { api } from '../../../../convex/_generated/api'
+import { api } from '../../../../../convex/_generated/api'
 import type { ToolConfig } from '@/lib/tools-config'
 
 interface ToolPageClientProps {

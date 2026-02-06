@@ -1,22 +1,29 @@
 'use client'
 
+import { ReactNode } from 'react'
+import { ConvexClientProvider } from '@/components/providers/convex-provider'
+import { I18nProvider } from '@/components/providers/i18n-provider'
+import { DataProvider } from '@/context/DataContext'
+import { SubscriptionProvider } from '@/context/SubscriptionContext'
 import { useConvexAuth } from '@/hooks/useCurrentUser'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { useEffect, useState } from 'react'
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+// Dashboard pages need all providers:
+// - ConvexClientProvider: Convex database connection
+// - I18nProvider: Translations
+// - DataProvider: User, brands, posts CRUD
+// - SubscriptionProvider: Plan limits and feature gating
+
+// Inner component that uses hooks (must be inside ConvexClientProvider)
+function DashboardAuthGuard({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const ensureUserExists = useMutation(api.users.ensureUserExists)
   const [userEnsured, setUserEnsured] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Use window.location for full page navigation
       window.location.href = '/sign-in'
     }
   }, [isLoading, isAuthenticated])
@@ -48,5 +55,27 @@ export default function DashboardLayout({
     )
   }
 
-  return <>{children}</>
+  return (
+    <DataProvider>
+      <SubscriptionProvider>
+        {children}
+      </SubscriptionProvider>
+    </DataProvider>
+  )
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: ReactNode
+}) {
+  return (
+    <ConvexClientProvider>
+      <I18nProvider>
+        <DashboardAuthGuard>
+          {children}
+        </DashboardAuthGuard>
+      </I18nProvider>
+    </ConvexClientProvider>
+  )
 }
