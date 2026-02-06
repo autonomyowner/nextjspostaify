@@ -138,14 +138,14 @@ export const generateAllFormats = action({
               taskType: "imageInference",
               taskUUID: crypto.randomUUID(),
               inputImage: args.imageUrl,
-              positivePrompt: "same image, high quality",
-              model: "runware:400@4", // FLUX.2 klein 4B - fastest, cheapest
+              positivePrompt: "same image, high quality, preserve original content",
+              model: "runware:101@1", // Flux Dev - better for img2img
               width: format.width,
               height: format.height,
               numberResults: 1,
               outputFormat: "png",
               outputQuality: 95,
-              strength: 0.3, // Low strength to preserve original image
+              strength: 0.2, // Low strength to preserve original image
               CFGScale: 3,
             },
           ]),
@@ -236,15 +236,15 @@ export const resizeImage = action({
           taskType: "imageInference",
           taskUUID: crypto.randomUUID(),
           inputImage: args.imageUrl,
-          positivePrompt: "same image, high quality, sharp details",
-          model: "runware:100@1",
+          positivePrompt: "same image, high quality, sharp details, preserve original content",
+          model: "runware:101@1", // Flux Dev - better for img2img
           width: args.width,
           height: args.height,
           numberResults: 1,
           outputFormat: "png",
-              outputQuality: 95,
-          strength: 0.25,
-          CFGScale: 2,
+          outputQuality: 95,
+          strength: 0.2, // Low strength to preserve original
+          CFGScale: 3,
         },
       ]),
     });

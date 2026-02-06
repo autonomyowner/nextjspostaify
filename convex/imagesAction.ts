@@ -9,9 +9,9 @@ import { canAccessModel, getModelRequiredPlan, Plan } from "./lib/planLimits";
 // Provider types
 type ImageProvider = "runware" | "fal";
 
-// Model to provider mapping - Runware for Flux, Fal.ai for Ideogram/Bria
+// Model to provider mapping - Runware for Flux, Fal.ai for Ideogram/Bria/Recraft
 function getProvider(model: string): ImageProvider {
-  if (model.includes("ideogram") || model.includes("bria")) {
+  if (model.includes("ideogram") || model.includes("bria") || model.includes("recraft")) {
     return "fal";
   }
   return "runware";
@@ -29,7 +29,7 @@ function getRunwareModelId(model: string): string {
     "fal-ai/flux/dev": "runware:101@1", // Flux Dev - $0.0038 (PRO tier)
     "fal-ai/flux-pro": "civitai:618692@691639", // Flux Pro 1.1 (PRO tier)
     "fal-ai/flux-pro/v1.1": "civitai:618692@691639", // Flux Pro 1.1 (PRO tier)
-    "fal-ai/recraft-v3": "runware:2@1", // Recraft V3 (BUSINESS tier)
+    // Note: Recraft V3 uses Fal.ai, not Runware
   };
   return modelMap[model] || "runware:400@4"; // Default to FLUX.2 klein 4B (cheapest)
 }
@@ -44,30 +44,35 @@ async function generateWithRunware(
 ): Promise<string> {
   const runwareModel = getRunwareModelId(model);
 
+  // Build request body with only universally supported parameters
+  // Different FLUX models have different parameter support
+  const requestBody: Record<string, unknown> = {
+    taskType: "imageInference",
+    taskUUID: crypto.randomUUID(),
+    positivePrompt: prompt,
+    model: runwareModel,
+    width,
+    height,
+    numberResults: 1,
+    outputFormat: "png",
+    outputQuality: 95,
+    outputType: "URL",
+    includeCost: false,
+  };
+
+  // Add CFGScale only for models that support it (not FLUX.2 Klein)
+  // FLUX.2 Klein (runware:400@4) works best with API defaults
+  if (runwareModel !== "runware:400@4") {
+    requestBody.CFGScale = 3.5; // Optimal for FLUX models
+  }
+
   const response = await fetch("https://api.runware.ai/v1", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify([
-      {
-        taskType: "imageInference",
-        taskUUID: crypto.randomUUID(),
-        positivePrompt: prompt,
-        model: runwareModel,
-        width,
-        height,
-        numberResults: 1,
-        outputFormat: "png",
-        outputQuality: 95,
-        outputType: "URL",
-        includeCost: false,
-        CFGScale: 7,
-        scheduler: "FlowMatchEulerDiscreteScheduler",
-        strength: 0.8,
-      },
-    ]),
+    body: JSON.stringify([requestBody]),
   });
 
   if (!response.ok) {
@@ -111,6 +116,13 @@ async function generateWithFal(
       expand_prompt: true,
       style: "auto",
     };
+  } else if (isRecraftModel(model)) {
+    // Recraft V3 uses different parameters
+    requestBody = {
+      prompt,
+      image_size: getRecraftImageSize(aspectRatio),
+      style: "realistic_image", // Default to realistic, can be: realistic_image, digital_illustration, vector_illustration
+    };
   } else {
     requestBody = {
       prompt,
@@ -121,7 +133,10 @@ async function generateWithFal(
     };
   }
 
-  const response = await fetch(`https://fal.run/${model}`, {
+  // Get the correct endpoint for the model
+  const endpoint = getFalModelEndpoint(model);
+
+  const response = await fetch(`https://fal.run/${endpoint}`, {
     method: "POST",
     headers: {
       Authorization: `Key ${apiKey}`,
@@ -379,6 +394,32 @@ function isIdeogramModel(model: string): boolean {
   return model.includes("ideogram");
 }
 
+// Check if model is Recraft
+function isRecraftModel(model: string): boolean {
+  return model.includes("recraft");
+}
+
+// Get Recraft image size from aspect ratio
+function getRecraftImageSize(aspectRatio: string): string {
+  const sizeMap: Record<string, string> = {
+    "1:1": "square_hd",
+    "16:9": "landscape_16_9",
+    "9:16": "portrait_16_9",
+    "4:3": "landscape_4_3",
+    "3:4": "portrait_4_3",
+  };
+  return sizeMap[aspectRatio] || "square_hd";
+}
+
+// Get Fal.ai model endpoint (some models need different paths)
+function getFalModelEndpoint(model: string): string {
+  // Recraft V3 uses a different endpoint structure
+  if (model === "fal-ai/recraft-v3") {
+    return "fal-ai/recraft/v3/text-to-image";
+  }
+  return model;
+}
+
 // Generate image - returns the URL from Fal.ai or Runware
 export const generate = action({
   args: {
@@ -481,7 +522,7 @@ export const generate = action({
         );
       }
     } else {
-      // Use Fal.ai for Ideogram logos
+      // Use Fal.ai for Ideogram logos, Recraft V3, etc.
       const falApiKey = process.env.FAL_API_KEY;
       if (!falApiKey) {
         throw new Error("Fal.ai API key not configured");

@@ -532,11 +532,6 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   {/* Usage Warning */}
                   <UsageWarning type="image" className="mb-4" />
 
-                  {/* Temporary Runware Notice */}
-                  <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
-                    Note: Premium image models (Flux Dev, Flux Pro) are temporarily unavailable while we activate the Runware API. Flux Schnell works via fallback.
-                  </div>
-
                   {/* IMAGE MODE */}
                   {mode === 'image' && (
                     <>
