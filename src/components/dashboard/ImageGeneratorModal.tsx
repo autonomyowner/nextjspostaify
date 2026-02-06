@@ -146,12 +146,11 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
   // Product photography state
   const [productImageUrl, setProductImageUrl] = useState('')
   const [productImagePreview, setProductImagePreview] = useState('')
-  const [productDescription, setProductDescription] = useState('')
-  const [productBrandColor, setProductBrandColor] = useState('#FACC15') // Default yellow
   const [selectedScene, setSelectedScene] = useState('studio-white')
   const [customScenePrompt, setCustomScenePrompt] = useState('')
   const [productAspectRatio, setProductAspectRatio] = useState('1:1')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [productCloseUp, setProductCloseUp] = useState(true)
 
   // Multi-format resize state (feature available after deploying imageResize action)
   const [selectedFormats, setSelectedFormats] = useState<string[]>([])
@@ -279,10 +278,6 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       setError('Please upload a product image.')
       return
     }
-    if (mode === 'product' && !productDescription.trim()) {
-      setError('Please describe your product.')
-      return
-    }
 
     setIsGenerating(true)
     setError('')
@@ -291,11 +286,10 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
       if (mode === 'product') {
         const result = await generateProductShotAction({
           imageUrl: productImageUrl,
-          productDescription: productDescription.trim(),
           scenePreset: selectedScene,
           customScene: customScenePrompt || undefined,
           aspectRatio: productAspectRatio,
-          brandColor: productBrandColor,
+          closeUp: productCloseUp,
         })
         setGeneratedImageUrl(result.url)
       } else {
@@ -382,11 +376,10 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
     setSelectedLogoModel('fal-ai/ideogram/v2/turbo')
     setProductImageUrl('')
     setProductImagePreview('')
-    setProductDescription('')
-    setProductBrandColor('#FACC15')
     setSelectedScene('studio-white')
     setCustomScenePrompt('')
     setProductAspectRatio('1:1')
+    setProductCloseUp(true)
     setResizedImages([])
     setSelectedFormats([])
     onClose()
@@ -829,48 +822,6 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                         </div>
                       </div>
 
-                      {/* Product Description */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2">Product Description</label>
-                        <textarea
-                          value={productDescription}
-                          onChange={(e) => setProductDescription(e.target.value)}
-                          placeholder="Describe your product... e.g., 'A jar of golden honey' or 'Sleek black wireless headphones'"
-                          rows={2}
-                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary resize-none"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Brief description to help the AI understand your product.
-                        </p>
-                      </div>
-
-                      {/* Brand Color Selection */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2">Brand Color (for gradient overlay)</label>
-                        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
-                          {PRESET_COLORS.map((color) => (
-                            <button
-                              key={color.hex}
-                              onClick={() => setProductBrandColor(color.hex)}
-                              className={`p-3 rounded-lg text-left transition-colors flex items-center gap-3 ${
-                                productBrandColor === color.hex
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-background border border-border hover:border-white/20'
-                              }`}
-                            >
-                              <span
-                                className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0"
-                                style={{ backgroundColor: color.hex }}
-                              />
-                              <span className="text-sm font-medium">{color.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Creates a cinematic color gradient from the top of the image.
-                        </p>
-                      </div>
-
                       {/* Scene Selection */}
                       <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">Background Scene</label>
@@ -908,6 +859,43 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                           placeholder="Add specific details... e.g., 'with coffee beans', 'morning light'"
                           className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
                         />
+                      </div>
+
+                      {/* Framing Options */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Product Framing</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => setProductCloseUp(true)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              productCloseUp
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">Close-up</span>
+                            <span className={`block text-xs mt-0.5 ${
+                              productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              Product fills frame (recommended)
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => setProductCloseUp(false)}
+                            className={`p-3 rounded-lg text-left transition-colors ${
+                              !productCloseUp
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background border border-border hover:border-white/20'
+                            }`}
+                          >
+                            <span className="block text-sm font-medium">Wide Shot</span>
+                            <span className={`block text-xs mt-0.5 ${
+                              !productCloseUp ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              More background visible
+                            </span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Aspect Ratio for Product */}
@@ -959,7 +947,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   {/* Generate Button */}
                   <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating || isUploadingImage || (mode === 'image' ? !prompt.trim() : mode === 'logo' ? !brandName.trim() : !productImageUrl || !productDescription.trim())}
+                    disabled={isGenerating || isUploadingImage || (mode === 'image' ? !prompt.trim() : mode === 'logo' ? !brandName.trim() : !productImageUrl)}
                     className="w-full"
                   >
                     {isGenerating ? (
@@ -983,7 +971,7 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <span className="text-sm text-muted-foreground">
-                        {mode === 'product' ? 'Flux Pro 1.1' : mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
+                        {mode === 'product' ? 'Bria Product Shot' : mode === 'logo' ? currentLogoModel?.name : currentModel?.name}
                       </span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
                         {mode === 'logo' ? '1:1' : mode === 'product' ? productAspectRatio : selectedAspectRatio}

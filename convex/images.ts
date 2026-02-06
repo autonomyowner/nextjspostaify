@@ -77,15 +77,15 @@ export const LOGO_MODELS: ImageModel[] = [
   },
 ];
 
-// Product photography - uses Flux Pro 1.1 via Runware for cinematic product shots
+// Product photography - uses Bria on Fal.ai for perfect product placement
 export const PRODUCT_MODEL: ImageModel = {
-  id: "fal-ai/flux-pro/v1.1",
-  name: "Flux Pro 1.1",
+  id: "fal-ai/bria/product-shot",
+  name: "Bria Product Shot",
   speed: "medium",
-  description: "Cinematic product photography with brand color gradients",
+  description: "Professional product photography - keeps product exact, changes background",
   requiredPlan: "PRO",
-  provider: "runware",
-  costPerImage: 0.0038, // Same as Flux Pro 1.1
+  provider: "fal",
+  costPerImage: 0.04,
 };
 
 // Product photography scene presets

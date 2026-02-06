@@ -508,41 +508,29 @@ export const generate = action({
   },
 });
 
-// Build cinematic product photography prompt
-// Based on world-class product photographer prompt template
-function buildProductPhotographyPrompt(
-  productDescription: string,
-  sceneDescription: string,
-  brandColor: string,
-  customPrompt?: string
-): string {
-  // Get color name for the prompt
-  const colorName = getColorName(brandColor);
+// Product scene description enhancer
+function enhanceProductScene(sceneDescription: string, customPrompt?: string): string {
+  // Quality keywords for realistic product photography
+  const qualityKeywords = "professional product photography, sharp focus, realistic lighting, natural shadows, high detail, commercial quality, centered composition";
 
-  // Build the comprehensive prompt
-  const prompt = `World-class product photography. ${productDescription}, placed centrally on a realistic surface appropriate for the scene.
+  // Combine scene description with custom prompt if provided
+  let finalDescription = sceneDescription;
+  if (customPrompt && customPrompt.trim()) {
+    finalDescription = `${sceneDescription}, ${customPrompt.trim()}`;
+  }
 
-Scene: ${sceneDescription}${customPrompt ? `, ${customPrompt}` : ''}.
-
-Cinematic background with shallow depth of field (beautiful bokeh), keeping sharp focus on the product. Soft professional cinematic lighting (golden hour side-lighting) creating deep shadows and bright highlights, making the product look premium and tactile.
-
-Apply a smooth artistic ${colorName} (${brandColor}) color gradient overlay starting from the top edge of the frame, slowly fading to transparency towards the middle, tinting the upper part and product highlights with the brand color.
-
-Photorealistic, high-resolution, luxurious, professional, high-end advertisement, commercial quality, centered composition, 8K detail.`;
-
-  return prompt;
+  // Add product photography quality boost
+  return `${finalDescription}, ${qualityKeywords}`;
 }
 
-// Generate product photography using Flux Pro 1.1
-// Creates cinematic product shots with brand color gradients
+// Generate product photography - places product in professional scene using Bria
 export const generateProductShot = action({
   args: {
-    imageUrl: v.string(), // Reference product image (base64 or URL)
-    productDescription: v.string(), // Required: description of the product
+    imageUrl: v.string(), // URL of the product image
     scenePreset: v.optional(v.string()), // Preset scene key
     customScene: v.optional(v.string()), // Custom scene description
     aspectRatio: v.optional(v.string()), // Output size
-    brandColor: v.optional(v.string()), // Brand color hex (e.g., "#FFD700")
+    closeUp: v.optional(v.boolean()), // Close-up framing (product fills more of frame)
   },
   handler: async (ctx, args) => {
     const authUser = await authComponent.getAuthUser(ctx);
@@ -568,24 +556,23 @@ export const generateProductShot = action({
       );
     }
 
-    // Use Runware for Flux Pro 1.1
-    const runwareApiKey = process.env.RUNWARE_API_KEY;
-    if (!runwareApiKey) {
-      throw new Error("Runware API key not configured");
+    const falApiKey = process.env.FAL_API_KEY;
+    if (!falApiKey) {
+      throw new Error("Fal.ai API key not configured");
     }
 
-    // Scene presets mapping - cinematic descriptions for world-class product photography
+    // Scene presets mapping - optimized for realistic close-up product shots
     const scenePresets: Record<string, string> = {
-      "studio-white": "Clean white studio surface with soft professional lighting, gentle shadows, crisp e-commerce aesthetic",
-      "marble-surface": "Polished white marble countertop with elegant reflections, soft natural window light, luxury aesthetic",
-      "wooden-table": "Rustic warm oak wood table with natural grain texture visible, soft golden hour side lighting, cozy artisan feel",
-      "kitchen-counter": "Modern white kitchen counter with bright daylight from window, clean minimal background, lifestyle home setting",
-      "living-room": "Coffee table in modern living room with soft ambient lighting, blurred cozy interior background, warm lifestyle tones",
-      "nature-outdoor": "Natural stone surface outdoors with lush green plants softly blurred in background, dappled sunlight, organic fresh feel",
-      "gradient-modern": "Smooth gradient background from white to soft gray, professional studio lighting, modern minimalist aesthetic",
-      "beach-seaside": "Light sandy surface with soft ocean waves blurred in background, warm golden sunset lighting, summer vacation mood",
-      "concrete-urban": "Raw concrete surface with industrial texture, dramatic side lighting, urban loft aesthetic, edgy modern vibe",
-      "fabric-textile": "Soft cream linen fabric with gentle folds, diffused natural light, elegant boutique styling, romantic feel",
+      "studio-white": "Product on clean white surface, soft studio lighting with gentle shadows, professional e-commerce photography, crisp and clear",
+      "marble-surface": "Product placed on polished white marble countertop, elegant reflections, soft natural window light, luxury aesthetic, realistic shadows",
+      "wooden-table": "Product on warm oak wood table, natural grain texture visible, soft golden hour side lighting, cozy artisan feel, subtle shadows",
+      "kitchen-counter": "Product on modern white kitchen counter, bright daylight from window, clean minimal background, lifestyle home setting, natural shadows",
+      "living-room": "Product on coffee table in modern living room, soft ambient lighting, blurred cozy interior background, lifestyle photography, warm tones",
+      "nature-outdoor": "Product on natural stone surface outdoors, lush green plants softly blurred in background, dappled sunlight, organic fresh feel",
+      "gradient-modern": "Product floating on smooth gradient background from white to soft gray, professional studio lighting, modern minimalist, soft shadow below",
+      "beach-seaside": "Product on light sandy surface, soft ocean waves blurred in background, warm golden sunset lighting, summer vacation mood",
+      "concrete-urban": "Product on raw concrete surface, industrial texture, dramatic side lighting, urban loft aesthetic, strong shadows, edgy modern",
+      "fabric-textile": "Product resting on soft cream linen fabric with gentle folds, diffused natural light, elegant boutique styling, soft romantic feel",
     };
 
     // Get scene description
@@ -599,76 +586,75 @@ export const generateProductShot = action({
     }
 
     if (!sceneDescription) {
-      sceneDescription = "Professional studio setting with clean background and soft lighting";
+      sceneDescription = "Professional product photography, clean background, studio lighting";
     }
 
-    // Default brand color if not provided
-    const brandColor = args.brandColor || "#FACC15"; // Default to POSTAIFY yellow
+    // Enhance the scene description
+    const enhancedScene = enhanceProductScene(sceneDescription);
 
-    // Build the cinematic product photography prompt
-    const prompt = buildProductPhotographyPrompt(
-      args.productDescription,
-      sceneDescription,
-      brandColor,
-      args.customScene
-    );
-
-    // Determine output dimensions
-    const dimensions = args.aspectRatio === "16:9"
-      ? { width: 1344, height: 768 }
+    // Determine output size - keep around 1M pixels for optimal quality
+    const shotSize = args.aspectRatio === "16:9"
+      ? [1200, 675]
       : args.aspectRatio === "9:16"
-      ? { width: 768, height: 1344 }
-      : { width: 1024, height: 1024 }; // Default square
+      ? [675, 1200]
+      : [1000, 1000]; // Default square
 
-    // Call Runware with Flux Pro 1.1 using image-to-image
-    // The input image serves as reference for the product appearance
-    const response = await fetch("https://api.runware.ai/v1", {
+    // Use manual_padding for closer, more realistic product placement
+    // Smaller padding = larger/closer product in frame
+    const isCloseUp = args.closeUp !== false; // Default to close-up (true)
+
+    // Close-up: smaller padding (50-80px) = product fills ~70% of frame
+    // Normal: larger padding (120-180px) = product fills ~50% of frame
+    const paddingValues = isCloseUp
+      ? args.aspectRatio === "16:9"
+        ? [80, 80, 50, 50]    // Close-up landscape
+        : args.aspectRatio === "9:16"
+        ? [50, 50, 80, 60]    // Close-up portrait
+        : [60, 60, 60, 50]    // Close-up square
+      : args.aspectRatio === "16:9"
+        ? [180, 180, 100, 100] // Normal landscape
+        : args.aspectRatio === "9:16"
+        ? [100, 100, 180, 120] // Normal portrait
+        : [140, 140, 140, 100]; // Normal square
+
+    // Call Bria Product Shot API
+    const response = await fetch("https://fal.run/fal-ai/bria/product-shot", {
       method: "POST",
       headers: {
+        Authorization: `Key ${falApiKey}`,
         "Content-Type": "application/json",
-        Authorization: `Bearer ${runwareApiKey}`,
       },
-      body: JSON.stringify([
-        {
-          taskType: "imageInference",
-          taskUUID: crypto.randomUUID(),
-          positivePrompt: prompt,
-          model: "civitai:618692@691639", // Flux Pro 1.1
-          width: dimensions.width,
-          height: dimensions.height,
-          numberResults: 1,
-          outputFormat: "png",
-          outputQuality: 95,
-          outputType: "URL",
-          includeCost: false,
-          CFGScale: 7,
-          scheduler: "FlowMatchEulerDiscreteScheduler",
-          steps: 25, // Higher steps for better quality
-          // Image-to-image: use uploaded product as reference
-          inputImage: args.imageUrl,
-          strength: 0.65, // Balance between keeping product identity and applying scene (0.6-0.7 recommended)
-        },
-      ]),
+      body: JSON.stringify({
+        image_url: args.imageUrl,
+        scene_description: enhancedScene,
+        optimize_description: true,
+        num_results: 1,
+        fast: false, // Higher quality
+        placement_type: "manual_padding",
+        padding_values: paddingValues,
+        shot_size: shotSize,
+        original_quality: true, // Preserve product quality
+      }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
       if (response.status === 401) {
-        throw new Error("Invalid Runware API key");
+        throw new Error("Invalid Fal.ai API key");
       }
       if (response.status === 402) {
-        throw new Error("Insufficient Runware credits");
+        throw new Error("Insufficient Fal.ai credits");
       }
+      const errorText = await response.text().catch(() => "");
       throw new Error(
         `Failed to generate product shot: ${errorText || response.statusText}`
       );
     }
 
     const result = (await response.json()) as {
-      data?: Array<{ imageURL?: string }>;
+      images?: Array<{ url: string }>;
     };
 
-    if (!result.data || result.data.length === 0 || !result.data[0].imageURL) {
+    if (!result.images || result.images.length === 0) {
       throw new Error("No product shot was generated");
     }
 
@@ -676,10 +662,9 @@ export const generateProductShot = action({
     await ctx.runMutation(api.users.incrementImageUsage);
 
     return {
-      url: result.data[0].imageURL,
+      url: result.images[0].url,
       scene: sceneDescription,
       aspectRatio: args.aspectRatio || "1:1",
-      prompt: prompt, // Return prompt for debugging/display
     };
   },
 });
