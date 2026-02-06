@@ -50,6 +50,7 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
   // Script state
   const [script, setScript] = useState(initialText)
   const [voiceStyle, setVoiceStyle] = useState<VoiceoverStyle>('conversational')
+  const [useExactText, setUseExactText] = useState(true) // Default to exact text
 
   // Voice state
   const [voices, setVoices] = useState<Voice[]>([])
@@ -144,6 +145,7 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
         text: script,
         voiceId: selectedVoiceId,
         style: voiceStyle,
+        useExactText,
       })
       setAudioUrl(result.url)
     } catch (err) {
@@ -327,6 +329,32 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Use Exact Text Toggle */}
+              <div className="mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    onClick={() => setUseExactText(!useExactText)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      useExactText ? 'bg-primary' : 'bg-white/20'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        useExactText ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Use exact script</span>
+                    <p className="text-xs text-muted-foreground">
+                      {useExactText
+                        ? 'Voice will read your script exactly as written'
+                        : 'AI will optimize your script for natural speech'}
+                    </p>
+                  </div>
+                </label>
               </div>
 
               {/* Voice Selection */}

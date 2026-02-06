@@ -141,6 +141,7 @@ export const generate = action({
         v.literal("calm")
       )
     ),
+    useExactText: v.optional(v.boolean()), // Skip AI optimization, use exact input text
   },
   handler: async (ctx, args) => {
     const authUser = await authComponent.getAuthUser(ctx);
@@ -169,19 +170,16 @@ export const generate = action({
       throw new Error("ElevenLabs API key not configured");
     }
 
-    const openRouterKey = process.env.OPENROUTER_API_KEY;
-    if (!openRouterKey) {
-      throw new Error("OpenRouter API key not configured");
-    }
-
     const style = args.style || "conversational";
 
-    // Optimize text for voiceover
-    const optimizedText = await optimizeForVoiceover(
-      args.text,
-      style,
-      openRouterKey
-    );
+    // Use exact text or optimize for voiceover
+    let finalText = args.text;
+    if (!args.useExactText) {
+      const openRouterKey = process.env.OPENROUTER_API_KEY;
+      if (openRouterKey) {
+        finalText = await optimizeForVoiceover(args.text, style, openRouterKey);
+      }
+    }
 
     // Generate speech
     const response = await fetch(
@@ -194,7 +192,7 @@ export const generate = action({
           Accept: "audio/mpeg",
         },
         body: JSON.stringify({
-          text: optimizedText,
+          text: finalText,
           model_id: "eleven_monolingual_v1",
           voice_settings: {
             stability: 0.5,
@@ -226,7 +224,7 @@ export const generate = action({
 
     return {
       url: dataUrl,
-      text: optimizedText,
+      text: finalText,
       voiceId: args.voiceId,
       style,
     };
