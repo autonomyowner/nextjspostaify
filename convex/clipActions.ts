@@ -31,8 +31,13 @@ const SCENE_TYPES = [
 async function parseScriptWithAI(
   script: string,
   maxScenes: number,
-  apiKey: string
+  apiKey: string,
+  autoSplit: boolean = false
 ): Promise<SceneData[]> {
+  const splitInstruction = autoSplit
+    ? `- The user has NOT separated scenes manually. You MUST intelligently split the text into logical scenes (${maxScenes} max). Identify natural breaks: opening hooks, brand mentions, feature lists, stats, comparisons, and closing CTAs. Create the best possible scene breakdown from the raw text.`
+    : `- If the script uses "---" as separators, treat each section as a scene. If no separators, split intelligently.`;
+
   const systemPrompt = `You are a video script parser for motion graphic clips. Your job is to analyze a user's script and split it into structured scenes.
 
 Available scene types:
@@ -51,7 +56,7 @@ Rules:
 - Keep text SHORT and punchy (headlines under 10 words, features under 8 words each)
 - If text is too long, shorten it while keeping the meaning
 - Auto-detect the best scene type for each section
-- If the script uses "---" as separators, treat each section as a scene
+${splitInstruction}
 - Always try to include a CTA as the last scene
 - Return ONLY valid JSON array, no other text
 
@@ -131,6 +136,7 @@ export const generate = action({
       accent: v.string(),
     }),
     title: v.optional(v.string()),
+    autoSplit: v.optional(v.boolean()),
     brandId: v.optional(v.id("brands")),
   },
   handler: async (ctx, args) => {
@@ -178,7 +184,8 @@ export const generate = action({
     const scenes = await parseScriptWithAI(
       script,
       limits.maxScenesPerClip,
-      apiKey
+      apiKey,
+      args.autoSplit ?? false
     );
 
     // Generate HTML

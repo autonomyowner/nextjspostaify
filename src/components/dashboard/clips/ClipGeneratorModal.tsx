@@ -46,6 +46,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     secondary: '#EAB308',
     accent: '#F97316',
   })
+  const [autoSplit, setAutoSplit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<GeneratedClip | null>(null)
@@ -79,6 +80,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
         script: script.trim(),
         colors,
         title: title.trim() || undefined,
+        autoSplit,
       })
 
       setResult(res as unknown as GeneratedClip)
@@ -113,6 +115,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     setStep('input')
     setScript('')
     setTitle('')
+    setAutoSplit(false)
     setError('')
     setResult(null)
     onClose()
@@ -205,15 +208,42 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                 />
               </div>
 
+              {/* AI Auto-Split toggle */}
+              <div className="mb-4 flex items-center justify-between px-1">
+                <div>
+                  <p className="text-xs text-white/60 font-medium">AI Auto-Split Scenes</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">
+                    {autoSplit
+                      ? 'AI will split your text into scenes automatically'
+                      : 'Separate scenes manually with ---'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoSplit(!autoSplit)}
+                  className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${
+                    autoSplit ? 'bg-yellow-500' : 'bg-white/10'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all ${
+                      autoSplit ? 'left-[22px]' : 'left-[3px]'
+                    }`}
+                  />
+                </button>
+              </div>
+
               {/* Script input */}
               <div className="mb-4">
                 <label className="block text-xs text-white/40 mb-1.5">
-                  Script <span className="text-white/20">(use --- to separate scenes)</span>
+                  Script {!autoSplit && <span className="text-white/20">(use --- to separate scenes)</span>}
                 </label>
                 <textarea
                   value={script}
                   onChange={(e) => setScript(e.target.value)}
-                  placeholder={`Still spending 8 hours on content?\n---\nPostaify - AI Content Automation\n---\n1. Generate posts instantly\n2. Schedule across platforms\n3. AI voiceovers built-in\n---\nFrom 8 hours to 5 minutes\n---\nStart free at postaify.com`}
+                  placeholder={autoSplit
+                    ? `Just paste your full text here and AI will split it into scenes for you.\n\nExample:\nStill spending 8 hours on content? Postaify uses AI to automate your social media. Generate posts instantly, schedule across platforms, and get AI voiceovers built-in. Go from 8 hours to 5 minutes. Start free at postaify.com`
+                    : `Still spending 8 hours on content?\n---\nPostaify - AI Content Automation\n---\n1. Generate posts instantly\n2. Schedule across platforms\n3. AI voiceovers built-in\n---\nFrom 8 hours to 5 minutes\n---\nStart free at postaify.com`}
                   rows={10}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors resize-none font-mono leading-relaxed"
                   maxLength={5000}
