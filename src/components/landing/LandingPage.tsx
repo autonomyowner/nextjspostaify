@@ -6,6 +6,7 @@ import { ShowcaseCarousel } from './ShowcaseCarousel'
 import { ProblemSolution } from './ProblemSolution'
 import { AgentFeatures } from './AgentFeatures'
 import { HowItWorks } from './HowItWorks'
+import { WhatIsPostaify } from './WhatIsPostaify'
 import { Pricing } from './Pricing'
 import { FAQ } from './FAQ'
 import { Footer } from './Footer'
@@ -19,6 +20,7 @@ export function LandingPage() {
       <ProblemSolution />
       <AgentFeatures />
       <HowItWorks />
+      <WhatIsPostaify />
       <Pricing />
       <FAQ />
       <Footer />

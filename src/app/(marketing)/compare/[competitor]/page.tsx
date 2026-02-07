@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const title = `POSTAIFY vs ${competitor.name} (2025) - Feature Comparison`
+  const title = `POSTAIFY vs ${competitor.name} (2026) - Feature Comparison`
   const description = `Compare POSTAIFY vs ${competitor.name}: AI content generation, pricing, features. See why users choose POSTAIFY for social media automation at $19/mo vs ${competitor.monthlyPrice}.`
 
   return {
@@ -40,6 +40,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: 'website',
+    },
+    alternates: {
+      canonical: `https://postaify.com/compare/${slug}`,
     },
   }
 }
@@ -100,6 +103,30 @@ export default async function ComparisonPage({ params }: Props) {
     })),
   }
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://postaify.com',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Comparisons',
+        item: 'https://postaify.com/compare',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: `POSTAIFY vs ${competitor.name}`,
+      },
+    ],
+  }
+
   return (
     <>
       <script
@@ -109,6 +136,10 @@ export default async function ComparisonPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <ComparisonPageClient competitor={competitor} />
     </>

@@ -33,6 +33,6 @@ export default function robots(): MetadataRoute.Robots {
       // Cohere
       { userAgent: 'cohere-ai', allow: '/', disallow: privateRoutes },
     ],
-    sitemap: 'https://www.postaify.com/sitemap.xml',
+    sitemap: 'https://postaify.com/sitemap.xml',
   }
 }

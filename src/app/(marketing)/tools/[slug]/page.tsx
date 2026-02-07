@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: tool.title,
       description: tool.description,
-      url: `https://www.postaify.com/tools/${slug}`,
+      url: `https://postaify.com/tools/${slug}`,
       type: 'website',
     },
     twitter: {
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: tool.description,
     },
     alternates: {
-      canonical: `https://www.postaify.com/tools/${slug}`,
+      canonical: `https://postaify.com/tools/${slug}`,
     },
   }
 }
@@ -77,6 +77,64 @@ export default async function ToolPage({ params }: Props) {
     })),
   }
 
+  // HowTo Schema for featured snippets
+  const howToJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: `How to ${tool.h1}`,
+    description: tool.description,
+    step: [
+      {
+        '@type': 'HowToStep',
+        position: 1,
+        name: 'Paste your YouTube video URL',
+        text: `Copy the URL of any YouTube video and paste it into the ${tool.title} tool.`,
+      },
+      {
+        '@type': 'HowToStep',
+        position: 2,
+        name: 'Click Generate',
+        text: `Our AI analyzes the video transcript and generates an optimized ${tool.platform} post.`,
+      },
+      {
+        '@type': 'HowToStep',
+        position: 3,
+        name: `Copy your ${tool.platform} content`,
+        text: `Review the generated content, make any edits, and copy it to ${tool.platform}. No signup required for your first conversion.`,
+      },
+    ],
+    tool: {
+      '@type': 'HowToTool',
+      name: 'POSTAIFY',
+    },
+    totalTime: 'PT1M',
+  }
+
+  // Breadcrumb Schema
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://postaify.com',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Free AI Tools',
+        item: 'https://postaify.com/tools',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: tool.title,
+      },
+    ],
+  }
+
   return (
     <>
       <script
@@ -86,6 +144,14 @@ export default async function ToolPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <ToolPageClient slug={slug} tool={tool} />
     </>

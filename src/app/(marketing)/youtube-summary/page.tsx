@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Free YouTube Video Summarizer',
     description: 'Get AI-powered summaries of any YouTube video in seconds.',
-    url: 'https://www.postaify.com/youtube-summary',
+    url: 'https://postaify.com/youtube-summary',
     type: 'website',
   },
   twitter: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Get AI-powered summaries of any YouTube video in seconds.',
   },
   alternates: {
-    canonical: 'https://www.postaify.com/youtube-summary',
+    canonical: 'https://postaify.com/youtube-summary',
   },
 }
 

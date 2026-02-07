@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { competitorSlugs } from '@/lib/competitors-config'
+import { blogSlugs } from '@/lib/blog-posts'
 
 // Initial launch: YouTube converters only
 const tools = [
@@ -11,7 +12,7 @@ const tools = [
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://www.postaify.com'
+  const baseUrl = 'https://postaify.com'
 
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -38,6 +39,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/roadmap`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    },
   ]
 
   const toolPages: MetadataRoute.Sitemap = tools.map((slug) => ({
@@ -55,5 +74,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...toolPages, ...comparisonPages]
+  // Blog pages
+  const blogPages: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    ...blogSlugs.map((slug) => ({
+      url: `${baseUrl}/blog/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ]
+
+  return [...staticPages, ...toolPages, ...comparisonPages, ...blogPages]
 }

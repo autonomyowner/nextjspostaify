@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Competitor } from '@/lib/competitors-config'
+import { Competitor, competitors } from '@/lib/competitors-config'
 import { ComparisonTable } from '@/components/seo/ComparisonTable'
 
 interface Props {
@@ -200,6 +200,28 @@ export function ComparisonPageClient({ competitor }: Props) {
           </div>
         </div>
       </section>
+
+      {/* Other Comparisons */}
+      {Object.values(competitors).filter(c => c.slug !== competitor.slug).length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 py-12">
+          <h2 className="mb-6 text-center text-2xl font-bold">
+            More Comparisons
+          </h2>
+          <div className="flex flex-wrap justify-center gap-3">
+            {Object.values(competitors)
+              .filter(c => c.slug !== competitor.slug)
+              .map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/compare/${c.slug}`}
+                  className="rounded-full border border-zinc-700 px-5 py-2 text-sm font-medium transition-colors hover:border-yellow-400 hover:text-yellow-400"
+                >
+                  POSTAIFY vs {c.name}
+                </Link>
+              ))}
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-6 py-16 text-center">

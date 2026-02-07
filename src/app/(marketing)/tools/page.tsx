@@ -87,7 +87,7 @@ export default function ToolsPage() {
               item: {
                 '@type': 'SoftwareApplication',
                 name: tool.title,
-                url: `https://www.postaify.com/tools/${slug}`,
+                url: `https://postaify.com/tools/${slug}`,
                 applicationCategory: 'MultimediaApplication',
                 operatingSystem: 'Web',
                 offers: {

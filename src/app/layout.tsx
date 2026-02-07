@@ -32,7 +32,7 @@ const notoArabic = Noto_Sans_Arabic({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.postaify.com'),
+  metadataBase: new URL('https://postaify.com'),
   title: {
     default: 'POSTAIFY - AI-Powered Social Media Automation',
     template: '%s | POSTAIFY',
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://www.postaify.com',
+    url: 'https://postaify.com',
     siteName: 'POSTAIFY',
     title: 'POSTAIFY - AI-Powered Social Media Automation',
     description: 'Create brands, generate AI content, and schedule posts automatically. Turn YouTube videos into viral social media content.',
@@ -96,8 +96,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Add verification codes when available
-    // google: 'your-google-verification-code',
+    // Already verified via Search Console (Feb 2026)
   },
 }
 
@@ -117,8 +116,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'POSTAIFY',
-              url: 'https://www.postaify.com',
-              logo: 'https://www.postaify.com/logo.png',
+              url: 'https://postaify.com',
+              logo: 'https://postaify.com/logo.png',
               sameAs: [
                 'https://twitter.com/postaify',
               ],
