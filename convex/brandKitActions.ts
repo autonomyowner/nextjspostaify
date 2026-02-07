@@ -203,7 +203,7 @@ export const generate = action({
     vibes: v.array(v.string()),
     brandId: v.optional(v.id("brands")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ kitId: string; score: number; status: string }> => {
     const authUser = await authComponent.getAuthUser(ctx);
     if (!authUser) throw new Error("Not authenticated");
 
@@ -214,7 +214,7 @@ export const generate = action({
     const limits = getPlanLimits(plan);
 
     // Create kit record
-    const kitId = await ctx.runMutation(api.brandKit.create, {
+    const kitId: string = await ctx.runMutation(api.brandKit.create, {
       name: args.name,
       description: args.description,
       vibes: args.vibes,
