@@ -8,6 +8,11 @@ import { useState, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Logo } from '@/components/ui/Logo'
+import { MobileNav } from '@/components/dashboard/MobileNav'
+import { useConvexAuth } from '@/hooks/useCurrentUser'
+import { useData } from '@/context/DataContext'
+import { authClient } from '@/lib/auth-client'
+import { useTranslation } from 'react-i18next'
 import Link from 'next/link'
 
 interface LogoItem { type: string; url: string; prompt?: string }
@@ -16,6 +21,46 @@ interface BackgroundItem { url: string; size?: string; prompt?: string }
 interface MockupItem { type: string; url: string; prompt?: string }
 interface SocialItem { platform: string; avatarUrl?: string; bannerUrl?: string }
 interface BrandKitItem { _id: string; name: string; description: string; status: string; score?: number; palette?: any; [key: string]: any }
+
+function PageHeader({ activeLabel }: { activeLabel: string }) {
+  const { t } = useTranslation()
+  const { user } = useData()
+  const { isAuthenticated } = useConvexAuth()
+  const signOut = () => authClient.signOut().then(() => window.location.href = '/')
+
+  return (
+    <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4 sm:gap-8">
+          <Logo />
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.dashboard')}</Link>
+            <Link href="/posts" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.posts')}</Link>
+            <Link href="/clips" className="text-sm text-muted-foreground hover:text-white transition-colors">Clips</Link>
+            <Link href="/brand-kit" className={`text-sm transition-colors ${activeLabel === 'Brand Kit' ? 'text-white font-medium' : 'text-muted-foreground hover:text-white'}`}>Brand Kit</Link>
+            <Link href="/calendar" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.calendar')}</Link>
+          </nav>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-4">
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-sm font-medium">
+                {user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'}
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-xs">
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <Link href="/sign-in">
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4">Sign In</Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  )
+}
 
 function BrandKitPageContent() {
   const searchParams = useSearchParams()
@@ -38,20 +83,15 @@ function BrandKitPageContent() {
   // If no kit selected, show kit list
   if (!kitId || !selectedKit) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Logo />
-              <h1 className="text-lg font-semibold">Brand Kits</h1>
-            </div>
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm">Back to Dashboard</Button>
-            </Link>
-          </div>
-        </header>
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <PageHeader activeLabel="Brand Kit" />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-32 md:pb-8 mb-20 md:mb-0">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-white mb-1">Brand Kits</h1>
+            <p className="text-sm text-white/40">Your AI-generated brand identities</p>
+          </div>
+
           {!kits ? (
             <div className="flex justify-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
@@ -101,6 +141,8 @@ function BrandKitPageContent() {
             </div>
           )}
         </main>
+
+        <MobileNav />
       </div>
     )
   }
@@ -123,57 +165,50 @@ function BrandKitPageContent() {
   ] : []
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4 sm:gap-6">
-            <Logo />
-            <div>
-              <h1 className="text-lg font-semibold">{kit.name}</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">{kit.description}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {kit.score !== undefined && (
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                <span className="text-xs text-muted-foreground">Score</span>
-                <span className="text-sm font-bold text-primary">{kit.score}</span>
-              </div>
-            )}
-            <Link href="/brand-kit">
-              <Button variant="ghost" size="sm">All Kits</Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm">Dashboard</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <PageHeader activeLabel="Brand Kit" />
 
       {/* Tab Navigation */}
       <div className="border-b border-border bg-card/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex gap-6">
-            {(['overview', 'social', 'templates'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors capitalize ${
-                  activeTab === tab
-                    ? 'border-primary text-white'
-                    : 'border-transparent text-muted-foreground hover:text-white'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-6">
+              {(['overview', 'social', 'templates'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-3 text-sm font-medium border-b-2 transition-colors capitalize ${
+                    activeTab === tab
+                      ? 'border-primary text-white'
+                      : 'border-transparent text-muted-foreground hover:text-white'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              {kit.score !== undefined && (
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                  <span className="text-xs text-muted-foreground">Score</span>
+                  <span className="text-sm font-bold text-primary">{kit.score}</span>
+                </div>
+              )}
+              <Link href="/brand-kit">
+                <Button variant="ghost" size="sm" className="text-xs">All Kits</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-32 md:pb-8 mb-20 md:mb-0">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-white">{kit.name}</h1>
+          <p className="text-sm text-white/40">{kit.description}</p>
+        </div>
+
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Color Palette */}
@@ -385,6 +420,8 @@ function BrandKitPageContent() {
           </div>
         )}
       </main>
+
+      <MobileNav />
     </div>
   )
 }
