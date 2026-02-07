@@ -25,6 +25,7 @@ export default defineSchema({
     telegramChatId: v.optional(v.string()),
     telegramEnabled: v.optional(v.boolean()),
     telegramLinkedAt: v.optional(v.number()),
+    brandKitsGenerated: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
@@ -62,6 +63,88 @@ export default defineSchema({
       addedAt: v.number(),
     }))),
   }).index("by_userId", ["userId"]),
+
+  // Brand Kit - full AI-generated brand identity
+  brandKits: defineTable({
+    userId: v.id("users"),
+    brandId: v.optional(v.id("brands")),
+    name: v.string(),
+    description: v.string(),
+    vibes: v.array(v.string()),
+    status: v.union(
+      v.literal("GENERATING"),
+      v.literal("READY"),
+      v.literal("FAILED")
+    ),
+    // Generation progress tracking
+    progress: v.optional(v.object({
+      palette: v.boolean(),
+      typography: v.boolean(),
+      logos: v.boolean(),
+      moodBoard: v.boolean(),
+      backgrounds: v.boolean(),
+      mockups: v.boolean(),
+      socialKit: v.boolean(),
+      pattern: v.boolean(),
+    })),
+    // Color palette
+    palette: v.optional(v.object({
+      primary: v.object({ hex: v.string(), name: v.string(), use: v.string() }),
+      secondary: v.object({ hex: v.string(), name: v.string(), use: v.string() }),
+      accent: v.object({ hex: v.string(), name: v.string(), use: v.string() }),
+      dark: v.object({ hex: v.string(), name: v.string(), use: v.string() }),
+      light: v.object({ hex: v.string(), name: v.string(), use: v.string() }),
+    })),
+    // Typography pairing
+    typography: v.optional(v.object({
+      heading: v.object({ family: v.string(), weight: v.string(), style: v.string() }),
+      body: v.object({ family: v.string(), weight: v.string(), style: v.string() }),
+      recommendation: v.optional(v.string()),
+    })),
+    // Logo variations
+    logos: v.optional(v.array(v.object({
+      type: v.string(), // "primary" | "icon" | "monochrome" | "inverted"
+      url: v.string(),
+      prompt: v.optional(v.string()),
+    }))),
+    // Mood board images
+    moodBoard: v.optional(v.array(v.object({
+      url: v.string(),
+      prompt: v.optional(v.string()),
+      label: v.optional(v.string()),
+    }))),
+    // Social media profile kit
+    socialProfiles: v.optional(v.array(v.object({
+      platform: v.string(),
+      avatarUrl: v.optional(v.string()),
+      bannerUrl: v.optional(v.string()),
+    }))),
+    // Branded post backgrounds
+    postBackgrounds: v.optional(v.array(v.object({
+      url: v.string(),
+      size: v.optional(v.string()), // "1080x1080", "1080x1920", "1200x675"
+      prompt: v.optional(v.string()),
+    }))),
+    // Mockup previews
+    mockups: v.optional(v.array(v.object({
+      type: v.string(), // "business-card" | "phone" | "storefront"
+      url: v.string(),
+      prompt: v.optional(v.string()),
+    }))),
+    // Brand pattern
+    pattern: v.optional(v.object({
+      url: v.string(),
+      prompt: v.optional(v.string()),
+    })),
+    // Brand consistency score
+    score: v.optional(v.number()),
+    // Public sharing
+    publicSlug: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_brandId", ["brandId"])
+    .index("by_publicSlug", ["publicSlug"]),
 
   posts: defineTable({
     userId: v.id("users"),

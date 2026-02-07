@@ -10,6 +10,13 @@ export const PLAN_LIMITS = {
     maxImagesPerMonth: 5,
     maxVoiceoversPerMonth: 2,
     maxVoiceProfiles: 1, // Voice cloning profiles
+    maxBrandKits: 1, // 1 free kit to taste the magic
+    brandKitLogoVariations: 2,
+    brandKitMoodBoardImages: 2,
+    brandKitPostTemplates: 2,
+    brandKitMockups: 0,
+    hasBrandKitExport: false,
+    hasBrandKitPublicShare: false,
   },
   PRO: {
     maxBrands: 5,
@@ -22,6 +29,13 @@ export const PLAN_LIMITS = {
     maxImagesPerMonth: 200, // Doubled from 100 due to cost savings
     maxVoiceoversPerMonth: 30,
     maxVoiceProfiles: 3, // Voice cloning profiles
+    maxBrandKits: 3,
+    brandKitLogoVariations: 4,
+    brandKitMoodBoardImages: 4,
+    brandKitPostTemplates: 6,
+    brandKitMockups: 3,
+    hasBrandKitExport: true,
+    hasBrandKitPublicShare: true,
   },
   BUSINESS: {
     maxBrands: 999,
@@ -34,6 +48,13 @@ export const PLAN_LIMITS = {
     maxImagesPerMonth: 1000, // Doubled from 500 due to cost savings
     maxVoiceoversPerMonth: 150,
     maxVoiceProfiles: 999, // Unlimited voice cloning profiles
+    maxBrandKits: 999,
+    brandKitLogoVariations: 4,
+    brandKitMoodBoardImages: 6,
+    brandKitPostTemplates: 10,
+    brandKitMockups: 5,
+    hasBrandKitExport: true,
+    hasBrandKitPublicShare: true,
   },
 } as const;
 

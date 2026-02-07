@@ -16,6 +16,7 @@ import { VoiceoverModal } from "./VoiceoverModal"
 import { ImageGeneratorModal } from "./ImageGeneratorModal"
 import { BrandModal } from "./BrandModal"
 import { SettingsModal } from "./SettingsModal"
+import { BrandKitModal } from "./brand-kit/BrandKitModal"
 import { MobileNav } from "./MobileNav"
 import { useData } from "@/context/DataContext"
 import { Logo } from "@/components/ui/Logo"
@@ -29,6 +30,7 @@ export function Dashboard() {
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
   const [editBrandId, setEditBrandId] = useState<string | null>(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [isBrandKitModalOpen, setIsBrandKitModalOpen] = useState(false)
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
   const { user } = useData()
   const { isAuthenticated } = useConvexAuth()
@@ -71,6 +73,7 @@ export function Dashboard() {
               >
                 Brands
               </button>
+              <Link href="/brand-kit" className="text-sm text-muted-foreground hover:text-white transition-colors">Brand Kit</Link>
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -144,6 +147,7 @@ export function Dashboard() {
             onRepurpose={() => setIsVideoModalOpen(true)}
             onVoiceover={() => setIsVoiceoverModalOpen(true)}
             onGenerateImage={() => setIsImageGeneratorModalOpen(true)}
+            onBrandKit={() => setIsBrandKitModalOpen(true)}
           />
         </motion.div>
 
@@ -201,6 +205,10 @@ export function Dashboard() {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
       />
+      <BrandKitModal
+        isOpen={isBrandKitModalOpen}
+        onClose={() => setIsBrandKitModalOpen(false)}
+      />
 
       {/* Mobile Navigation - hide when any modal is open */}
       <MobileNav
@@ -210,7 +218,8 @@ export function Dashboard() {
           isVoiceoverModalOpen ||
           isImageGeneratorModalOpen ||
           isBrandModalOpen ||
-          isSettingsModalOpen
+          isSettingsModalOpen ||
+          isBrandKitModalOpen
         }
       />
     </div>
