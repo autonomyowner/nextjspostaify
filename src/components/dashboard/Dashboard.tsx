@@ -17,6 +17,7 @@ import { ImageGeneratorModal } from "./ImageGeneratorModal"
 import { BrandModal } from "./BrandModal"
 import { SettingsModal } from "./SettingsModal"
 import { BrandKitModal } from "./brand-kit/BrandKitModal"
+import { ClipGeneratorModal } from "./clips/ClipGeneratorModal"
 import { MobileNav } from "./MobileNav"
 import { useData } from "@/context/DataContext"
 import { Logo } from "@/components/ui/Logo"
@@ -31,6 +32,7 @@ export function Dashboard() {
   const [editBrandId, setEditBrandId] = useState<string | null>(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isBrandKitModalOpen, setIsBrandKitModalOpen] = useState(false)
+  const [isClipModalOpen, setIsClipModalOpen] = useState(false)
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
   const { user } = useData()
   const { isAuthenticated } = useConvexAuth()
@@ -74,6 +76,7 @@ export function Dashboard() {
                 Brands
               </button>
               <Link href="/brand-kit" className="text-sm text-muted-foreground hover:text-white transition-colors">Brand Kit</Link>
+              <Link href="/clips" className="text-sm text-muted-foreground hover:text-white transition-colors">Clips</Link>
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -148,6 +151,7 @@ export function Dashboard() {
             onVoiceover={() => setIsVoiceoverModalOpen(true)}
             onGenerateImage={() => setIsImageGeneratorModalOpen(true)}
             onBrandKit={() => setIsBrandKitModalOpen(true)}
+            onCreateClip={() => setIsClipModalOpen(true)}
           />
         </motion.div>
 
@@ -209,6 +213,10 @@ export function Dashboard() {
         isOpen={isBrandKitModalOpen}
         onClose={() => setIsBrandKitModalOpen(false)}
       />
+      <ClipGeneratorModal
+        isOpen={isClipModalOpen}
+        onClose={() => setIsClipModalOpen(false)}
+      />
 
       {/* Mobile Navigation - hide when any modal is open */}
       <MobileNav
@@ -219,7 +227,8 @@ export function Dashboard() {
           isImageGeneratorModalOpen ||
           isBrandModalOpen ||
           isSettingsModalOpen ||
-          isBrandKitModalOpen
+          isBrandKitModalOpen ||
+          isClipModalOpen
         }
       />
     </div>

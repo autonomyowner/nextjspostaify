@@ -42,11 +42,15 @@ export const viewer = query({
           brands: 0,
           brandsLimit: 2,
           totalPosts: 0,
+          clipsThisMonth: 0,
+          clipsLimit: 2,
         },
         features: {
           hasImageGeneration: true,
           hasVoiceover: true,
           hasVideoRepurpose: false,
+          hasClipMp4Export: false,
+          maxScenesPerClip: 4,
         },
         _creationTime: Date.now(),
         needsSetup: true,
@@ -86,11 +90,15 @@ export const viewer = query({
         brands: brandCount,
         brandsLimit: limits.maxBrands,
         totalPosts: postCount,
+        clipsThisMonth: user.clipsThisMonth ?? 0,
+        clipsLimit: limits.maxClipsPerMonth,
       },
       features: {
         hasImageGeneration: limits.hasImageGeneration,
         hasVoiceover: limits.hasVoiceover,
         hasVideoRepurpose: limits.hasVideoRepurpose,
+        hasClipMp4Export: limits.hasClipMp4Export,
+        maxScenesPerClip: limits.maxScenesPerClip,
       },
       _creationTime: user._creationTime,
     };
@@ -345,6 +353,7 @@ export const resetMonthlyUsage = internalMutation({
           postsThisMonth: 0,
           imagesThisMonth: 0,
           voiceoversThisMonth: 0,
+          clipsThisMonth: 0,
           usageResetDate: now,
         });
       }

@@ -10,9 +10,10 @@ interface QuickActionsProps {
   onVoiceover?: () => void
   onGenerateImage?: () => void
   onBrandKit?: () => void
+  onCreateClip?: () => void
 }
 
-export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoiceover, onGenerateImage, onBrandKit }: QuickActionsProps) {
+export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoiceover, onGenerateImage, onBrandKit, onCreateClip }: QuickActionsProps) {
   const actions = [
     {
       id: 'generate',
@@ -55,6 +56,14 @@ export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoi
       gradient: "from-red-500/10 to-orange-500/10"
     },
     {
+      id: 'clip',
+      title: 'Motion Clip',
+      description: 'AI video from your script',
+      buttonText: 'Create Clip',
+      primary: false,
+      gradient: "from-emerald-500/10 to-teal-500/10"
+    },
+    {
       id: 'brand',
       title: 'Create Brand',
       description: "Add a new brand profile",
@@ -84,13 +93,16 @@ export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoi
       case 'brand-kit':
         onBrandKit?.()
         break
+      case 'clip':
+        onCreateClip?.()
+        break
     }
   }
 
   return (
     <div className="overflow-hidden">
       <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Actions</h2>
-      <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-6 sm:overflow-visible">
+      <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-7 sm:overflow-visible">
         {actions.map((action) => (
           <Card
             key={action.id}

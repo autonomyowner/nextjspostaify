@@ -26,6 +26,7 @@ export default defineSchema({
     telegramEnabled: v.optional(v.boolean()),
     telegramLinkedAt: v.optional(v.number()),
     brandKitsGenerated: v.optional(v.number()),
+    clipsThisMonth: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
@@ -227,6 +228,34 @@ export default defineSchema({
     count: v.number(), // Requests in current window
     windowStart: v.number(), // When the current window started
   }).index("by_ip_tool", ["ipHash", "toolSlug"]),
+
+  // AI-generated motion graphic clips
+  clips: defineTable({
+    userId: v.id("users"),
+    brandId: v.optional(v.id("brands")),
+    title: v.string(),
+    script: v.string(),
+    scenes: v.any(),
+    colors: v.object({
+      primary: v.string(),
+      secondary: v.string(),
+      accent: v.string(),
+    }),
+    htmlContent: v.string(),
+    mp4Url: v.optional(v.string()),
+    renderStatus: v.union(
+      v.literal("draft"),
+      v.literal("rendering"),
+      v.literal("ready"),
+      v.literal("failed")
+    ),
+    renderJobId: v.optional(v.string()),
+    duration: v.number(),
+    scenesCount: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_renderJobId", ["renderJobId"]),
 
   // Feature click tracking for conversion analytics
   featureClicks: defineTable({

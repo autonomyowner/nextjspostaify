@@ -17,6 +17,9 @@ export const PLAN_LIMITS = {
     brandKitMockups: 0,
     hasBrandKitExport: false,
     hasBrandKitPublicShare: false,
+    maxClipsPerMonth: 2,
+    maxScenesPerClip: 4,
+    hasClipMp4Export: false,
   },
   PRO: {
     maxBrands: 5,
@@ -36,6 +39,9 @@ export const PLAN_LIMITS = {
     brandKitMockups: 3,
     hasBrandKitExport: true,
     hasBrandKitPublicShare: true,
+    maxClipsPerMonth: 30,
+    maxScenesPerClip: 8,
+    hasClipMp4Export: true,
   },
   BUSINESS: {
     maxBrands: 999,
@@ -55,6 +61,9 @@ export const PLAN_LIMITS = {
     brandKitMockups: 5,
     hasBrandKitExport: true,
     hasBrandKitPublicShare: true,
+    maxClipsPerMonth: 150,
+    maxScenesPerClip: 8,
+    hasClipMp4Export: true,
   },
 } as const;
 
