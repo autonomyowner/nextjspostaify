@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAction } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
+// generate action is in brandKitActions (separate "use node" file)
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { BrandKitReveal } from './BrandKitReveal'
@@ -36,7 +37,7 @@ export function BrandKitModal({ isOpen, onClose, brandId }: BrandKitModalProps) 
   const [error, setError] = useState('')
   const [kitId, setKitId] = useState<string | null>(null)
 
-  const generateKit = useAction(api.brandKit.generate)
+  const generateKit = useAction(api.brandKitActions.generate)
 
   const toggleVibe = (vibeId: string) => {
     setSelectedVibes(prev => {
