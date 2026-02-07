@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAction, useQuery } from 'convex/react'
+import { useAction } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { useSubscription } from '@/context/SubscriptionContext'
 
@@ -15,6 +15,7 @@ interface GeneratedClip {
   clipId: string
   scenesCount: number
   duration: number
+  htmlContent: string
   scenes: Array<{ type: string; headline: string }>
 }
 
@@ -37,18 +38,10 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<GeneratedClip | null>(null)
-  const [clipId, setClipId] = useState<string | null>(null)
 
   const { subscription, openUpgradeModal } = useSubscription()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generateClip = useAction((api as any).clipActions.generate)
-
-  // Reactively fetch clip data after creation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const clipData = (useQuery as any)(
-    clipId ? (api as any).clips?.getById : "skip",
-    clipId ? { id: clipId } : undefined
-  )
 
   const userPlan = subscription.plan
   const clipsUsed = (subscription as any).clipsThisMonth ?? 0
@@ -77,9 +70,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
         title: title.trim() || undefined,
       })
 
-      const generated = res as unknown as GeneratedClip
-      setResult(generated)
-      setClipId(generated.clipId)
+      setResult(res as unknown as GeneratedClip)
       setStep('result')
     } catch (e: any) {
       setError(e.message || 'Failed to generate clip')
@@ -90,21 +81,21 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
   }
 
   const openPreview = useCallback(() => {
-    if (!clipData?.htmlContent) return
-    const blob = new Blob([clipData.htmlContent], { type: 'text/html' })
+    if (!result?.htmlContent) return
+    const blob = new Blob([result.htmlContent], { type: 'text/html' })
     window.open(URL.createObjectURL(blob), '_blank')
-  }, [clipData])
+  }, [result])
 
   const downloadHtml = useCallback(() => {
-    if (!clipData?.htmlContent) return
-    const blob = new Blob([clipData.htmlContent], { type: 'text/html' })
+    if (!result?.htmlContent) return
+    const blob = new Blob([result.htmlContent], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `${title || 'clip'}.html`
     a.click()
     URL.revokeObjectURL(url)
-  }, [clipData, title])
+  }, [result, title])
 
   const handleClose = () => {
     if (step === 'generating') return
@@ -113,7 +104,6 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     setTitle('')
     setError('')
     setResult(null)
-    setClipId(null)
     onClose()
   }
 
@@ -337,14 +327,14 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
               <div className="flex gap-3">
                 <button
                   onClick={openPreview}
-                  disabled={!clipData?.htmlContent}
+                  disabled={!result?.htmlContent}
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold text-sm hover:from-yellow-400 hover:to-orange-400 transition-all disabled:opacity-50"
                 >
-                  {clipData?.htmlContent ? 'Preview Clip' : 'Loading...'}
+                  Preview Clip
                 </button>
                 <button
                   onClick={downloadHtml}
-                  disabled={!clipData?.htmlContent}
+                  disabled={!result?.htmlContent}
                   className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 transition-colors disabled:opacity-30"
                 >
                   Download

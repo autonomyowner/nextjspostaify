@@ -211,6 +211,7 @@ export const generate = action({
       clipId,
       scenesCount: scenes.length,
       duration,
+      htmlContent,
       scenes: scenes.map((s) => ({
         type: s.type,
         headline: s.headline || s.brandName || s.demoTitle || "",
