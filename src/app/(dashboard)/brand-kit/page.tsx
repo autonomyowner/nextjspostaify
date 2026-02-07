@@ -46,7 +46,7 @@ function BrandKitPageContent() {
               <h1 className="text-lg font-semibold">Brand Kits</h1>
             </div>
             <Link href="/dashboard">
-              <Button variant="ghost" size="sm">Back to Dashboard</Button>
+              <Button variant="outline" size="sm">Back to Dashboard</Button>
             </Link>
           </div>
         </header>

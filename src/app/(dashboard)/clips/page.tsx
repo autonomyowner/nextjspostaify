@@ -5,6 +5,8 @@ import { useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { motion } from 'framer-motion'
 import { useSubscription } from '@/context/SubscriptionContext'
+import { Logo } from '@/components/ui/Logo'
+import Link from 'next/link'
 
 export default function ClipsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,12 +33,26 @@ export default function ClipsPage() {
   }, [])
 
   return (
-    <div className="min-h-screen p-4 sm:p-8">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-1">My Clips</h1>
-        <p className="text-sm text-white/40 mb-8">
-          Your AI-generated motion graphic clips
-        </p>
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="border-b border-white/8 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Logo />
+            <div>
+              <h1 className="text-lg font-semibold text-white">My Clips</h1>
+              <p className="text-xs text-white/40 hidden sm:block">Your AI-generated motion graphic clips</p>
+            </div>
+          </div>
+          <Link href="/dashboard">
+            <button className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-sm font-medium hover:bg-white/10 transition-all">
+              Back to Dashboard
+            </button>
+          </Link>
+        </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto p-4 sm:p-8">
 
         {clips.length === 0 ? (
           <div className="text-center py-20">
