@@ -11,6 +11,8 @@
 import type * as admin from "../admin.js";
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
+import type * as brandKit from "../brandKit.js";
+import type * as brandKitActions from "../brandKitActions.js";
 import type * as brands from "../brands.js";
 import type * as chatbot from "../chatbot.js";
 import type * as chatbotAction from "../chatbotAction.js";
@@ -41,6 +43,8 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   ai: typeof ai;
   auth: typeof auth;
+  brandKit: typeof brandKit;
+  brandKitActions: typeof brandKitActions;
   brands: typeof brands;
   chatbot: typeof chatbot;
   chatbotAction: typeof chatbotAction;

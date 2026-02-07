@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 import { authComponent } from "./auth";
 import { getPlanLimits, Plan } from "./lib/planLimits";
 
@@ -203,7 +204,7 @@ export const generate = action({
     vibes: v.array(v.string()),
     brandId: v.optional(v.id("brands")),
   },
-  handler: async (ctx, args): Promise<{ kitId: string; score: number; status: string }> => {
+  handler: async (ctx, args): Promise<{ kitId: Id<"brandKits">; score: number; status: string }> => {
     const authUser = await authComponent.getAuthUser(ctx);
     if (!authUser) throw new Error("Not authenticated");
 
@@ -214,7 +215,7 @@ export const generate = action({
     const limits = getPlanLimits(plan);
 
     // Create kit record
-    const kitId: string = await ctx.runMutation(api.brandKit.create, {
+    const kitId = await ctx.runMutation(api.brandKit.create, {
       name: args.name,
       description: args.description,
       vibes: args.vibes,
