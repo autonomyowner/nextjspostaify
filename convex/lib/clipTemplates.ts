@@ -128,7 +128,7 @@ function getCoreCSS(colors: ClipColors): string {
       background: #000;
       position: relative;
       overflow: hidden;
-      transform-origin: top center;
+      transform-origin: top left;
     }
 
     #viewport {
@@ -1128,14 +1128,15 @@ function getScalingScript(): string {
   return `
     (function() {
       var canvas = document.getElementById('video-canvas');
+      var frame = document.querySelector('.capture-frame');
       var W = 1080, H = 1920;
       function scaleToFit() {
-        var vw = window.innerWidth;
-        var vh = window.innerHeight - 80;
+        var vw = window.innerWidth - 40;
+        var vh = window.innerHeight - 120;
         var s = Math.min(vw / W, vh / H, 1);
         canvas.style.transform = 'scale(' + s + ')';
-        canvas.parentElement.style.width = (W * s) + 'px';
-        canvas.parentElement.style.height = (H * s) + 'px';
+        frame.style.width = Math.round(W * s) + 'px';
+        frame.style.height = Math.round(H * s) + 'px';
       }
       scaleToFit();
       window.addEventListener('resize', scaleToFit);

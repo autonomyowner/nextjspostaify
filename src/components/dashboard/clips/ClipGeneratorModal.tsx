@@ -19,6 +19,17 @@ interface GeneratedClip {
   scenes: Array<{ type: string; headline: string }>
 }
 
+const COLOR_PRESETS = [
+  { name: 'Gold', primary: '#FACC15', secondary: '#EAB308', accent: '#F97316' },
+  { name: 'Ocean', primary: '#3B82F6', secondary: '#1D4ED8', accent: '#06B6D4' },
+  { name: 'Emerald', primary: '#10B981', secondary: '#059669', accent: '#34D399' },
+  { name: 'Rose', primary: '#F43F5E', secondary: '#E11D48', accent: '#FB7185' },
+  { name: 'Violet', primary: '#8B5CF6', secondary: '#7C3AED', accent: '#A78BFA' },
+  { name: 'Sunset', primary: '#F97316', secondary: '#EA580C', accent: '#FBBF24' },
+  { name: 'Neon', primary: '#22D3EE', secondary: '#06B6D4', accent: '#A855F7' },
+  { name: 'Coral', primary: '#FB923C', secondary: '#F87171', accent: '#FBBF24' },
+]
+
 const GENERATION_STEPS = [
   { label: 'Parsing Script', description: 'AI is analyzing your scenes' },
   { label: 'Building Scenes', description: 'Mapping to motion templates' },
@@ -220,7 +231,53 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
               {/* Brand Colors */}
               <div className="mb-6">
                 <label className="block text-xs text-white/40 mb-2">Brand Colors</label>
-                <div className="flex gap-4">
+
+                {/* Preset palettes */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {COLOR_PRESETS.map((preset) => {
+                    const isActive =
+                      colors.primary === preset.primary &&
+                      colors.secondary === preset.secondary &&
+                      colors.accent === preset.accent
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() =>
+                          setColors({
+                            primary: preset.primary,
+                            secondary: preset.secondary,
+                            accent: preset.accent,
+                          })
+                        }
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+                          isActive
+                            ? 'border-white/30 bg-white/10 text-white'
+                            : 'border-white/8 bg-white/3 text-white/40 hover:border-white/15 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex -space-x-1">
+                          <div
+                            className="w-3.5 h-3.5 rounded-full border border-black/30"
+                            style={{ background: preset.primary }}
+                          />
+                          <div
+                            className="w-3.5 h-3.5 rounded-full border border-black/30"
+                            style={{ background: preset.secondary }}
+                          />
+                          <div
+                            className="w-3.5 h-3.5 rounded-full border border-black/30"
+                            style={{ background: preset.accent }}
+                          />
+                        </div>
+                        {preset.name}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Custom color pickers */}
+                <div className="flex gap-3">
                   <ColorPicker
                     label="Primary"
                     value={colors.primary}
