@@ -348,7 +348,6 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                   setScript('')
                   setTitle('')
                   setResult(null)
-                  setClipId(null)
                   setError('')
                 }}
                 className="w-full mt-3 py-2.5 rounded-xl bg-white/3 text-white/40 text-xs hover:bg-white/5 transition-colors"
