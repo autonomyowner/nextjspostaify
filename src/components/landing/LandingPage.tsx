@@ -9,6 +9,7 @@ import { HowItWorks } from './HowItWorks'
 import { WhatIsPostaify } from './WhatIsPostaify'
 import { Pricing } from './Pricing'
 import { FAQ } from './FAQ'
+import { BlogPreview } from './BlogPreview'
 import { Footer } from './Footer'
 
 export function LandingPage() {
@@ -23,6 +24,7 @@ export function LandingPage() {
       <WhatIsPostaify />
       <Pricing />
       <FAQ />
+      <BlogPreview />
       <Footer />
     </div>
   )

@@ -16,8 +16,8 @@ export function Footer() {
     ],
     [t('footer.company.title')]: [
       { label: t('footer.company.about'), href: '#' },
-      { label: t('footer.company.blog'), href: '#' },
-      { label: t('footer.company.careers'), href: '#' },
+      { label: t('footer.company.blog'), href: '/blog' },
+      { label: 'Compare', href: '/compare/buffer' },
       { label: t('footer.company.contact'), href: '#' }
     ],
     [t('footer.legal.title')]: [

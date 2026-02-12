@@ -56,6 +56,9 @@ export const Navbar = memo(function Navbar() {
           <Link href="/tools" className="text-sm text-muted-foreground hover:text-white transition-colors">
             Free Tools
           </Link>
+          <Link href="/blog" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            Blog
+          </Link>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-white transition-colors">
             {t('nav.pricing')}
           </a>
