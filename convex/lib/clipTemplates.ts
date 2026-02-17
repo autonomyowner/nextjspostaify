@@ -76,12 +76,18 @@ function getCoreCSS(colors: ClipColors): string {
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
     body {
-      background: #0a0a0a;
+      background: #000;
       display: flex;
       justify-content: center;
       align-items: flex-start;
       min-height: 100vh;
+      min-height: 100dvh;
       font-family: 'Inter', sans-serif;
       overflow-x: hidden;
     }
@@ -91,6 +97,32 @@ function getCoreCSS(colors: ClipColors): string {
       flex-direction: column;
       align-items: center;
       padding: 20px;
+      width: 100%;
+    }
+
+    @media (max-width: 767px) {
+      body {
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .page-wrapper {
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      .capture-frame {
+        border: none !important;
+        border-radius: 0 !important;
+      }
+      .capture-label, .capture-dimensions {
+        display: none !important;
+      }
+      #controls {
+        display: none !important;
+      }
     }
 
     .capture-frame {
@@ -1129,14 +1161,61 @@ function getScalingScript(): string {
     (function() {
       var canvas = document.getElementById('video-canvas');
       var frame = document.querySelector('.capture-frame');
+      var wrapper = document.querySelector('.page-wrapper');
+      var label = document.querySelector('.capture-label');
+      var dims = document.querySelector('.capture-dimensions');
+      var controls = document.getElementById('controls');
       var W = 1080, H = 1920;
+
+      function isMobile() {
+        return window.innerWidth < 768;
+      }
+
       function scaleToFit() {
-        var vw = window.innerWidth - 40;
-        var vh = window.innerHeight - 120;
-        var s = Math.min(vw / W, vh / H, 1);
-        canvas.style.transform = 'scale(' + s + ')';
-        frame.style.width = Math.round(W * s) + 'px';
-        frame.style.height = Math.round(H * s) + 'px';
+        if (isMobile()) {
+          // MOBILE: Fill entire viewport for easy screen recording
+          document.body.style.overflow = 'hidden';
+          wrapper.style.padding = '0';
+          frame.style.border = 'none';
+          frame.style.borderRadius = '0';
+          if (label) label.style.display = 'none';
+          if (dims) dims.style.display = 'none';
+          if (controls) controls.style.display = 'none';
+
+          var vw = window.innerWidth;
+          var vh = window.innerHeight;
+          // Scale to fit within viewport (no content cropping)
+          // Black bars blend with phone bezels since clip bg is black
+          var s = Math.min(vw / W, vh / H);
+          var scaledW = Math.round(W * s);
+          var scaledH = Math.round(H * s);
+          // Center the canvas in the viewport
+          var offsetX = Math.round((vw - scaledW) / 2);
+          var offsetY = Math.round((vh - scaledH) / 2);
+          canvas.style.transformOrigin = 'top left';
+          canvas.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + s + ')';
+          frame.style.width = vw + 'px';
+          frame.style.height = vh + 'px';
+          frame.style.overflow = 'hidden';
+        } else {
+          // DESKTOP: Original behavior with capture guides
+          document.body.style.overflow = '';
+          wrapper.style.padding = '20px';
+          frame.style.border = '2px dashed rgba(255, 50, 50, 0.4)';
+          frame.style.borderRadius = '8px';
+          frame.style.overflow = 'hidden';
+          if (label) label.style.display = '';
+          if (dims) dims.style.display = '';
+          if (controls) controls.style.display = '';
+
+          var vw = window.innerWidth - 40;
+          var vh = window.innerHeight - 120;
+          var s = Math.min(vw / W, vh / H, 1);
+          canvas.style.transform = 'scale(' + s + ')';
+          canvas.style.transformOrigin = 'top left';
+          frame.style.width = Math.round(W * s) + 'px';
+          frame.style.height = Math.round(H * s) + 'px';
+        }
       }
       scaleToFit();
       window.addEventListener('resize', scaleToFit);
@@ -1213,7 +1292,10 @@ export function generateClipHTML(config: ClipConfig): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>${escapeHtml(config.title)}</title>
   <style>
     ${getCoreCSS(colors)}
