@@ -5,6 +5,7 @@ import { Hero } from './Hero'
 import { ShowcaseCarousel } from './ShowcaseCarousel'
 import { ProblemSolution } from './ProblemSolution'
 import { AgentFeatures } from './AgentFeatures'
+import { MotionClipShowcase } from './MotionClipShowcase'
 import { HowItWorks } from './HowItWorks'
 import { WhatIsPostaify } from './WhatIsPostaify'
 import { Pricing } from './Pricing'
@@ -20,6 +21,7 @@ export function LandingPage() {
       <ShowcaseCarousel />
       <ProblemSolution />
       <AgentFeatures />
+      <MotionClipShowcase />
       <HowItWorks />
       <WhatIsPostaify />
       <Pricing />

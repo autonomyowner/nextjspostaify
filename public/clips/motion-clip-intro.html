@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>POSTAIFY — Motion Clip Intro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FACC15;
+      --secondary: #F5D547;
+      --accent: #FACC15;
+      --gold: #D4A017;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --snappy: cubic-bezier(0.2, 0, 0, 1);
+      --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { width: 100%; height: 100%; }
+
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: 'Inter', -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      width: 100%;
+    }
+
+    @media (max-width: 767px) {
+      body { align-items: center; justify-content: center; overflow: hidden; }
+      .page-wrapper { padding: 0; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
+      .capture-frame { border: none !important; border-radius: 0 !important; }
+      .capture-label, .capture-dimensions { display: none !important; }
+      #controls { display: none !important; }
+    }
+
+    .capture-frame {
+      position: relative;
+      border: 2px dashed rgba(250, 204, 21, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .capture-label {
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(250, 204, 21, 0.5);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .capture-dimensions {
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.2);
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+
+    #video-canvas {
+      width: 1080px;
+      height: 1920px;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+      transform-origin: top left;
+    }
+
+    #video-canvas, #video-canvas * { cursor: none !important; }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-origin: center center;
+    }
+
+    /* ═══════════════════════════════════════════
+       AMBIENT BACKGROUND
+       ═══════════════════════════════════════════ */
+
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, #FACC1518, transparent),
+        radial-gradient(ellipse 60% 40% at 80% 100%, #FACC1510, transparent),
+        radial-gradient(ellipse 50% 40% at 20% 60%, #D4A01708, transparent);
+      z-index: 1;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(250,204,21,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(250,204,21,0.015) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0;
+      animation: fadeIn 2s var(--ease-out) forwards 0.5s;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .glow-orb-1 {
+      width: 500px; height: 500px;
+      top: -150px; right: -100px;
+      background: #FACC15;
+      filter: blur(100px);
+      opacity: 0.2;
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+
+    .glow-orb-2 {
+      width: 350px; height: 350px;
+      bottom: 300px; left: -120px;
+      background: #D4A017;
+      filter: blur(100px);
+      opacity: 0.15;
+      animation: pulseGlow 5s ease-in-out infinite reverse;
+    }
+
+    .glow-orb-3 {
+      width: 300px; height: 300px;
+      bottom: -100px; right: -50px;
+      background: #FACC15;
+      filter: blur(90px);
+      opacity: 0.15;
+      animation: pulseGlow 6s ease-in-out infinite 1s;
+    }
+
+    .glow-orb-4 {
+      width: 200px; height: 200px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #FACC15;
+      filter: blur(120px);
+      opacity: 0;
+      transition: opacity 1s var(--ease-out);
+    }
+
+    #particles {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      background: rgba(250, 204, 21, 0.4);
+      border-radius: 50%;
+      animation: floatParticle 8s infinite ease-in-out;
+    }
+
+    /* ═══════════════════════════════════════════
+       LETTERBOX BARS (cinematic)
+       ═══════════════════════════════════════════ */
+
+    .letterbox-top, .letterbox-bottom {
+      position: absolute;
+      left: 0; width: 100%;
+      height: 0;
+      background: #000;
+      z-index: 200;
+      transition: height 1s var(--ease-out);
+    }
+    .letterbox-top { top: 0; }
+    .letterbox-bottom { bottom: 0; }
+
+    /* ═══════════════════════════════════════════
+       SCENES
+       ═══════════════════════════════════════════ */
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 50px;
+      z-index: 10;
+      opacity: 0;
+      transform: scale(0.95);
+      filter: blur(4px);
+      transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out), filter 0.5s var(--ease-out);
+      will-change: opacity, transform, filter;
+    }
+
+    .scene.active {
+      opacity: 1;
+      transform: scale(1);
+      filter: blur(0);
+    }
+
+    .scene.exit {
+      opacity: 0;
+      transform: scale(1.08);
+      filter: blur(6px);
+    }
+
+    .scene, .scene * {
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 1: COLD OPEN — Montage Flash
+       ═══════════════════════════════════════════ */
+
+    .montage-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .montage-flash {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .flash-1 { font-size: 80px; color: #ef4444; }
+    .flash-2 { font-size: 72px; color: var(--primary); }
+    .flash-3 { font-size: 64px; color: #22c55e; }
+    .flash-4 { font-size: 90px; color: #fff; text-shadow: 0 0 60px var(--primary); }
+
+    /* ═══════════════════════════════════════════
+       SCENE 2: HOOK
+       ═══════════════════════════════════════════ */
+
+    .hook-line-1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 82px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      line-height: 1.05;
+      opacity: 0;
+      transform: scale(2.5) translateY(-40px);
+      filter: blur(12px);
+    }
+
+    .hook-line-2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 82px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.05;
+      margin-top: 10px;
+      opacity: 0;
+      transform: translateY(30px);
+      background: linear-gradient(90deg, #fff, var(--primary), var(--secondary), var(--primary));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hook-underline {
+      width: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary), var(--gold));
+      margin-top: 30px;
+      border-radius: 3px;
+      box-shadow: 0 0 20px var(--primary);
+    }
+
+    .hook-sub {
+      font-size: 32px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.4);
+      margin-top: 40px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 3: BRAND REVEAL
+       ═══════════════════════════════════════════ */
+
+    .brand-badge {
+      padding: 14px 36px;
+      border: 2px solid var(--primary);
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: scale(0.5);
+      margin-bottom: 40px;
+    }
+
+    .brand-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 110px;
+      font-weight: 800;
+      letter-spacing: -3px;
+      opacity: 0;
+      transform: scale(0.8);
+      background: linear-gradient(90deg, #fff, var(--primary), var(--secondary), #fff, var(--primary));
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-feature-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 56px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+      margin-top: 10px;
+      opacity: 0;
+      transform: translateY(20px);
+      letter-spacing: 8px;
+      text-transform: uppercase;
+    }
+
+    .brand-tagline {
+      font-size: 26px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.35);
+      margin-top: 30px;
+      opacity: 0;
+      transform: translateY(15px);
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 4: HOW IT WORKS (Demo)
+       ═══════════════════════════════════════════ */
+
+    .demo-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 44px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 50px;
+      opacity: 0;
+      transform: scale(2) translateY(-30px);
+      filter: blur(8px);
+    }
+
+    .demo-step {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 28px 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(250,204,21,0.08);
+      border-radius: 20px;
+      margin-bottom: 16px;
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    .step-num {
+      width: 52px; height: 52px;
+      min-width: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: #000;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .step-desc {
+      font-size: 26px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.3;
+    }
+
+    .step-connector {
+      width: 3px;
+      height: 30px;
+      background: linear-gradient(to bottom, var(--primary), transparent);
+      margin-left: 57px;
+      margin-bottom: 16px;
+      opacity: 0;
+    }
+
+    .demo-output {
+      width: 100%;
+      max-width: 860px;
+      margin-top: 20px;
+      padding: 24px 32px;
+      background: linear-gradient(135deg, rgba(250,204,21,0.06), rgba(250,204,21,0.02));
+      border: 2px solid rgba(250,204,21,0.2);
+      border-radius: 20px;
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    .demo-output-label {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .demo-output-desc {
+      font-size: 28px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 5: SCENE TYPES SHOWCASE
+       ═══════════════════════════════════════════ */
+
+    .types-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 42px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 10px;
+      opacity: 0;
+      transform: scale(2) translateY(-30px);
+      filter: blur(8px);
+    }
+
+    .types-sub {
+      font-size: 22px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 40px;
+      opacity: 0;
+      transform: translateY(15px);
+    }
+
+    .types-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .type-card {
+      padding: 22px 20px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      opacity: 0;
+      transform: scale(0.7) translateY(20px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .type-dot {
+      width: 12px; height: 12px;
+      min-width: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .type-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .type-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+      pointer-events: none;
+    }
+
+    /* Color accents per type */
+    .type-hook .type-dot { color: #ef4444; background: #ef4444; }
+    .type-brand .type-dot { color: #FACC15; background: #FACC15; }
+    .type-features .type-dot { color: #3b82f6; background: #3b82f6; }
+    .type-demo .type-dot { color: #22c55e; background: #22c55e; }
+    .type-transform .type-dot { color: #a855f7; background: #a855f7; }
+    .type-stats .type-dot { color: #06b6d4; background: #06b6d4; }
+    .type-compare .type-dot { color: #f97316; background: #f97316; }
+    .type-cta .type-dot { color: #FACC15; background: #FACC15; }
+
+    .type-hook { border-color: rgba(239,68,68,0.15); }
+    .type-brand { border-color: rgba(250,204,21,0.15); }
+    .type-features { border-color: rgba(59,130,246,0.15); }
+    .type-demo { border-color: rgba(34,197,94,0.15); }
+    .type-transform { border-color: rgba(168,85,247,0.15); }
+    .type-stats { border-color: rgba(6,182,212,0.15); }
+    .type-compare { border-color: rgba(249,115,22,0.15); }
+    .type-cta { border-color: rgba(250,204,21,0.15); }
+
+    /* ═══════════════════════════════════════════
+       SCENE 6: QUALITY FEATURES
+       ═══════════════════════════════════════════ */
+
+    .quality-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 50px;
+      opacity: 0;
+      transform: scale(2) translateY(-30px);
+      filter: blur(8px);
+    }
+
+    .quality-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      max-width: 900px;
+    }
+
+    .quality-pill {
+      padding: 18px 34px;
+      background: rgba(250,204,21,0.06);
+      border: 2px solid rgba(250,204,21,0.2);
+      border-radius: 50px;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary);
+      opacity: 0;
+      transform: scale(0.6);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 7: TRANSFORMATION
+       ═══════════════════════════════════════════ */
+
+    .transform-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 60px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .transform-boxes {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      width: 100%;
+      max-width: 860px;
+      justify-content: center;
+    }
+
+    .transform-box {
+      flex: 1;
+      padding: 40px 24px;
+      border-radius: 24px;
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.7);
+    }
+
+    .transform-before {
+      background: rgba(239,68,68,0.06);
+      border: 2px solid rgba(239,68,68,0.2);
+    }
+
+    .transform-after {
+      background: rgba(250,204,21,0.06);
+      border: 2px solid rgba(250,204,21,0.2);
+    }
+
+    .transform-label {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 16px;
+    }
+
+    .transform-before .transform-label { color: rgba(239,68,68,0.6); }
+    .transform-after .transform-label { color: var(--primary); }
+
+    .transform-value {
+      font-size: 44px;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .transform-before .transform-value {
+      color: rgba(239,68,68,0.8);
+    }
+
+    .transform-after .transform-value {
+      color: var(--primary);
+      text-shadow: 0 0 40px rgba(250,204,21,0.3);
+    }
+
+    .transform-arrow {
+      font-size: 48px;
+      color: var(--primary);
+      opacity: 0;
+      transform: scale(0.5);
+      flex-shrink: 0;
+      animation-fill-mode: forwards;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 8: STATS
+       ═══════════════════════════════════════════ */
+
+    .stats-row {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      max-width: 860px;
+      justify-content: center;
+    }
+
+    .stat-card {
+      flex: 1;
+      padding: 36px 16px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(250,204,21,0.1);
+      border-radius: 20px;
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.6) translateY(30px);
+    }
+
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 64px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .stat-label {
+      font-size: 18px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.3;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 9: CTA
+       ═══════════════════════════════════════════ */
+
+    .cta-headline {
+      font-family: 'Syne', sans-serif;
+      font-size: 64px;
+      font-weight: 900;
+      color: #fff;
+      text-align: center;
+      line-height: 1.1;
+      max-width: 800px;
+      opacity: 0;
+      transform: scale(2.5) translateY(-40px);
+      filter: blur(12px);
+    }
+
+    .cta-sub {
+      font-size: 28px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 20px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .cta-button {
+      margin-top: 50px;
+      padding: 30px 90px;
+      background: linear-gradient(135deg, var(--primary), var(--gold));
+      border: none;
+      border-radius: 60px;
+      font-size: 30px;
+      font-weight: 800;
+      color: #000;
+      letter-spacing: 1px;
+      opacity: 0;
+      transform: scale(0.6);
+      box-shadow: 0 0 50px rgba(250,204,21,0.4);
+    }
+
+    .cta-url {
+      margin-top: 30px;
+      font-size: 24px;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 2px;
+      opacity: 0;
+    }
+
+    .cta-powered {
+      margin-top: 16px;
+      font-size: 16px;
+      color: rgba(255,255,255,0.15);
+      opacity: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       CONTROLS
+       ═══════════════════════════════════════════ */
+
+    #controls {
+      margin-top: 30px;
+      display: flex;
+      gap: 12px;
+    }
+
+    #controls button {
+      padding: 14px 36px;
+      border: 1px solid rgba(250,204,21,0.3);
+      background: rgba(250,204,21,0.05);
+      color: var(--primary);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    #controls button:hover {
+      background: rgba(250,204,21,0.1);
+      border-color: rgba(250,204,21,0.5);
+    }
+
+    /* ═══════════════════════════════════════════
+       KEYFRAMES
+       ═══════════════════════════════════════════ */
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.15; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(1.15); }
+    }
+
+    @keyframes floatParticle {
+      0%, 100% { transform: translateY(0) translateX(0); opacity: 0.4; }
+      50% { transform: translateY(-120px) translateX(25px); opacity: 0.9; }
+    }
+
+    @keyframes textSlam {
+      from { opacity: 0; transform: scale(2.5) translateY(-40px); filter: blur(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+    }
+
+    @keyframes scalePop {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-60px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes gradientShift {
+      to { background-position: 300% center; }
+    }
+
+    @keyframes shineSweep {
+      from { left: -100%; }
+      to { left: 150%; }
+    }
+
+    @keyframes buttonGlow {
+      0%, 100% { box-shadow: 0 0 50px rgba(250,204,21,0.4); }
+      50% { box-shadow: 0 0 100px rgba(250,204,21,0.7), 0 0 150px rgba(250,204,21,0.2); }
+    }
+
+    @keyframes arrowPulse {
+      0%, 100% { transform: translateX(0) scale(1); opacity: 0.8; }
+      50% { transform: translateX(8px) scale(1.15); opacity: 1; }
+    }
+
+    @keyframes flashIn {
+      0% { opacity: 0; transform: scale(3); filter: blur(20px); }
+      20% { opacity: 1; transform: scale(1); filter: blur(0); }
+      80% { opacity: 1; transform: scale(1); filter: blur(0); }
+      100% { opacity: 0; transform: scale(0.95); filter: blur(2px); }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.8); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes widthGrow {
+      from { width: 0; }
+      to { width: 400px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="capture-label">CAPTURE THIS AREA</div>
+    <div class="capture-frame">
+      <div id="video-canvas">
+        <div id="viewport">
+          <div class="bg-gradient"></div>
+          <div class="grid-overlay"></div>
+          <div class="glow-orb glow-orb-1"></div>
+          <div class="glow-orb glow-orb-2"></div>
+          <div class="glow-orb glow-orb-3"></div>
+          <div class="glow-orb glow-orb-4" id="center-glow"></div>
+          <div id="particles"></div>
+          <div class="letterbox-top" id="lb-top"></div>
+          <div class="letterbox-bottom" id="lb-bot"></div>
+
+          <!-- SCENE 1: COLD OPEN — Montage Flash -->
+          <div class="scene" id="scene-0">
+            <div class="montage-container">
+              <div class="montage-flash flash-1" id="flash-1">STILL EDITING<br>MANUALLY?</div>
+              <div class="montage-flash flash-2" id="flash-2">POSTAIFY</div>
+              <div class="montage-flash flash-3" id="flash-3">30 DAYS OF<br>CONTENT</div>
+              <div class="montage-flash flash-4" id="flash-4">MOTION<br>CLIP</div>
+            </div>
+          </div>
+
+          <!-- SCENE 2: HOOK -->
+          <div class="scene" id="scene-1">
+            <div class="hook-line-1" id="hook-1">YOUR SCRIPT.</div>
+            <div class="hook-line-2" id="hook-2">OUR CINEMA.</div>
+            <div class="hook-underline" id="hook-line"></div>
+            <div class="hook-sub" id="hook-sub">AI-Powered Video Ads in Seconds</div>
+          </div>
+
+          <!-- SCENE 3: BRAND REVEAL -->
+          <div class="scene" id="scene-2">
+            <div class="brand-badge" id="brand-badge">INTRODUCING</div>
+            <div class="brand-name" id="brand-name">POSTAIFY</div>
+            <div class="brand-feature-name" id="brand-feat">MOTION CLIP</div>
+            <div class="brand-tagline" id="brand-tag">Script to cinematic video. Instantly.</div>
+          </div>
+
+          <!-- SCENE 4: HOW IT WORKS -->
+          <div class="scene" id="scene-3" style="justify-content: center;">
+            <div class="demo-title" id="demo-title">HOW IT WORKS</div>
+            <div class="demo-step" id="step-1">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-label">Write</div>
+                <div class="step-desc">Type your ad script or idea</div>
+              </div>
+            </div>
+            <div class="step-connector" id="conn-1"></div>
+            <div class="demo-step" id="step-2">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-label">AI Parses</div>
+                <div class="step-desc">Scenes, timing &amp; transitions</div>
+              </div>
+            </div>
+            <div class="step-connector" id="conn-2"></div>
+            <div class="demo-step" id="step-3">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-label">Output</div>
+                <div class="step-desc">Cinematic 60fps video clip</div>
+              </div>
+            </div>
+            <div class="demo-output" id="demo-out">
+              <div class="demo-output-label">RESULT</div>
+              <div class="demo-output-desc">Screen-record or export MP4</div>
+            </div>
+          </div>
+
+          <!-- SCENE 5: SCENE TYPES -->
+          <div class="scene" id="scene-4">
+            <div class="types-title" id="types-title">8 SCENE TYPES</div>
+            <div class="types-sub" id="types-sub">Every scene, every style</div>
+            <div class="types-grid">
+              <div class="type-card type-hook" id="tc-0"><div class="type-dot"></div><div class="type-name">Hook</div></div>
+              <div class="type-card type-brand" id="tc-1"><div class="type-dot"></div><div class="type-name">Brand</div></div>
+              <div class="type-card type-features" id="tc-2"><div class="type-dot"></div><div class="type-name">Features</div></div>
+              <div class="type-card type-demo" id="tc-3"><div class="type-dot"></div><div class="type-name">Demo</div></div>
+              <div class="type-card type-transform" id="tc-4"><div class="type-dot"></div><div class="type-name">Transform</div></div>
+              <div class="type-card type-stats" id="tc-5"><div class="type-dot"></div><div class="type-name">Stats</div></div>
+              <div class="type-card type-compare" id="tc-6"><div class="type-dot"></div><div class="type-name">Compare</div></div>
+              <div class="type-card type-cta" id="tc-7"><div class="type-dot"></div><div class="type-name">CTA</div></div>
+            </div>
+          </div>
+
+          <!-- SCENE 6: QUALITY -->
+          <div class="scene" id="scene-5">
+            <div class="quality-title" id="q-title">CINEMATIC QUALITY</div>
+            <div class="quality-pills">
+              <div class="quality-pill" id="qp-0">60fps Animations</div>
+              <div class="quality-pill" id="qp-1">Pro Easing Curves</div>
+              <div class="quality-pill" id="qp-2">Glow &amp; Particles</div>
+              <div class="quality-pill" id="qp-3">Zoom Transitions</div>
+              <div class="quality-pill" id="qp-4">Text Slam Effects</div>
+              <div class="quality-pill" id="qp-5">Dark Cinematic</div>
+            </div>
+          </div>
+
+          <!-- SCENE 7: TRANSFORMATION -->
+          <div class="scene" id="scene-6">
+            <div class="transform-title" id="tf-title">The Transformation</div>
+            <div class="transform-boxes">
+              <div class="transform-box transform-before" id="tf-before">
+                <div class="transform-label">Before</div>
+                <div class="transform-value">Write a<br>script</div>
+              </div>
+              <div class="transform-arrow" id="tf-arrow">&#10132;</div>
+              <div class="transform-box transform-after" id="tf-after">
+                <div class="transform-label">After</div>
+                <div class="transform-value">30-sec<br>cinema</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCENE 8: STATS -->
+          <div class="scene" id="scene-7">
+            <div class="stats-row">
+              <div class="stat-card" id="st-0">
+                <div class="stat-value" id="sv-0">8</div>
+                <div class="stat-label">Scene<br>Types</div>
+              </div>
+              <div class="stat-card" id="st-1">
+                <div class="stat-value" id="sv-1">60</div>
+                <div class="stat-label">Frames Per<br>Second</div>
+              </div>
+              <div class="stat-card" id="st-2">
+                <div class="stat-value" id="sv-2">30s</div>
+                <div class="stat-label">Cinematic<br>Clips</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCENE 9: CTA -->
+          <div class="scene" id="scene-8">
+            <div class="cta-headline" id="cta-h">Create Your First Clip</div>
+            <div class="cta-sub" id="cta-sub">Powered by POSTAIFY</div>
+            <div class="cta-button" id="cta-btn">Try Free</div>
+            <div class="cta-url" id="cta-url">postaify.com</div>
+          </div>
+        </div>
+      </div>
+      <div class="capture-dimensions">1080 x 1920 px</div>
+    </div>
+
+    <div id="controls">
+      <button onclick="playVideo()">Play</button>
+      <button onclick="location.reload()">Restart</button>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════
+    // DYNAMIC VIEWPORT SCALING
+    // ═══════════════════════════════════════════
+    (function() {
+      var canvas = document.getElementById('video-canvas');
+      var frame = document.querySelector('.capture-frame');
+      var wrapper = document.querySelector('.page-wrapper');
+      var label = document.querySelector('.capture-label');
+      var dims = document.querySelector('.capture-dimensions');
+      var controls = document.getElementById('controls');
+      var W = 1080, H = 1920;
+
+      function isMobile() { return window.innerWidth < 768; }
+
+      function scaleToFit() {
+        if (isMobile()) {
+          document.body.style.overflow = 'hidden';
+          wrapper.style.padding = '0';
+          frame.style.border = 'none';
+          frame.style.borderRadius = '0';
+          if (label) label.style.display = 'none';
+          if (dims) dims.style.display = 'none';
+          if (controls) controls.style.display = 'none';
+
+          var vw = window.innerWidth;
+          var vh = window.innerHeight;
+          var s = Math.min(vw / W, vh / H);
+          var scaledW = Math.round(W * s);
+          var scaledH = Math.round(H * s);
+          var offsetX = Math.round((vw - scaledW) / 2);
+          var offsetY = Math.round((vh - scaledH) / 2);
+          canvas.style.transformOrigin = 'top left';
+          canvas.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + s + ')';
+          frame.style.width = vw + 'px';
+          frame.style.height = vh + 'px';
+          frame.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = '';
+          wrapper.style.padding = '20px';
+          frame.style.border = '2px dashed rgba(250, 204, 21, 0.3)';
+          frame.style.borderRadius = '8px';
+          frame.style.overflow = 'hidden';
+          if (label) label.style.display = '';
+          if (dims) dims.style.display = '';
+          if (controls) controls.style.display = '';
+
+          var vw = window.innerWidth - 40;
+          var vh = window.innerHeight - 120;
+          var s = Math.min(vw / W, vh / H, 1);
+          canvas.style.transform = 'scale(' + s + ')';
+          canvas.style.transformOrigin = 'top left';
+          frame.style.width = Math.round(W * s) + 'px';
+          frame.style.height = Math.round(H * s) + 'px';
+        }
+      }
+      scaleToFit();
+      window.addEventListener('resize', scaleToFit);
+    })();
+
+    // ═══════════════════════════════════════════
+    // PARTICLES
+    // ═══════════════════════════════════════════
+    (function() {
+      var c = document.getElementById('particles');
+      for (var i = 0; i < 25; i++) {
+        var p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.top = Math.random() * 100 + '%';
+        p.style.width = (2 + Math.random() * 4) + 'px';
+        p.style.height = p.style.width;
+        p.style.animationDelay = Math.random() * 5 + 's';
+        p.style.animationDuration = (5 + Math.random() * 6) + 's';
+        c.appendChild(p);
+      }
+    })();
+
+    // ═══════════════════════════════════════════
+    // ANIMATION HELPERS
+    // ═══════════════════════════════════════════
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function el(id) { return document.getElementById(id); }
+
+    function anim(id, animation, duration, fill) {
+      var e = el(id);
+      if (!e) return;
+      e.style.animation = animation;
+      if (fill !== false) e.style.animationFillMode = 'forwards';
+    }
+
+    function css(id, props) {
+      var e = el(id);
+      if (!e) return;
+      Object.assign(e.style, props);
+    }
+
+    async function switchScene(id) {
+      var current = document.querySelector('.scene.active');
+      var next = document.getElementById(id);
+      if (current) {
+        current.classList.add('exit');
+        current.classList.remove('active');
+        await wait(700); // wait for full 0.6s exit transition + gap
+        current.classList.remove('exit');
+        // Reset all child animations so nothing flickers on re-entry
+        current.querySelectorAll('[style]').forEach(function(el) {
+          el.style.opacity = '';
+          el.style.transform = '';
+          el.style.animation = '';
+          el.style.filter = '';
+        });
+        await wait(100); // brief black gap between scenes
+      }
+      next.classList.add('active');
+      await wait(200); // let the scene fully fade in before animating children
+    }
+
+    function animateNumber(element, target, duration, suffix) {
+      suffix = suffix || '';
+      var startTime = performance.now();
+      function update(now) {
+        var elapsed = now - startTime;
+        var progress = Math.min(elapsed / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = Math.floor(target * eased);
+        element.textContent = current + suffix;
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    // ═══════════════════════════════════════════
+    // MAIN VIDEO SEQUENCE
+    // ═══════════════════════════════════════════
+    async function playVideo() {
+
+      // ─── SCENE 0: COLD OPEN (montage flash) ───
+      await switchScene('scene-0');
+      await wait(400);
+
+      // Flash 1: Pain point — slow dramatic
+      css('flash-1', { animation: 'flashIn 1s var(--ease-out-expo) forwards' });
+      await wait(1100);
+
+      // Flash 2: Brand
+      css('flash-2', { animation: 'flashIn 0.9s var(--ease-out-expo) forwards' });
+      await wait(1000);
+
+      // Flash 3: Promise
+      css('flash-3', { animation: 'flashIn 0.9s var(--ease-out-expo) forwards' });
+      await wait(1000);
+
+      // Flash 4: Feature name — hold longest
+      css('flash-4', { animation: 'flashIn 1.4s var(--ease-out-expo) forwards' });
+      await wait(1500);
+
+      // ─── SCENE 1: HOOK ───
+      await switchScene('scene-1');
+
+      // Text slam line 1
+      css('hook-1', { animation: 'textSlam 0.6s var(--ease-out-expo) forwards' });
+      await wait(800);
+
+      // Line 2 slides up + gradient shift
+      css('hook-2', {
+        transition: 'all 0.8s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)',
+        animation: 'gradientShift 3s linear infinite'
+      });
+      await wait(600);
+
+      // Golden underline grows
+      css('hook-line', {
+        transition: 'width 1s var(--ease-out)',
+        width: '400px'
+      });
+      await wait(500);
+
+      // Subtitle
+      css('hook-sub', {
+        transition: 'all 0.7s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)'
+      });
+      await wait(2500);
+
+      // ─── SCENE 2: BRAND REVEAL ───
+      // Cinematic letterbox bars
+      el('lb-top').style.height = '7%';
+      el('lb-bot').style.height = '7%';
+
+      await switchScene('scene-2');
+
+      // Badge pops
+      css('brand-badge', { animation: 'scalePop 0.7s var(--ease-out-back) forwards' });
+      await wait(700);
+
+      // Brand name with gradient
+      css('brand-name', {
+        animation: 'scalePop 0.9s var(--ease-out-back) forwards, gradientShift 4s linear infinite 0.9s'
+      });
+      await wait(800);
+
+      // Feature name
+      css('brand-feat', {
+        transition: 'all 0.8s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)'
+      });
+      await wait(500);
+
+      // Center glow pulse
+      css('center-glow', { opacity: '0.4', animation: 'glowPulse 2s ease-in-out infinite' });
+
+      // Tagline
+      css('brand-tag', {
+        transition: 'all 0.7s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)'
+      });
+      await wait(2800);
+
+      // Remove letterbox
+      el('lb-top').style.height = '0';
+      el('lb-bot').style.height = '0';
+      css('center-glow', { opacity: '0' });
+
+      // ─── SCENE 3: HOW IT WORKS ───
+      await switchScene('scene-3');
+
+      // Title slam
+      css('demo-title', { animation: 'textSlam 0.6s var(--ease-out-expo) forwards' });
+      await wait(700);
+
+      // Step 1
+      css('step-1', { animation: 'slideInLeft 0.6s var(--ease-out) forwards' });
+      await wait(400);
+      css('conn-1', { transition: 'opacity 0.3s', opacity: '1' });
+      await wait(200);
+
+      // Step 2
+      css('step-2', { animation: 'slideInLeft 0.6s var(--ease-out) forwards 0.1s' });
+      await wait(400);
+      css('conn-2', { transition: 'opacity 0.3s', opacity: '1' });
+      await wait(200);
+
+      // Step 3
+      css('step-3', { animation: 'slideInLeft 0.6s var(--ease-out) forwards 0.2s' });
+      await wait(600);
+
+      // Output box
+      css('demo-out', { animation: 'scalePop 0.7s var(--ease-out-back) forwards' });
+      await wait(2500);
+
+      // ─── SCENE 4: SCENE TYPES ───
+      await switchScene('scene-4');
+
+      css('types-title', { animation: 'textSlam 0.6s var(--ease-out-expo) forwards' });
+      await wait(500);
+
+      css('types-sub', {
+        transition: 'all 0.5s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)'
+      });
+      await wait(300);
+
+      // Stagger type cards
+      for (var i = 0; i < 8; i++) {
+        (function(idx) {
+          setTimeout(function() {
+            var card = el('tc-' + idx);
+            card.style.animation = 'scalePop 0.5s var(--ease-out-back) forwards';
+            // Shine sweep after pop
+            setTimeout(function() {
+              var after = card.querySelector('::after');
+              card.style.overflow = 'hidden';
+              var shine = document.createElement('div');
+              shine.style.cssText = 'position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);pointer-events:none;animation:shineSweep 1s var(--ease-out) forwards;';
+              card.appendChild(shine);
+            }, 400);
+          }, idx * 100);
+        })(i);
+      }
+      await wait(3000);
+
+      // ─── SCENE 5: QUALITY ───
+      await switchScene('scene-5');
+
+      css('q-title', { animation: 'textSlam 0.6s var(--ease-out-expo) forwards' });
+      await wait(600);
+
+      // Stagger pills
+      for (var j = 0; j < 6; j++) {
+        (function(idx) {
+          setTimeout(function() {
+            el('qp-' + idx).style.animation = 'scalePop 0.5s var(--ease-out-back) forwards';
+          }, idx * 130);
+        })(j);
+      }
+      await wait(2800);
+
+      // ─── SCENE 6: TRANSFORMATION ───
+      await switchScene('scene-6');
+
+      css('tf-title', {
+        transition: 'all 0.6s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)'
+      });
+      await wait(400);
+
+      // Before box
+      css('tf-before', { animation: 'scalePop 0.6s var(--ease-out-back) forwards' });
+      await wait(700);
+
+      // Arrow
+      css('tf-arrow', {
+        animation: 'scalePop 0.5s var(--ease-out-back) forwards, arrowPulse 1.5s ease-in-out infinite 0.5s'
+      });
+      await wait(500);
+
+      // After box
+      css('tf-after', { animation: 'scalePop 0.6s var(--ease-out-back) forwards' });
+      await wait(2500);
+
+      // ─── SCENE 7: STATS ───
+      await switchScene('scene-7');
+
+      // Stagger stat cards with number counting
+      for (var k = 0; k < 3; k++) {
+        (function(idx) {
+          setTimeout(function() {
+            el('st-' + idx).style.animation = 'scalePop 0.6s var(--ease-out-back) forwards';
+            // Number counter after card appears
+            setTimeout(function() {
+              if (idx === 0) animateNumber(el('sv-0'), 8, 1200, '');
+              else if (idx === 1) animateNumber(el('sv-1'), 60, 1500, '');
+              // sv-2 is "30s" — just reveal it
+            }, 300);
+          }, idx * 250);
+        })(k);
+      }
+      await wait(3000);
+
+      // ─── SCENE 8: CTA ───
+      // Bring back letterbox for dramatic ending
+      el('lb-top').style.height = '5%';
+      el('lb-bot').style.height = '5%';
+
+      await switchScene('scene-8');
+
+      // Headline slam
+      css('cta-h', { animation: 'textSlam 0.7s var(--ease-out-expo) forwards' });
+      await wait(800);
+
+      // Subtitle
+      css('cta-sub', {
+        transition: 'all 0.5s var(--ease-out)',
+        opacity: '1',
+        transform: 'translateY(0)'
+      });
+      await wait(400);
+
+      // Button with glow
+      css('cta-btn', {
+        animation: 'scalePop 0.8s var(--ease-out-back) forwards, buttonGlow 2s ease-in-out infinite 0.8s'
+      });
+      await wait(400);
+
+      // URL
+      css('cta-url', {
+        transition: 'opacity 0.6s var(--ease-out)',
+        opacity: '1'
+      });
+      await wait(3500);
+    }
+
+    // Auto-play on load
+    window.addEventListener('load', function() {
+      setTimeout(playVideo, 600);
+    });
+  </script>
+</body>
+</html>
