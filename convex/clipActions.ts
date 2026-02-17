@@ -10,6 +10,7 @@ import {
   estimateDuration,
   SceneData,
   ClipColors,
+  ClipTheme,
 } from "./lib/clipTemplates";
 
 // ============================================================
@@ -26,6 +27,7 @@ const SCENE_TYPES = [
   "stats",
   "comparison",
   "cta",
+  "montage",
 ] as const;
 
 async function parseScriptWithAI(
@@ -138,6 +140,7 @@ export const generate = action({
     title: v.optional(v.string()),
     autoSplit: v.optional(v.boolean()),
     brandId: v.optional(v.id("brands")),
+    theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
   },
   handler: async (ctx, args) => {
     // Auth check
@@ -181,12 +184,55 @@ export const generate = action({
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error("OpenRouter API key not configured");
 
+    const theme: ClipTheme = args.theme || "classic";
+    const maxScenes = theme === "cinematic"
+      ? Math.max(limits.maxScenesPerClip - 1, 1) // reserve 1 slot for montage
+      : limits.maxScenesPerClip;
+
     const scenes = await parseScriptWithAI(
       script,
-      limits.maxScenesPerClip,
+      maxScenes,
       apiKey,
       args.autoSplit ?? false
     );
+
+    // Cinematic: auto-generate montage scene from parsed content
+    let allScenes: SceneData[] = scenes;
+    if (theme === "cinematic") {
+      const montageItems: string[] = [];
+      const hookScene = scenes.find((s) => s.type === "hook");
+      if (hookScene?.headline) {
+        montageItems.push(hookScene.headline.split(" ").slice(0, 4).join(" "));
+      }
+      const brandScene = scenes.find((s) => s.type === "brand");
+      if (brandScene?.brandName) {
+        montageItems.push(brandScene.brandName);
+      }
+      const featScene = scenes.find((s) => s.type === "features");
+      if (featScene?.features?.[0]) {
+        montageItems.push(featScene.features[0]);
+      }
+      const ctaScene = scenes.find((s) => s.type === "cta");
+      if (ctaScene?.ctaText) {
+        montageItems.push(ctaScene.ctaText);
+      }
+      // Ensure at least 3 items
+      if (montageItems.length < 3) {
+        for (const s of scenes) {
+          if (montageItems.length >= 3) break;
+          const text = s.headline || s.demoTitle || s.brandName;
+          if (text && !montageItems.includes(text)) {
+            montageItems.push(text.split(" ").slice(0, 5).join(" "));
+          }
+        }
+      }
+      if (montageItems.length >= 2) {
+        allScenes = [
+          { type: "montage", montageItems: montageItems.slice(0, 5) },
+          ...scenes,
+        ];
+      }
+    }
 
     // Generate HTML
     const colors: ClipColors = args.colors;
@@ -195,33 +241,35 @@ export const generate = action({
 
     const htmlContent = generateClipHTML({
       title,
-      scenes,
+      scenes: allScenes,
       colors,
-      brandName: scenes.find((s) => s.type === "brand")?.brandName,
+      brandName: allScenes.find((s) => s.type === "brand")?.brandName,
+      theme,
     });
 
-    const duration = estimateDuration(scenes);
+    const duration = estimateDuration(allScenes);
 
     // Save to DB
     const clipId: string = await ctx.runMutation((api as any).clips.create, {
       title,
       script,
-      scenes,
+      scenes: allScenes,
       colors,
       htmlContent,
       duration,
-      scenesCount: scenes.length,
+      scenesCount: allScenes.length,
       brandId: args.brandId,
+      theme: theme !== "classic" ? theme : undefined,
     });
 
     return {
       clipId,
-      scenesCount: scenes.length,
+      scenesCount: allScenes.length,
       duration,
       htmlContent,
-      scenes: scenes.map((s) => ({
+      scenes: allScenes.map((s) => ({
         type: s.type,
-        headline: s.headline || s.brandName || s.demoTitle || "",
+        headline: s.headline || s.brandName || s.demoTitle || (s.type === "montage" ? "Montage Intro" : ""),
       })),
     };
   },

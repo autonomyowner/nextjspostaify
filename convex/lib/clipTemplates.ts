@@ -1,8 +1,11 @@
 // ============================================================
 // CLIP TEMPLATE ENGINE
 // Generates cinematic motion-graphic HTML clips
-// 8 scene types, pro easing curves, particles, glow orbs
+// 8 scene types + montage, pro easing curves, particles, glow orbs
+// Two themes: classic (default) and cinematic (intro-clip quality)
 // ============================================================
+
+export type ClipTheme = "classic" | "cinematic";
 
 export interface ClipColors {
   primary: string;
@@ -19,7 +22,8 @@ export interface SceneData {
     | "transformation"
     | "stats"
     | "comparison"
-    | "cta";
+    | "cta"
+    | "montage";
   // Common
   headline?: string;
   subheadline?: string;
@@ -44,6 +48,8 @@ export interface SceneData {
   // CTA
   ctaText?: string;
   url?: string;
+  // Montage (cinematic only)
+  montageItems?: string[];
 }
 
 export interface ClipConfig {
@@ -51,14 +57,15 @@ export interface ClipConfig {
   scenes: SceneData[];
   colors: ClipColors;
   brandName?: string;
+  theme?: ClipTheme;
 }
 
 // ============================================================
 // CORE CSS: Easing, animations, backgrounds
 // ============================================================
 
-function getCoreCSS(colors: ClipColors): string {
-  return `
+function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
+  let css = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     :root {
@@ -412,13 +419,170 @@ function getCoreCSS(colors: ClipColors): string {
       50% { transform: translateX(10px) scale(1.15); opacity: 1; }
     }
   `;
+
+  // Cinematic theme additions
+  if (theme === "cinematic") {
+    css += `
+    /* ============================================================
+       CINEMATIC THEME OVERRIDES
+       ============================================================ */
+
+    /* 4th center glow orb - activates on brand/CTA scenes */
+    .glow-orb-4 {
+      width: 500px;
+      height: 500px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--primary);
+      filter: blur(120px);
+      opacity: 0;
+      transition: opacity 1s ease;
+      z-index: 3;
+    }
+
+    .glow-orb-4.active {
+      opacity: 0.3;
+      animation: centerGlowPulse 3s ease-in-out infinite;
+    }
+
+    /* Letterbox bars */
+    .letterbox-top, .letterbox-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: #000;
+      height: 0;
+      z-index: 15;
+      transition: height 1s var(--ease-out);
+    }
+
+    .letterbox-top { top: 0; }
+    .letterbox-bottom { bottom: 0; }
+
+    /* More dramatic slam */
+    .anim-slam {
+      opacity: 0;
+      transform: scale(2.5) translateY(-50px);
+      filter: blur(12px);
+    }
+
+    @keyframes textSlam {
+      from { opacity: 0; transform: scale(2.5) translateY(-50px); filter: blur(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+    }
+
+    /* Smoother scene exit */
+    .scene.exit {
+      opacity: 0;
+      transform: scale(1.08);
+      filter: blur(6px);
+    }
+
+    /* Smoother scene enter */
+    .scene {
+      transform: scale(0.95);
+    }
+
+    /* Montage flash system */
+    .montage-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .montage-flash {
+      position: absolute;
+      opacity: 0;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      text-transform: uppercase;
+    }
+
+    .montage-flash.animate {
+      animation: flashIn 0.9s var(--ease-out-expo) forwards;
+    }
+
+    .montage-flash.flash-last.animate {
+      animation: flashIn 1.4s var(--ease-out-expo) forwards;
+    }
+
+    .flash-red { color: #ff4444; }
+    .flash-primary { color: var(--primary); }
+    .flash-green { color: #44ff88; }
+    .flash-white { color: #ffffff; }
+
+    @keyframes flashIn {
+      0% { opacity: 0; transform: scale(3); filter: blur(20px); }
+      30% { opacity: 1; transform: scale(1); filter: blur(0); }
+      70% { opacity: 1; transform: scale(1); filter: blur(0); }
+      100% { opacity: 0; transform: scale(0.9); filter: blur(4px); }
+    }
+
+    @keyframes centerGlowPulse {
+      0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    /* Hook underline */
+    .hook-underline {
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 3px;
+      margin-top: 24px;
+      width: 0;
+      transition: width 0.8s var(--ease-out);
+    }
+
+    .hook-underline.animate {
+      width: 400px;
+    }
+
+    /* INTRODUCING badge */
+    .intro-badge {
+      display: inline-block;
+      padding: 8px 28px;
+      border: 2px solid var(--primary);
+      border-radius: 40px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+
+    /* Enhanced CTA glow */
+    @keyframes buttonGlowEnhanced {
+      0%, 100% { box-shadow: 0 0 50px ${colors.accent}66; }
+      50% { box-shadow: 0 0 100px ${colors.accent}99, 0 0 150px ${colors.accent}33; }
+    }
+
+    /* Dynamic shine for cinematic features */
+    @keyframes dynamicShineSweep {
+      from { left: -100%; }
+      to { left: 200%; }
+    }
+    `;
+  }
+
+  return css;
 }
 
 // ============================================================
 // SCENE HTML GENERATORS
 // ============================================================
 
-function hookScene(scene: SceneData, index: number): string {
+function hookScene(scene: SceneData, index: number, _colors: ClipColors, theme: ClipTheme): string {
+  const underlineHtml = theme === "cinematic"
+    ? `<div class="hook-underline" id="s${index}-underline"></div>`
+    : "";
+
   return `
     <div class="scene" id="scene-${index}">
       <div class="anim-slam" id="s${index}-headline" style="
@@ -431,6 +595,7 @@ function hookScene(scene: SceneData, index: number): string {
         max-width: 900px;
         text-shadow: 0 0 60px ${`var(--primary)`}40;
       ">${escapeHtml(scene.headline || "")}</div>
+      ${underlineHtml}
       ${
         scene.subheadline
           ? `<div class="anim" id="s${index}-sub" style="
@@ -448,9 +613,16 @@ function hookScene(scene: SceneData, index: number): string {
   `;
 }
 
-function brandScene(scene: SceneData, index: number, colors: ClipColors): string {
+function brandScene(scene: SceneData, index: number, colors: ClipColors, theme: ClipTheme): string {
+  const introBadge = theme === "cinematic"
+    ? `<div class="anim-pop intro-badge" id="s${index}-badge">INTRODUCING</div>`
+    : "";
+
+  const gradientSize = theme === "cinematic" ? "300%" : "200%";
+
   return `
     <div class="scene" id="scene-${index}">
+      ${introBadge}
       <div class="anim-pop" id="s${index}-logo" style="
         width: 120px;
         height: 120px;
@@ -470,7 +642,7 @@ function brandScene(scene: SceneData, index: number, colors: ClipColors): string
         font-size: 80px;
         font-weight: 900;
         background: linear-gradient(90deg, #fff, var(--primary), var(--secondary), var(--primary));
-        background-size: 200% auto;
+        background-size: ${gradientSize} auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -734,7 +906,7 @@ function transformationScene(
   `;
 }
 
-function statsScene(scene: SceneData, index: number, colors: ClipColors): string {
+function statsScene(scene: SceneData, index: number, colors: ClipColors, theme: ClipTheme): string {
   const stats = scene.stats || [];
   const statCards = stats
     .map(
@@ -748,7 +920,7 @@ function statsScene(scene: SceneData, index: number, colors: ClipColors): string
       border-radius: 20px;
       text-align: center;
     ">
-      <div style="
+      <div id="s${index}-stat-val-${i}" style="
         font-size: 64px;
         font-weight: 900;
         background: linear-gradient(135deg, var(--primary), var(--accent));
@@ -757,7 +929,7 @@ function statsScene(scene: SceneData, index: number, colors: ClipColors): string
         background-clip: text;
         line-height: 1.1;
         margin-bottom: 12px;
-      ">${escapeHtml(s.value)}</div>
+      ">${theme === "cinematic" ? "0" : escapeHtml(s.value)}</div>
       <div style="
         font-size: 22px;
         font-weight: 500;
@@ -946,29 +1118,57 @@ function ctaScene(scene: SceneData, index: number, colors: ClipColors): string {
   `;
 }
 
+function montageScene(scene: SceneData, index: number): string {
+  const items = scene.montageItems || [];
+  const colorClasses = ["flash-red", "flash-primary", "flash-green", "flash-white"];
+  const sizes = [80, 72, 68, 76, 84];
+
+  const flashEls = items
+    .map((text, i) => {
+      const colorClass = colorClasses[i % colorClasses.length];
+      const isLast = i === items.length - 1;
+      const fontSize = sizes[i % sizes.length];
+      const glowStyle = isLast ? `text-shadow: 0 0 60px var(--primary);` : "";
+      return `<div class="montage-flash ${colorClass}${isLast ? " flash-last" : ""}" id="s${index}-flash-${i}" style="
+        font-size: ${fontSize}px;
+        ${glowStyle}
+      ">${escapeHtml(text)}</div>`;
+    })
+    .join("\n      ");
+
+  return `
+    <div class="scene" id="scene-${index}">
+      <div class="montage-container">
+        ${flashEls}
+      </div>
+    </div>
+  `;
+}
+
 // ============================================================
 // SCENE RENDERER MAP
 // ============================================================
 
-const SCENE_RENDERERS: Record<
-  SceneData["type"],
-  (scene: SceneData, index: number, colors: ClipColors) => string
-> = {
-  hook: (s, i, c) => hookScene(s, i),
+type SceneRenderer = (scene: SceneData, index: number, colors: ClipColors, theme: ClipTheme) => string;
+
+const SCENE_RENDERERS: Record<string, SceneRenderer> = {
+  hook: hookScene,
   brand: brandScene,
-  features: featuresScene,
-  demo: demoScene,
-  transformation: transformationScene,
+  features: (s, i, c, _t) => featuresScene(s, i, c),
+  demo: (s, i, c, _t) => demoScene(s, i, c),
+  transformation: (s, i, c, _t) => transformationScene(s, i, c),
   stats: statsScene,
-  comparison: comparisonScene,
-  cta: ctaScene,
+  comparison: (s, i, c, _t) => comparisonScene(s, i, c),
+  cta: (s, i, c, _t) => ctaScene(s, i, c),
+  montage: (s, i, _c, _t) => montageScene(s, i),
 };
 
 // ============================================================
 // JAVASCRIPT ANIMATION TIMELINE
 // ============================================================
 
-function getAnimationTimeline(scenes: SceneData[]): string {
+function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
+  const isCinematic = theme === "cinematic";
   const sceneTimings: string[] = [];
 
   scenes.forEach((scene, i) => {
@@ -978,9 +1178,23 @@ function getAnimationTimeline(scenes: SceneData[]): string {
     lines.push(`  await wait(200);`);
 
     switch (scene.type) {
+      case "montage": {
+        const items = scene.montageItems || [];
+        items.forEach((_, fi) => {
+          lines.push(`  anim('s${i}-flash-${fi}');`);
+          lines.push(`  await wait(${fi === items.length - 1 ? 1400 : 900});`);
+        });
+        lines.push(`  await wait(500);`);
+        break;
+      }
+
       case "hook":
         lines.push(`  anim('s${i}-headline');`);
         lines.push(`  await wait(600);`);
+        if (isCinematic) {
+          lines.push(`  el('s${i}-underline', function(u) { u.classList.add('animate'); });`);
+          lines.push(`  await wait(400);`);
+        }
         if (scene.subheadline) {
           lines.push(`  anim('s${i}-sub');`);
         }
@@ -988,6 +1202,13 @@ function getAnimationTimeline(scenes: SceneData[]): string {
         break;
 
       case "brand":
+        if (isCinematic) {
+          lines.push(`  setLetterbox(7);`);
+          lines.push(`  el('glow-orb-4', function(o) { o.classList.add('active'); });`);
+          lines.push(`  await wait(300);`);
+          lines.push(`  anim('s${i}-badge');`);
+          lines.push(`  await wait(400);`);
+        }
         lines.push(`  anim('s${i}-logo');`);
         lines.push(`  await wait(500);`);
         lines.push(`  anim('s${i}-name');`);
@@ -996,6 +1217,10 @@ function getAnimationTimeline(scenes: SceneData[]): string {
           lines.push(`  anim('s${i}-tagline');`);
         }
         lines.push(`  await wait(2000);`);
+        if (isCinematic) {
+          lines.push(`  setLetterbox(0);`);
+          lines.push(`  el('glow-orb-4', function(o) { o.classList.remove('active'); });`);
+        }
         break;
 
       case "features": {
@@ -1006,7 +1231,22 @@ function getAnimationTimeline(scenes: SceneData[]): string {
         const feats = scene.features || [];
         feats.forEach((_, fi) => {
           lines.push(`  anim('s${i}-feat-${fi}');`);
-          lines.push(`  await wait(120);`);
+          if (isCinematic) {
+            // Dynamic shine sweep after each card pops
+            lines.push(`  (function(idx) {`);
+            lines.push(`    setTimeout(function() {`);
+            lines.push(`      var card = document.getElementById('s${i}-feat-' + idx);`);
+            lines.push(`      if (!card) return;`);
+            lines.push(`      var shine = document.createElement('div');`);
+            lines.push(`      shine.style.cssText = 'position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);pointer-events:none;';`);
+            lines.push(`      card.appendChild(shine);`);
+            lines.push(`      shine.style.animation = 'dynamicShineSweep 1.2s var(--ease-out) forwards';`);
+            lines.push(`    }, 400);`);
+            lines.push(`  })(${fi});`);
+            lines.push(`  await wait(200);`);
+          } else {
+            lines.push(`  await wait(120);`);
+          }
         });
         lines.push(`  await wait(${1500 + feats.length * 400});`);
         break;
@@ -1045,8 +1285,11 @@ function getAnimationTimeline(scenes: SceneData[]): string {
           lines.push(`  await wait(400);`);
         }
         const sts = scene.stats || [];
-        sts.forEach((_, si) => {
+        sts.forEach((st, si) => {
           lines.push(`  anim('s${i}-stat-${si}');`);
+          if (isCinematic) {
+            lines.push(`  animateNumber('s${i}-stat-val-${si}', '${st.value.replace(/'/g, "\\'")}');`);
+          }
           lines.push(`  await wait(300);`);
         });
         lines.push(`  await wait(2000);`);
@@ -1074,6 +1317,11 @@ function getAnimationTimeline(scenes: SceneData[]): string {
       }
 
       case "cta":
+        if (isCinematic) {
+          lines.push(`  setLetterbox(5);`);
+          lines.push(`  el('glow-orb-4', function(o) { o.classList.add('active'); });`);
+          lines.push(`  await wait(300);`);
+        }
         lines.push(`  anim('s${i}-headline');`);
         lines.push(`  await wait(500);`);
         if (scene.subheadline) {
@@ -1082,10 +1330,15 @@ function getAnimationTimeline(scenes: SceneData[]): string {
         }
         lines.push(`  anim('s${i}-btn');`);
         lines.push(`  await wait(300);`);
-        // Add button glow after pop
-        lines.push(
-          `  document.getElementById('s${i}-btn').style.animation = 'scalePop 0.8s var(--ease-out-back) forwards, buttonGlow 2s ease-in-out infinite 0.8s';`
-        );
+        if (isCinematic) {
+          lines.push(
+            `  document.getElementById('s${i}-btn').style.animation = 'scalePop 0.8s var(--ease-out-back) forwards, buttonGlowEnhanced 2s ease-in-out infinite 0.8s';`
+          );
+        } else {
+          lines.push(
+            `  document.getElementById('s${i}-btn').style.animation = 'scalePop 0.8s var(--ease-out-back) forwards, buttonGlow 2s ease-in-out infinite 0.8s';`
+          );
+        }
         if (scene.url) {
           lines.push(`  anim('s${i}-url');`);
         }
@@ -1096,15 +1349,28 @@ function getAnimationTimeline(scenes: SceneData[]): string {
     sceneTimings.push(lines.join("\n"));
   });
 
-  return `
-    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-    function anim(id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.add('animate');
-    }
-
-    async function switchScene(id) {
+  // Build switchScene function — cinematic has full style reset + longer child delay
+  const switchSceneFn = isCinematic
+    ? `async function switchScene(id) {
+      var current = document.querySelector('.scene.active');
+      var next = document.getElementById(id);
+      if (current) {
+        current.classList.add('exit');
+        current.classList.remove('active');
+        await wait(400);
+        current.classList.remove('exit');
+        current.querySelectorAll('.animate').forEach(function(el) {
+          el.classList.remove('animate');
+          el.style.opacity = '';
+          el.style.transform = '';
+          el.style.animation = '';
+          el.style.filter = '';
+        });
+      }
+      next.classList.add('active');
+      await wait(200);
+    }`
+    : `async function switchScene(id) {
       var current = document.querySelector('.scene.active');
       var next = document.getElementById(id);
       if (current) {
@@ -1118,7 +1384,64 @@ function getAnimationTimeline(scenes: SceneData[]): string {
       }
       next.classList.add('active');
       await wait(100);
+    }`;
+
+  // Cinematic-only helper functions
+  const cinematicHelpers = isCinematic
+    ? `
+    function el(id, fn) {
+      var e = document.getElementById(id);
+      if (e) fn(e);
     }
+
+    function setLetterbox(pct) {
+      var h = Math.round(1920 * pct / 100) + 'px';
+      var top = document.getElementById('letterbox-top');
+      var bot = document.getElementById('letterbox-bottom');
+      if (top) top.style.height = pct > 0 ? h : '0';
+      if (bot) bot.style.height = pct > 0 ? h : '0';
+    }
+
+    function animateNumber(id, target) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var match = target.match(/([\\d,.]+)/);
+      if (!match) { el.textContent = target; return; }
+      var numStr = match[1];
+      var numVal = parseFloat(numStr.replace(/,/g, ''));
+      if (isNaN(numVal)) { el.textContent = target; return; }
+      var prefix = target.substring(0, target.indexOf(numStr));
+      var suffix = target.substring(target.indexOf(numStr) + numStr.length);
+      var hasDecimal = numStr.includes('.');
+      var decimalPlaces = hasDecimal ? numStr.split('.')[1].length : 0;
+      var hasCommas = numStr.includes(',');
+      var startTime = null;
+      var duration = 1200;
+      function frame(ts) {
+        if (!startTime) startTime = ts;
+        var progress = Math.min((ts - startTime) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = numVal * eased;
+        var formatted = hasDecimal ? current.toFixed(decimalPlaces) : Math.round(current).toString();
+        if (hasCommas) formatted = formatted.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+        el.textContent = prefix + formatted + suffix;
+        if (progress < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+    `
+    : "";
+
+  return `
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function anim(id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.add('animate');
+    }
+
+    ${switchSceneFn}
+    ${cinematicHelpers}
 
     async function playVideo() {
 ${sceneTimings.join("\n\n")}
@@ -1135,7 +1458,28 @@ ${sceneTimings.join("\n\n")}
 // PARTICLES GENERATOR
 // ============================================================
 
-function getParticlesScript(): string {
+function getParticlesScript(theme: ClipTheme, colors: ClipColors): string {
+  if (theme === "cinematic") {
+    return `
+    (function() {
+      var c = document.getElementById('particles');
+      for (var i = 0; i < 25; i++) {
+        var p = document.createElement('div');
+        p.className = 'particle';
+        var size = 2 + Math.random() * 2;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.background = '${colors.primary}66';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.top = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 5 + 's';
+        p.style.animationDuration = (5 + Math.random() * 5) + 's';
+        c.appendChild(p);
+      }
+    })();
+  `;
+  }
+
   return `
     (function() {
       var c = document.getElementById('particles');
@@ -1244,6 +1588,9 @@ export function estimateDuration(scenes: SceneData[]): number {
   let ms = 0;
   for (const scene of scenes) {
     switch (scene.type) {
+      case "montage":
+        ms += ((scene.montageItems?.length || 3) * 1100) + 500;
+        break;
       case "hook":
         ms += 3500;
         break;
@@ -1283,10 +1630,19 @@ export function estimateDuration(scenes: SceneData[]): number {
 
 export function generateClipHTML(config: ClipConfig): string {
   const { scenes, colors } = config;
+  const theme: ClipTheme = config.theme || "classic";
 
   const sceneHtmlParts = scenes.map((scene, i) =>
-    SCENE_RENDERERS[scene.type](scene, i, colors)
+    SCENE_RENDERERS[scene.type](scene, i, colors, theme)
   );
+
+  // Cinematic-only HTML elements
+  const cinematicHtml = theme === "cinematic"
+    ? `
+          <div class="glow-orb glow-orb-4" id="glow-orb-4"></div>
+          <div class="letterbox-top" id="letterbox-top"></div>
+          <div class="letterbox-bottom" id="letterbox-bottom"></div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1298,7 +1654,7 @@ export function generateClipHTML(config: ClipConfig): string {
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>${escapeHtml(config.title)}</title>
   <style>
-    ${getCoreCSS(colors)}
+    ${getCoreCSS(colors, theme)}
   </style>
 </head>
 <body>
@@ -1311,7 +1667,7 @@ export function generateClipHTML(config: ClipConfig): string {
           <div class="grid-overlay"></div>
           <div class="glow-orb glow-orb-1"></div>
           <div class="glow-orb glow-orb-2"></div>
-          <div class="glow-orb glow-orb-3"></div>
+          <div class="glow-orb glow-orb-3"></div>${cinematicHtml}
           <div id="particles"></div>
           ${sceneHtmlParts.join("\n")}
         </div>
@@ -1326,8 +1682,8 @@ export function generateClipHTML(config: ClipConfig): string {
 
   <script>
     ${getScalingScript()}
-    ${getParticlesScript()}
-    ${getAnimationTimeline(scenes)}
+    ${getParticlesScript(theme, colors)}
+    ${getAnimationTimeline(scenes, theme)}
   </script>
 </body>
 </html>`;

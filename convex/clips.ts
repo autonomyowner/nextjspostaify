@@ -65,6 +65,7 @@ export const create = mutation({
     duration: v.number(),
     scenesCount: v.number(),
     brandId: v.optional(v.id("brands")),
+    theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
   },
   handler: async (ctx, args) => {
     let authUser;
@@ -88,6 +89,7 @@ export const create = mutation({
       script: args.script,
       scenes: args.scenes,
       colors: args.colors,
+      theme: args.theme,
       htmlContent: args.htmlContent,
       renderStatus: "draft",
       duration: args.duration,

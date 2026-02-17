@@ -241,6 +241,7 @@ export default defineSchema({
       secondary: v.string(),
       accent: v.string(),
     }),
+    theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
     htmlContent: v.string(),
     mp4Url: v.optional(v.string()),
     renderStatus: v.union(

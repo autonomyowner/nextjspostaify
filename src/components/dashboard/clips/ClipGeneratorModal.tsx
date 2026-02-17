@@ -47,6 +47,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     accent: '#F97316',
   })
   const [autoSplit, setAutoSplit] = useState(false)
+  const [theme, setTheme] = useState<'classic' | 'cinematic'>('classic')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<GeneratedClip | null>(null)
@@ -81,6 +82,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
         colors,
         title: title.trim() || undefined,
         autoSplit,
+        theme,
       })
 
       setResult(res as unknown as GeneratedClip)
@@ -116,6 +118,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     setScript('')
     setTitle('')
     setAutoSplit(false)
+    setTheme('classic')
     setError('')
     setResult(null)
     onClose()
@@ -231,6 +234,42 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                     }`}
                   />
                 </button>
+              </div>
+
+              {/* Theme selector */}
+              <div className="mb-4">
+                <label className="block text-xs text-white/40 mb-2">Style</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTheme('classic')}
+                    className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-medium transition-all ${
+                      theme === 'classic'
+                        ? 'border-white/30 bg-white/10 text-white'
+                        : 'border-white/8 bg-white/3 text-white/40 hover:border-white/15 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="font-semibold mb-0.5">Classic</div>
+                    <div className="text-[10px] opacity-60">Clean motion graphics</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme('cinematic')}
+                    className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-medium transition-all ${
+                      theme === 'cinematic'
+                        ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
+                        : 'border-white/8 bg-white/3 text-white/40 hover:border-white/15 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="font-semibold mb-0.5">Cinematic</div>
+                    <div className="text-[10px] opacity-60">Montage + letterbox + glow</div>
+                  </button>
+                </div>
+                {theme === 'cinematic' && (
+                  <p className="text-[10px] text-yellow-400/40 mt-1.5 px-1">
+                    Adds a montage intro + letterbox bars + enhanced animations. Uses 1 extra scene slot.
+                  </p>
+                )}
               </div>
 
               {/* Script input */}
@@ -434,6 +473,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                   setStep('input')
                   setScript('')
                   setTitle('')
+                  setTheme('classic')
                   setResult(null)
                   setError('')
                 }}

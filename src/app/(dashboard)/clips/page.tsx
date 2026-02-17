@@ -117,6 +117,12 @@ export default function ClipsPage() {
                     <span>{clip.scenesCount} scenes</span>
                     <span>&middot;</span>
                     <span>~{clip.duration}s</span>
+                    {clip.theme === 'cinematic' && (
+                      <>
+                        <span>&middot;</span>
+                        <span className="text-yellow-400/60">Cinematic</span>
+                      </>
+                    )}
                     <span>&middot;</span>
                     <span>{new Date(clip.createdAt).toLocaleDateString()}</span>
                   </div>
