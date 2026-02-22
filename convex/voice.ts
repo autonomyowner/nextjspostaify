@@ -265,12 +265,17 @@ export const getCartesiaVoices = action({
       throw new Error("Failed to fetch Cartesia voices");
     }
 
-    const voices = (await response.json()) as Array<{
-      id: string;
-      name: string;
-      language: string;
-      description?: string;
-    }>;
+    const data = (await response.json()) as {
+      data: Array<{
+        id: string;
+        name: string;
+        language: string;
+        description?: string;
+        gender?: string;
+      }>;
+    };
+
+    const voices = data.data;
 
     // Filter to English voices and map to same shape as ElevenLabs
     return voices
@@ -282,6 +287,7 @@ export const getCartesiaVoices = action({
         previewUrl: "",
         category: "cartesia",
         labels: {
+          gender: voice.gender || "",
           description: voice.description || "",
         },
       }));
