@@ -42,6 +42,26 @@ const logos = [
       </svg>
     ),
   },
+  {
+    name: 'ElevenLabs',
+    svg: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-9 w-9">
+        <path d="M4.6035 0v24h4.9317V0zm9.8613 0v24h4.9317V0z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Cartesia',
+    svg: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-9 w-9">
+        <rect x="0.5" y="8" width="3" height="8" rx="1" />
+        <rect x="5.5" y="2" width="3" height="20" rx="1" />
+        <rect x="10.5" y="5" width="3" height="14" rx="1" />
+        <rect x="15.5" y="1" width="3" height="22" rx="1" />
+        <rect x="20.5" y="8" width="3" height="8" rx="1" />
+      </svg>
+    ),
+  },
 ]
 
 export function LogoBar() {
