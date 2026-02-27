@@ -88,6 +88,7 @@ const COLOR_PRESETS = [
   { name: 'Sunset', primary: '#F97316', secondary: '#EA580C', accent: '#FBBF24' },
   { name: 'Neon', primary: '#22D3EE', secondary: '#06B6D4', accent: '#A855F7' },
   { name: 'Coral', primary: '#FB923C', secondary: '#F87171', accent: '#FBBF24' },
+  { name: 'Sage', primary: '#91A8A4', secondary: '#F5F3ED', accent: '#CBB39E' },
 ]
 
 const GENERATION_STEPS = [
