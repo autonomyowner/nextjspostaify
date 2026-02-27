@@ -352,7 +352,7 @@ export const generateCartesia = action({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model_id: "sonic-2",
+        model_id: "sonic-3",
         transcript: finalText,
         voice: {
           mode: "id",
