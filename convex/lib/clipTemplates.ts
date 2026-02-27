@@ -84,6 +84,7 @@ export interface ClipConfig {
   colors: ClipColors;
   brandName?: string;
   theme?: ClipTheme;
+  voiceoverDurationMs?: number;
 }
 
 // ============================================================
@@ -1733,7 +1734,7 @@ const SCENE_RENDERERS: Record<string, SceneRenderer> = {
 // JAVASCRIPT ANIMATION TIMELINE
 // ============================================================
 
-function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
+function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: number = 1): string {
   const isCinematic = theme === "cinematic";
   const sceneTimings: string[] = [];
 
@@ -2093,7 +2094,8 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
   `;
 
   return `
-    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    var _wr = ${waitRatio.toFixed(4)};
+    function wait(ms) { return new Promise(r => setTimeout(r, Math.round(ms * _wr))); }
 
     function anim(id) {
       var el = document.getElementById(id);
@@ -2307,6 +2309,15 @@ export function generateClipHTML(config: ClipConfig): string {
   const { scenes, colors } = config;
   const theme: ClipTheme = config.theme || "classic";
 
+  // Compute wait ratio to sync animation timing with voiceover duration
+  let waitRatio = 1;
+  if (config.voiceoverDurationMs && config.voiceoverDurationMs > 0) {
+    const animDurationMs = estimateDuration(scenes) * 1000;
+    if (animDurationMs > 0) {
+      waitRatio = Math.max(0.6, Math.min(1.8, config.voiceoverDurationMs / animDurationMs));
+    }
+  }
+
   const sceneHtmlParts = scenes.map((scene, i) =>
     SCENE_RENDERERS[scene.type](scene, i, colors, theme)
   );
@@ -2361,7 +2372,7 @@ export function generateClipHTML(config: ClipConfig): string {
   <script>
     ${getScalingScript()}
     ${getParticlesScript(theme, colors)}
-    ${getAnimationTimeline(scenes, theme)}
+    ${getAnimationTimeline(scenes, theme, waitRatio)}
   </script>
 </body>
 </html>`;

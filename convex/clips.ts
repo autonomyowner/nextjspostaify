@@ -78,6 +78,7 @@ export const create = mutation({
     voiceoverText: v.optional(v.string()),
     voiceId: v.optional(v.string()),
     voiceProvider: v.optional(v.union(v.literal("cartesia"), v.literal("elevenlabs"))),
+    voiceoverDurationMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let authUser;
@@ -108,6 +109,7 @@ export const create = mutation({
       voiceoverText: args.voiceoverText,
       voiceId: args.voiceId,
       voiceProvider: args.voiceProvider,
+      voiceoverDurationMs: args.voiceoverDurationMs,
       renderStatus: "draft",
       duration: args.duration,
       scenesCount: args.scenesCount,

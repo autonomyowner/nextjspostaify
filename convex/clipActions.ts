@@ -326,7 +326,7 @@ async function generateCartesiaTTS(
   apiKey: string,
   style: "conversational" | "professional" | "energetic" | "calm" = "conversational",
   openRouterKey?: string
-): Promise<{ url: string; finalText: string }> {
+): Promise<{ url: string; finalText: string; durationMs: number }> {
   // Optimize text for voiceover if OpenRouter key is available
   let finalText = text;
   if (openRouterKey) {
@@ -424,7 +424,10 @@ Output ONLY the voiceover script.`,
   const base64 = Buffer.from(arrayBuffer).toString("base64");
   const dataUrl = `data:audio/mpeg;base64,${base64}`;
 
-  return { url: dataUrl, finalText };
+  // Estimate duration from MP3 byte length (128kbps CBR)
+  const durationMs = Math.round((arrayBuffer.byteLength * 8 / 128000) * 1000);
+
+  return { url: dataUrl, finalText, durationMs };
 }
 
 // ============================================================
@@ -590,6 +593,7 @@ export const generate = action({
     let voiceoverStorageId: string | undefined;
     let voiceoverText: string | undefined;
     let voiceId: string | undefined;
+    let voiceoverDurationMs: number | undefined;
 
     if (args.voiceover?.enabled) {
       const cartesiaKey = process.env.CARTESIA_API_KEY;
@@ -620,6 +624,7 @@ export const generate = action({
           apiKey // OpenRouter key for text optimization
         );
         voiceoverText = ttsResult.finalText;
+        voiceoverDurationMs = ttsResult.durationMs;
 
         // Store audio in Convex file storage (not in document — too large for base64)
         const audioBlob = new Blob(
@@ -651,6 +656,7 @@ export const generate = action({
         colors,
         brandName: allScenes.find((s) => s.type === "brand")?.brandName,
         theme,
+        voiceoverDurationMs,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -658,8 +664,12 @@ export const generate = action({
       throw new Error(`HTML generation failed: ${msg}`);
     }
 
-    const duration = estimateDuration(allScenes);
-    console.log("[clipActions:generate] HTML OK, duration:", duration, "s. Saving to DB...");
+    const baseDuration = estimateDuration(allScenes);
+    const durationWaitRatio = voiceoverDurationMs
+      ? Math.max(0.6, Math.min(1.8, voiceoverDurationMs / (baseDuration * 1000)))
+      : 1;
+    const duration = Math.round(baseDuration * durationWaitRatio * 10) / 10;
+    console.log("[clipActions:generate] HTML OK, duration:", duration, "s (ratio:", durationWaitRatio.toFixed(2), "). Saving to DB...");
 
     // Save to DB
     let clipId: string;
@@ -679,6 +689,7 @@ export const generate = action({
         voiceoverText,
         voiceId,
         voiceProvider: voiceoverStorageId ? "cartesia" as const : undefined,
+        voiceoverDurationMs,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

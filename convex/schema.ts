@@ -256,6 +256,7 @@ export default defineSchema({
     voiceoverText: v.optional(v.string()),
     voiceId: v.optional(v.string()),
     voiceProvider: v.optional(v.union(v.literal("cartesia"), v.literal("elevenlabs"))),
+    voiceoverDurationMs: v.optional(v.number()),
     mp4Url: v.optional(v.string()),
     renderStatus: v.union(
       v.literal("draft"),

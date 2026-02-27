@@ -206,6 +206,13 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
               vo.currentTime = 0;
               vo.play().catch(function(){});
               await origPlay();
+              // Hold last scene if voiceover audio is still playing
+              if (vo && !vo.paused && !vo.ended) {
+                await new Promise(function(resolve) {
+                  vo.addEventListener('ended', resolve, {once: true});
+                  setTimeout(resolve, 10000);
+                });
+              }
             };
           }
           // Also auto-play on first user click
@@ -238,6 +245,13 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
               vo.currentTime = 0;
               vo.play().catch(function(){});
               await origPlay();
+              // Hold last scene if voiceover audio is still playing
+              if (vo && !vo.paused && !vo.ended) {
+                await new Promise(function(resolve) {
+                  vo.addEventListener('ended', resolve, {once: true});
+                  setTimeout(resolve, 10000);
+                });
+              }
             };
           }
           document.addEventListener('click', function handler() {
