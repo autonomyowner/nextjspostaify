@@ -17,6 +17,7 @@ interface GeneratedClip {
   duration: number
   htmlContent: string
   hasVoiceover?: boolean
+  voiceoverUrl?: string | null
   scenes: Array<{ type: string; headline: string }>
 }
 
@@ -128,13 +129,64 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
 
   const openPreview = useCallback(() => {
     if (!result?.htmlContent) return
-    const blob = new Blob([result.htmlContent], { type: 'text/html' })
+    let html = result.htmlContent
+    // Inject voiceover audio into the HTML preview if available
+    if (result.voiceoverUrl) {
+      const audioTag = `<audio id="clip-voiceover" preload="auto" style="display:none"><source src="${result.voiceoverUrl}" type="audio/mpeg"></audio>`
+      const voiceoverScript = `
+      <script>
+        (function() {
+          var vo = document.getElementById('clip-voiceover');
+          if (!vo) return;
+          var origPlay = window.playVideo;
+          if (origPlay) {
+            window.playVideo = async function() {
+              vo.currentTime = 0;
+              vo.play().catch(function(){});
+              await origPlay();
+            };
+          }
+          // Also auto-play on first user click
+          document.addEventListener('click', function handler() {
+            if (vo.paused) { vo.currentTime = 0; vo.play().catch(function(){}); }
+            document.removeEventListener('click', handler);
+          });
+        })();
+      </script>`
+      html = html.replace('</body>', `${audioTag}${voiceoverScript}</body>`)
+    }
+    const blob = new Blob([html], { type: 'text/html' })
     window.open(URL.createObjectURL(blob), '_blank')
   }, [result])
 
   const downloadHtml = useCallback(() => {
     if (!result?.htmlContent) return
-    const blob = new Blob([result.htmlContent], { type: 'text/html' })
+    let html = result.htmlContent
+    // Inject voiceover audio into the download if available
+    if (result.voiceoverUrl) {
+      const audioTag = `<audio id="clip-voiceover" preload="auto" style="display:none"><source src="${result.voiceoverUrl}" type="audio/mpeg"></audio>`
+      const voiceoverScript = `
+      <script>
+        (function() {
+          var vo = document.getElementById('clip-voiceover');
+          if (!vo) return;
+          var origPlay = window.playVideo;
+          if (origPlay) {
+            window.playVideo = async function() {
+              vo.currentTime = 0;
+              vo.play().catch(function(){});
+              await origPlay();
+            };
+          }
+          document.addEventListener('click', function handler() {
+            if (vo.paused) { vo.currentTime = 0; vo.play().catch(function(){}); }
+            document.removeEventListener('click', handler);
+          });
+        })();
+      </script>`
+      html = html.replace('</body>', `${audioTag}${voiceoverScript}</body>`)
+    }
+    const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

@@ -529,12 +529,19 @@ export const generate = action({
       throw new Error(`DB save failed: ${msg}`);
     }
 
+    // Get voiceover playback URL from storage
+    let voiceoverPlayUrl: string | null = null;
+    if (voiceoverStorageId) {
+      voiceoverPlayUrl = await ctx.storage.getUrl(voiceoverStorageId as any);
+    }
+
     return {
       clipId,
       scenesCount: allScenes.length,
       duration,
       htmlContent,
       hasVoiceover: !!voiceoverStorageId,
+      voiceoverUrl: voiceoverPlayUrl,
       scenes: allScenes.map((s) => ({
         type: s.type,
         headline: s.headline || s.brandName || s.demoTitle || (s.type === "montage" ? "Montage Intro" : ""),
