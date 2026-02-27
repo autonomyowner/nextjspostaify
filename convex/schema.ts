@@ -240,6 +240,7 @@ export default defineSchema({
       primary: v.string(),
       secondary: v.string(),
       accent: v.string(),
+      background: v.optional(v.string()),
     }),
     theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
     category: v.optional(v.union(
