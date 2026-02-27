@@ -214,8 +214,9 @@ function getPauseMarker(durationMs: number): string {
   return "... ... ...";
 }
 
-function buildNarrationFromScenes(scenes: SceneData[]): string {
+function buildNarrationFromScenes(scenes: SceneData[]): { text: string; sceneTextLengths: number[] } {
   const segments: string[] = [];
+  const sceneTextLengths: number[] = [];
 
   for (const scene of scenes) {
     const parts: string[] = [];
@@ -296,23 +297,29 @@ function buildNarrationFromScenes(scenes: SceneData[]): string {
     }
 
     const text = parts.filter(Boolean).join(" ");
+    // Track text length for every scene (0 for montage/empty)
+    sceneTextLengths.push(text.length);
     if (text) segments.push(text);
   }
 
   // Join segments with paragraph breaks and pause markers proportional to scene duration
   const result: string[] = [];
+  let segIdx = 0;
   for (let i = 0; i < segments.length; i++) {
     result.push(segments[i]);
+    // Find the matching scene index for pause markers
+    while (segIdx < scenes.length && sceneTextLengths[segIdx] === 0) segIdx++;
     if (i < segments.length - 1) {
-      const sceneDuration = getSceneDurationMs(scenes[i]);
+      const sceneDuration = getSceneDurationMs(scenes[segIdx] || scenes[i]);
       const pause = getPauseMarker(sceneDuration);
       // Always add paragraph break for TTS pacing
       result.push("\n\n");
       if (pause) result.push(pause + "\n\n");
     }
+    segIdx++;
   }
 
-  return result.join("");
+  return { text: result.join(""), sceneTextLengths };
 }
 
 // ============================================================
@@ -594,6 +601,7 @@ export const generate = action({
     let voiceoverText: string | undefined;
     let voiceId: string | undefined;
     let voiceoverDurationMs: number | undefined;
+    let sceneTextLengths: number[] | undefined;
 
     if (args.voiceover?.enabled) {
       const cartesiaKey = process.env.CARTESIA_API_KEY;
@@ -610,7 +618,9 @@ export const generate = action({
       const voiceStyle = args.voiceover.style || "energetic";
 
       // Build narration script from parsed scenes
-      const rawNarration = buildNarrationFromScenes(allScenes);
+      const narrationResult = buildNarrationFromScenes(allScenes);
+      const rawNarration = narrationResult.text;
+      sceneTextLengths = narrationResult.sceneTextLengths;
       if (rawNarration.length < 5) {
         throw new Error("Not enough text in scenes for voiceover narration");
       }
@@ -657,6 +667,7 @@ export const generate = action({
         brandName: allScenes.find((s) => s.type === "brand")?.brandName,
         theme,
         voiceoverDurationMs,
+        sceneTextLengths,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

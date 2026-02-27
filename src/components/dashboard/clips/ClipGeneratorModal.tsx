@@ -211,10 +211,14 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
           if (vo.readyState >= 1) { recalcRatio(); }
           else { vo.addEventListener('loadedmetadata', recalcRatio); }
 
+          // Expose audio element for per-scene sync
+          if (typeof _voAudio !== 'undefined') { _voAudio = vo; }
+
           var origPlay = window.playVideo;
           if (origPlay) {
             window.playVideo = async function() {
               recalcRatio();
+              if (typeof _voAudio !== 'undefined') { _voAudio = vo; }
               vo.currentTime = 0;
               vo.play().catch(function(){});
               await origPlay();
@@ -229,7 +233,7 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
           }
           // Also auto-play on first user click
           document.addEventListener('click', function handler() {
-            if (vo.paused) { recalcRatio(); vo.currentTime = 0; vo.play().catch(function(){}); }
+            if (vo.paused) { recalcRatio(); if (typeof _voAudio !== 'undefined') { _voAudio = vo; } vo.currentTime = 0; vo.play().catch(function(){}); }
             document.removeEventListener('click', handler);
           });
         })();
@@ -262,10 +266,14 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
           if (vo.readyState >= 1) { recalcRatio(); }
           else { vo.addEventListener('loadedmetadata', recalcRatio); }
 
+          // Expose audio element for per-scene sync
+          if (typeof _voAudio !== 'undefined') { _voAudio = vo; }
+
           var origPlay = window.playVideo;
           if (origPlay) {
             window.playVideo = async function() {
               recalcRatio();
+              if (typeof _voAudio !== 'undefined') { _voAudio = vo; }
               vo.currentTime = 0;
               vo.play().catch(function(){});
               await origPlay();
@@ -279,7 +287,7 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
             };
           }
           document.addEventListener('click', function handler() {
-            if (vo.paused) { recalcRatio(); vo.currentTime = 0; vo.play().catch(function(){}); }
+            if (vo.paused) { recalcRatio(); if (typeof _voAudio !== 'undefined') { _voAudio = vo; } vo.currentTime = 0; vo.play().catch(function(){}); }
             document.removeEventListener('click', handler);
           });
         })();

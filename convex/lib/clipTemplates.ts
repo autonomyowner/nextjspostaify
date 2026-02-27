@@ -85,6 +85,7 @@ export interface ClipConfig {
   brandName?: string;
   theme?: ClipTheme;
   voiceoverDurationMs?: number;
+  sceneTextLengths?: number[];
 }
 
 // ============================================================
@@ -1734,7 +1735,7 @@ const SCENE_RENDERERS: Record<string, SceneRenderer> = {
 // JAVASCRIPT ANIMATION TIMELINE
 // ============================================================
 
-function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: number = 1): string {
+function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: number = 1, sceneTextLengths?: number[]): string {
   const isCinematic = theme === "cinematic";
   const sceneTimings: string[] = [];
 
@@ -2004,6 +2005,8 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
         break;
     }
 
+    // Per-scene voiceover sync point: wait for audio to reach expected position
+    lines.push(`  await _syncScene(${i});`);
     sceneTimings.push(lines.join("\n"));
   });
 
@@ -2115,10 +2118,32 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
     }
   }, 0);
 
+  // Compute cumulative narration ratios for per-scene sync
+  const lens = sceneTextLengths || scenes.map(() => 0);
+  const totalLen = lens.reduce((a, b) => a + b, 0);
+  const cumulativeRatios: number[] = [];
+  let cumSum = 0;
+  for (let i = 0; i < lens.length; i++) {
+    cumSum += lens[i];
+    cumulativeRatios.push(totalLen > 0 ? cumSum / totalLen : (i + 1) / lens.length);
+  }
+
   return `
     var _baseDurMs = ${baseDurMs};
     var _wr = ${waitRatio.toFixed(4)};
+    var _voAudio = null;
+    var _sceneSync = [${cumulativeRatios.map(r => r.toFixed(4)).join(",")}];
     function wait(ms) { return new Promise(r => setTimeout(r, Math.round(ms * _wr))); }
+
+    // Per-scene sync: wait for voiceover audio to reach expected position before transitioning
+    async function _syncScene(idx) {
+      if (!_voAudio || !_voAudio.duration || !isFinite(_voAudio.duration)) return;
+      if (_voAudio.paused || _voAudio.ended) return;
+      var target = _voAudio.duration * _sceneSync[idx];
+      while (_voAudio.currentTime < target - 0.15 && !_voAudio.paused && !_voAudio.ended) {
+        await new Promise(function(r) { setTimeout(r, 80); });
+      }
+    }
 
     function anim(id) {
       var el = document.getElementById(id);
@@ -2395,7 +2420,7 @@ export function generateClipHTML(config: ClipConfig): string {
   <script>
     ${getScalingScript()}
     ${getParticlesScript(theme, colors)}
-    ${getAnimationTimeline(scenes, theme, waitRatio)}
+    ${getAnimationTimeline(scenes, theme, waitRatio, config.sceneTextLengths)}
   </script>
 </body>
 </html>`;
