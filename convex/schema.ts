@@ -243,7 +243,8 @@ export default defineSchema({
     }),
     theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
     htmlContent: v.string(),
-    voiceoverUrl: v.optional(v.string()),
+    voiceoverUrl: v.optional(v.string()), // legacy: base64 data URL from earlier version
+    voiceoverStorageId: v.optional(v.string()),
     voiceoverText: v.optional(v.string()),
     voiceId: v.optional(v.string()),
     voiceProvider: v.optional(v.union(v.literal("cartesia"), v.literal("elevenlabs"))),

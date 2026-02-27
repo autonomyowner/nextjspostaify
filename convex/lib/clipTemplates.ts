@@ -58,7 +58,6 @@ export interface ClipConfig {
   colors: ClipColors;
   brandName?: string;
   theme?: ClipTheme;
-  voiceoverUrl?: string; // base64 data URL for embedded audio
 }
 
 // ============================================================
@@ -1851,35 +1850,7 @@ export function generateClipHTML(config: ClipConfig): string {
           <div class="letterbox-bottom" id="letterbox-bottom"></div>`
     : "";
 
-  // Voiceover audio element (hidden, synced to animation start)
-  const voiceoverHtml = config.voiceoverUrl
-    ? `<audio id="clip-voiceover" preload="auto" style="display:none;"><source src="${config.voiceoverUrl}" type="audio/mpeg"></audio>`
-    : "";
-
-  // Voiceover playback script — starts audio when first scene plays
-  const voiceoverScript = config.voiceoverUrl
-    ? `
-    // Voiceover sync: play audio when animation starts
-    var voiceoverAudio = document.getElementById('clip-voiceover');
-    var originalPlayVideo = playVideo;
-    playVideo = async function() {
-      if (voiceoverAudio) {
-        voiceoverAudio.currentTime = 0;
-        voiceoverAudio.play().catch(function() {});
-      }
-      await originalPlayVideo();
-    };
-    // Also expose for manual replay
-    document.querySelectorAll('#controls button').forEach(function(btn) {
-      if (btn.textContent === 'Play') {
-        var origClick = btn.onclick;
-        btn.onclick = function() {
-          if (voiceoverAudio) { voiceoverAudio.currentTime = 0; voiceoverAudio.play().catch(function() {}); }
-        };
-      }
-    });
-    `
-    : "";
+  // Voiceover is handled externally via Convex file storage + frontend player
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1895,7 +1866,6 @@ export function generateClipHTML(config: ClipConfig): string {
   </style>
 </head>
 <body>
-  ${voiceoverHtml}
   <div class="page-wrapper">
     <div class="capture-label">CAPTURE THIS AREA</div>
     <div class="capture-frame">
@@ -1923,7 +1893,6 @@ export function generateClipHTML(config: ClipConfig): string {
     ${getScalingScript()}
     ${getParticlesScript(theme, colors)}
     ${getAnimationTimeline(scenes, theme)}
-    ${voiceoverScript}
   </script>
 </body>
 </html>`;

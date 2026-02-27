@@ -435,7 +435,7 @@ export const generate = action({
     }
 
     // Generate voiceover (if enabled and Cartesia key available)
-    let voiceoverUrl: string | undefined;
+    let voiceoverStorageId: string | undefined;
     let voiceoverText: string | undefined;
     let voiceId: string | undefined;
 
@@ -467,8 +467,14 @@ export const generate = action({
           voiceStyle,
           apiKey // OpenRouter key for text optimization
         );
-        voiceoverUrl = ttsResult.url;
         voiceoverText = ttsResult.finalText;
+
+        // Store audio in Convex file storage (not in document — too large for base64)
+        const audioBlob = new Blob(
+          [Buffer.from(ttsResult.url.split(",")[1], "base64")],
+          { type: "audio/mpeg" }
+        );
+        voiceoverStorageId = await ctx.storage.store(audioBlob);
 
         // Increment voiceover usage
         await ctx.runMutation(api.users.incrementVoiceoverUsage);
@@ -479,7 +485,7 @@ export const generate = action({
       }
     }
 
-    // Generate HTML
+    // Generate HTML (no embedded audio — voiceover plays separately via frontend)
     const colors: ClipColors = args.colors;
     const title =
       args.title || `Clip - ${new Date().toLocaleDateString()}`;
@@ -492,7 +498,6 @@ export const generate = action({
         colors,
         brandName: allScenes.find((s) => s.type === "brand")?.brandName,
         theme,
-        voiceoverUrl,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -514,10 +519,10 @@ export const generate = action({
         scenesCount: allScenes.length,
         brandId: args.brandId,
         theme: theme !== "classic" ? theme : undefined,
-        voiceoverUrl,
+        voiceoverStorageId,
         voiceoverText,
         voiceId,
-        voiceProvider: voiceoverUrl ? "cartesia" as const : undefined,
+        voiceProvider: voiceoverStorageId ? "cartesia" as const : undefined,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -529,7 +534,7 @@ export const generate = action({
       scenesCount: allScenes.length,
       duration,
       htmlContent,
-      hasVoiceover: !!voiceoverUrl,
+      hasVoiceover: !!voiceoverStorageId,
       scenes: allScenes.map((s) => ({
         type: s.type,
         headline: s.headline || s.brandName || s.demoTitle || (s.type === "montage" ? "Montage Intro" : ""),
