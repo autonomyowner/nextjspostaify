@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAction } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
@@ -9,6 +9,10 @@ import { useSubscription } from '@/context/SubscriptionContext'
 interface ClipGeneratorModalProps {
   isOpen: boolean
   onClose: () => void
+  initialScript?: string
+  initialColors?: { primary: string; secondary: string; accent: string }
+  initialCategory?: ClipCategory
+  initialTitle?: string
 }
 
 interface GeneratedClip {
@@ -101,7 +105,7 @@ const GENERATION_STEPS_WITH_VO = [
   { label: 'Finalizing', description: 'Polishing your clip' },
 ]
 
-export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps) {
+export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColors, initialCategory, initialTitle }: ClipGeneratorModalProps) {
   const [step, setStep] = useState<'input' | 'generating' | 'result'>('input')
   const [script, setScript] = useState('')
   const [title, setTitle] = useState('')
@@ -112,6 +116,16 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
   })
   const [autoSplit, setAutoSplit] = useState(false)
   const [category, setCategory] = useState<ClipCategory>('saas')
+
+  // Pre-fill form when opened with initial data (e.g. from "Convert to Clip")
+  useEffect(() => {
+    if (isOpen) {
+      if (initialScript) { setScript(initialScript); setAutoSplit(true) }
+      if (initialColors) setColors(initialColors)
+      if (initialCategory) setCategory(initialCategory)
+      if (initialTitle) setTitle(initialTitle)
+    }
+  }, [isOpen, initialScript, initialColors, initialCategory, initialTitle])
   const [theme, setTheme] = useState<'classic' | 'cinematic'>('classic')
   const [voiceoverEnabled, setVoiceoverEnabled] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<string>(CLIP_VOICES[0].id)

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/Logo"
 import { MobileNav } from "@/components/dashboard/MobileNav"
+import { ClipGeneratorModal } from "@/components/dashboard/clips/ClipGeneratorModal"
 import { DateTimePicker } from "@/components/ui/calendar"
 
 const platformColors: Record<string, string> = {
@@ -42,6 +43,8 @@ export default function PostsPage() {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [postToSchedule, setPostToSchedule] = useState<Post | null>(null)
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | null>(null)
+  const [clipModalOpen, setClipModalOpen] = useState(false)
+  const [pendingClipData, setPendingClipData] = useState<{ script: string; colors?: { primary: string; secondary: string; accent: string } } | undefined>(undefined)
 
   const filteredPosts = posts.filter(post => {
     if (filterStatus !== 'all' && post.status !== filterStatus) return false
@@ -103,6 +106,15 @@ export default function PostsPage() {
       const message = error instanceof Error ? error.message : 'Unknown error'
       alert(`Failed to schedule post: ${message}`)
     }
+  }
+
+  const handleConvertToClip = (post: Post) => {
+    const brand = brands.find(b => b.id === post.brandId)
+    setPendingClipData({
+      script: post.content,
+      colors: brand?.color ? { primary: brand.color, secondary: brand.color, accent: '#F97316' } : undefined,
+    })
+    setClipModalOpen(true)
   }
 
   const handleCloseScheduleModal = () => {
@@ -293,6 +305,14 @@ export default function PostsPage() {
                     >
                       Copy
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] sm:text-xs h-6 sm:h-8 px-1.5 sm:px-3"
+                      onClick={() => handleConvertToClip(post)}
+                    >
+                      Clip
+                    </Button>
                     {(post.status === 'draft' || post.status === 'scheduled') && (
                       <Button
                         variant="outline"
@@ -408,6 +428,14 @@ export default function PostsPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Clip Generator Modal */}
+      <ClipGeneratorModal
+        isOpen={clipModalOpen}
+        onClose={() => { setClipModalOpen(false); setPendingClipData(undefined) }}
+        initialScript={pendingClipData?.script}
+        initialColors={pendingClipData?.colors}
+      />
 
       {/* Mobile Navigation */}
       <MobileNav />

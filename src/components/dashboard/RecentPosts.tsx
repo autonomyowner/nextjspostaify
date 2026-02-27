@@ -39,7 +39,7 @@ function formatScheduledTime(dateString?: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + `, ${timeStr}`
 }
 
-export function RecentPosts() {
+export function RecentPosts({ onConvertToClip }: { onConvertToClip?: (post: { content: string; brandId: string }) => void }) {
   const { t } = useTranslation()
   const { posts, deletePost } = useData()
 
@@ -118,6 +118,16 @@ export function RecentPosts() {
               >
                 Copy
               </Button>
+              {onConvertToClip && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => onConvertToClip({ content: post.content, brandId: post.brandId })}
+                >
+                  Clip
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

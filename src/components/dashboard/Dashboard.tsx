@@ -34,7 +34,8 @@ export function Dashboard() {
   const [isBrandKitModalOpen, setIsBrandKitModalOpen] = useState(false)
   const [isClipModalOpen, setIsClipModalOpen] = useState(false)
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
-  const { user } = useData()
+  const [pendingClipData, setPendingClipData] = useState<{ script: string; colors?: { primary: string; secondary: string; accent: string }; title?: string } | undefined>(undefined)
+  const { user, brands } = useData()
   const { isAuthenticated } = useConvexAuth()
 
   // Handler for creating a post with a generated image
@@ -48,6 +49,22 @@ export function Dashboard() {
   const handleGenerateModalClose = () => {
     setIsGenerateModalOpen(false)
     setPendingImageUrl(undefined)
+  }
+
+  // Handler for converting a post to a clip
+  const handleConvertToClip = (post: { content: string; brandId: string }) => {
+    const brand = brands.find(b => b.id === post.brandId)
+    setPendingClipData({
+      script: post.content,
+      colors: brand?.color ? { primary: brand.color, secondary: brand.color, accent: '#F97316' } : undefined,
+      title: undefined,
+    })
+    setIsClipModalOpen(true)
+  }
+
+  const handleClipModalClose = () => {
+    setIsClipModalOpen(false)
+    setPendingClipData(undefined)
   }
 
   const userName = user?.name || user?.email?.split('@')[0] || 'User'
@@ -164,7 +181,7 @@ export function Dashboard() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-2"
           >
-            <RecentPosts />
+            <RecentPosts onConvertToClip={handleConvertToClip} />
           </motion.div>
 
           {/* Calendar Preview - Takes 1 column */}
@@ -215,7 +232,10 @@ export function Dashboard() {
       />
       <ClipGeneratorModal
         isOpen={isClipModalOpen}
-        onClose={() => setIsClipModalOpen(false)}
+        onClose={handleClipModalClose}
+        initialScript={pendingClipData?.script}
+        initialColors={pendingClipData?.colors}
+        initialTitle={pendingClipData?.title}
       />
 
       {/* Mobile Navigation - hide when any modal is open */}
