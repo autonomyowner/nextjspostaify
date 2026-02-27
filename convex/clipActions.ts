@@ -119,7 +119,7 @@ Example output:
         "X-Title": "POSTAIFY",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-haiku",
+        model: "anthropic/claude-haiku-4.5",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -462,8 +462,13 @@ export const generate = action({
     })),
   },
   handler: async (ctx, args) => {
-    // Auth check
-    const authUser = await authComponent.getAuthUser(ctx);
+    // Auth check (getAuthUser throws when unauthenticated, so wrap in try-catch)
+    let authUser;
+    try {
+      authUser = await authComponent.getAuthUser(ctx);
+    } catch {
+      throw new Error("Not authenticated");
+    }
     if (!authUser) throw new Error("Not authenticated");
 
     const user = await ctx.runQuery(api.users.viewer);
