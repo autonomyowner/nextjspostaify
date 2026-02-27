@@ -139,8 +139,8 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
   const generateClip = useAction((api as any).clipActions.generate)
 
   const userPlan = subscription.plan
-  const clipsUsed = (subscription as any).clipsThisMonth ?? 0
-  const clipsLimit = (subscription as any).clipsLimit ?? 2
+  const clipsUsed = subscription.clipsThisMonth
+  const clipsLimit = subscription.clipsLimit
   const maxScenes = userPlan === 'free' ? 4 : 8
   const hasMp4Export = userPlan !== 'free'
 

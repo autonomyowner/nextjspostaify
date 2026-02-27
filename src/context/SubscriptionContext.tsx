@@ -63,6 +63,8 @@ interface SubscriptionState {
   voiceoversLimit: number
   brandsCount: number
   brandsLimit: number
+  clipsThisMonth: number
+  clipsLimit: number
   hasSeenWelcome: boolean
 }
 
@@ -113,6 +115,8 @@ const DEFAULT_SUBSCRIPTION: SubscriptionState = {
   voiceoversLimit: 2,
   brandsCount: 0,
   brandsLimit: 2,
+  clipsThisMonth: 0,
+  clipsLimit: 2,
   hasSeenWelcome: false
 }
 
@@ -160,6 +164,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       voiceoversLimit: userData.usage.voiceoversLimit,
       brandsCount: userData.usage.brands,
       brandsLimit: userData.usage.brandsLimit,
+      clipsThisMonth: userData.usage.clipsThisMonth ?? 0,
+      clipsLimit: userData.usage.clipsLimit ?? 2,
       hasSeenWelcome
     }
   }, [userData, hasSeenWelcome])

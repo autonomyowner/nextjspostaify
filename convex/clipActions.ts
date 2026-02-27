@@ -462,17 +462,31 @@ export const generate = action({
     })),
   },
   handler: async (ctx, args) => {
+    console.log("[clipActions:generate] Starting clip generation...");
+
     // Auth check (getAuthUser throws when unauthenticated, so wrap in try-catch)
     let authUser;
     try {
       authUser = await authComponent.getAuthUser(ctx);
-    } catch {
+    } catch (e) {
+      console.error("[clipActions:generate] Auth failed:", e);
       throw new Error("Not authenticated");
     }
     if (!authUser) throw new Error("Not authenticated");
+    console.log("[clipActions:generate] Auth OK, email:", authUser.email);
+
+    // Ensure user record exists in DB (new accounts may not have one yet)
+    try {
+      await ctx.runMutation(api.users.ensureUserExists);
+      console.log("[clipActions:generate] ensureUserExists OK");
+    } catch (e) {
+      console.error("[clipActions:generate] ensureUserExists failed:", e);
+      throw new Error("Failed to initialize user record");
+    }
 
     const user = await ctx.runQuery(api.users.viewer);
     if (!user) throw new Error("User not found");
+    console.log("[clipActions:generate] User found, plan:", user.plan);
 
     // Plan limits
     const plan = (user.plan || "FREE") as Plan;
@@ -507,6 +521,7 @@ export const generate = action({
     // Parse script with AI
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error("OpenRouter API key not configured");
+    console.log("[clipActions:generate] Validation passed, calling AI parser...");
 
     const theme: ClipTheme = args.theme || "classic";
     const maxScenes = theme === "cinematic"
@@ -526,8 +541,10 @@ export const generate = action({
       );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error("[clipActions:generate] AI parse failed:", msg);
       throw new Error(`Script parsing failed: ${msg}`);
     }
+    console.log("[clipActions:generate] AI parsed", scenes.length, "scenes");
 
     // Cinematic: auto-generate montage scene from parsed content
     let allScenes: SceneData[] = scenes;
@@ -623,6 +640,7 @@ export const generate = action({
     const title =
       args.title || `Clip - ${new Date().toLocaleDateString()}`;
 
+    console.log("[clipActions:generate] Generating HTML...");
     let htmlContent: string;
     try {
       htmlContent = generateClipHTML({
@@ -634,10 +652,12 @@ export const generate = action({
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error("[clipActions:generate] HTML gen failed:", msg);
       throw new Error(`HTML generation failed: ${msg}`);
     }
 
     const duration = estimateDuration(allScenes);
+    console.log("[clipActions:generate] HTML OK, duration:", duration, "s. Saving to DB...");
 
     // Save to DB
     let clipId: string;
@@ -660,8 +680,10 @@ export const generate = action({
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error("[clipActions:generate] DB save failed:", msg);
       throw new Error(`DB save failed: ${msg}`);
     }
+    console.log("[clipActions:generate] Saved clip:", clipId);
 
     // Get voiceover playback URL from storage
     let voiceoverPlayUrl: string | null = null;
