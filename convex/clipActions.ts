@@ -438,6 +438,7 @@ export const generate = action({
       primary: v.string(),
       secondary: v.string(),
       accent: v.string(),
+      background: v.optional(v.string()),
     }),
     title: v.optional(v.string()),
     autoSplit: v.optional(v.boolean()),
@@ -513,7 +514,8 @@ export const generate = action({
     if (
       !hexRegex.test(args.colors.primary) ||
       !hexRegex.test(args.colors.secondary) ||
-      !hexRegex.test(args.colors.accent)
+      !hexRegex.test(args.colors.accent) ||
+      (args.colors.background && !hexRegex.test(args.colors.background))
     ) {
       throw new Error("Invalid color format. Use hex colors like #FF5500.");
     }

@@ -11,6 +11,7 @@ export interface ClipColors {
   primary: string;
   secondary: string;
   accent: string;
+  background?: string;
 }
 
 export interface SceneData {
@@ -86,10 +87,27 @@ export interface ClipConfig {
 }
 
 // ============================================================
+// LIGHT BACKGROUND DETECTION
+// ============================================================
+
+function isLightBackground(colors: ClipColors): boolean {
+  const hex = colors.background;
+  if (!hex) return false;
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const toL = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * toL(r) + 0.7152 * toL(g) + 0.0722 * toL(b) > 0.5;
+}
+
+// ============================================================
 // CORE CSS: Easing, animations, backgrounds
 // ============================================================
 
 function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
+  const isLight = isLightBackground(colors);
+  const bg = colors.background || "#000";
   let css = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -97,6 +115,22 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       --primary: ${colors.primary};
       --secondary: ${colors.secondary};
       --accent: ${colors.accent};
+      --bg: ${bg};
+      --text: ${isLight ? "#1a1a1a" : "#ffffff"};
+      --text-85: ${isLight ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.85)"};
+      --text-60: ${isLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)"};
+      --text-50: ${isLight ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)"};
+      --text-40: ${isLight ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)"};
+      --text-30: ${isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"};
+      --text-25: ${isLight ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)"};
+      --text-20: ${isLight ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"};
+      --text-10: ${isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"};
+      --overlay-02: ${isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)"};
+      --overlay-03: ${isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"};
+      --overlay-04: ${isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"};
+      --overlay-06: ${isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"};
+      --overlay-10: ${isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"};
+      --overlay-15: ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"};
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
       --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
       --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
@@ -194,7 +228,7 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
     #video-canvas {
       width: 1080px;
       height: 1920px;
-      background: #000;
+      background: var(--bg);
       position: relative;
       overflow: hidden;
       transform-origin: top left;
@@ -221,8 +255,8 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       position: absolute;
       inset: 0;
       background-image:
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        linear-gradient(var(--overlay-02) 1px, transparent 1px),
+        linear-gradient(90deg, var(--overlay-02) 1px, transparent 1px);
       background-size: 60px 60px;
       opacity: 0;
       animation: fadeIn 2s var(--ease-out) forwards 0.5s;
@@ -290,7 +324,7 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
 
     .particle {
       position: absolute;
-      background: rgba(255,255,255,0.3);
+      background: var(--text-30);
       border-radius: 50%;
       animation: floatParticle 8s infinite ease-in-out;
     }
@@ -306,7 +340,7 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
     .particle-line {
       position: absolute;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      background: linear-gradient(90deg, transparent, var(--text-20), transparent);
       animation: floatParticle 12s infinite ease-in-out;
     }
 
@@ -696,7 +730,7 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       position: absolute;
       left: 0;
       right: 0;
-      background: #000;
+      background: var(--bg);
       height: 0;
       z-index: 15;
       transition: height 1s var(--ease-out);
@@ -760,7 +794,7 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
     .flash-red { color: #ff4444; }
     .flash-primary { color: var(--primary); }
     .flash-green { color: #44ff88; }
-    .flash-white { color: #ffffff; }
+    .flash-white { color: var(--text); }
 
     @keyframes flashIn {
       0% { opacity: 0; transform: scale(3); filter: blur(20px); }
@@ -846,7 +880,7 @@ function hookScene(scene: SceneData, index: number, _colors: ClipColors, theme: 
       <div class="anim-glitch" id="s${index}-headline" style="
         font-size: 72px;
         font-weight: 900;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         line-height: 1.15;
         letter-spacing: -1px;
@@ -857,7 +891,7 @@ function hookScene(scene: SceneData, index: number, _colors: ClipColors, theme: 
       <div id="s${index}-headline" style="
         font-size: 72px;
         font-weight: 900;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         line-height: 1.15;
         letter-spacing: -1px;
@@ -872,7 +906,7 @@ function hookScene(scene: SceneData, index: number, _colors: ClipColors, theme: 
           ? `<div class="anim" id="s${index}-sub" style="
         font-size: 36px;
         font-weight: 400;
-        color: rgba(255,255,255,0.6);
+        color: var(--text-60);
         text-align: center;
         margin-top: 30px;
         max-width: 800px;
@@ -904,7 +938,7 @@ function brandScene(scene: SceneData, index: number, colors: ClipColors, theme: 
         justify-content: center;
         font-size: 52px;
         font-weight: 900;
-        color: #fff;
+        color: var(--text);
         margin-bottom: 40px;
         box-shadow: 0 0 80px ${colors.primary}50, 0 0 120px ${colors.primary}20;
         will-change: transform, opacity;
@@ -912,7 +946,7 @@ function brandScene(scene: SceneData, index: number, colors: ClipColors, theme: 
       <div class="anim-neon" id="s${index}-name" style="
         font-size: 80px;
         font-weight: 900;
-        background: linear-gradient(90deg, #fff, var(--primary), var(--secondary), var(--primary));
+        background: linear-gradient(90deg, var(--text), var(--primary), var(--secondary), var(--primary));
         background-size: ${gradientSize} auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -927,7 +961,7 @@ function brandScene(scene: SceneData, index: number, colors: ClipColors, theme: 
           ? `<div class="anim" id="s${index}-tagline" style="
         font-size: 32px;
         font-weight: 400;
-        color: rgba(255,255,255,0.5);
+        color: var(--text-50);
         text-align: center;
         margin-top: 20px;
         max-width: 700px;
@@ -949,7 +983,7 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
       align-items: center;
       gap: 24px;
       padding: 28px 36px;
-      background: rgba(255,255,255,0.03);
+      background: var(--overlay-03);
       border: 2px solid ${colors.primary}20;
       border-radius: 20px;
       width: 100%;
@@ -969,12 +1003,12 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
         justify-content: center;
         font-size: 26px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
       ">${i + 1}</div>
       <div style="
         font-size: 28px;
         font-weight: 600;
-        color: #fff;
+        color: var(--text);
         line-height: 1.3;
       ">${escapeHtml(f)}</div>
       <div class="shine-layer" style="
@@ -984,7 +1018,7 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
         left: -100%;
         width: 50%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+        background: linear-gradient(90deg, transparent, var(--overlay-04), transparent);
         pointer-events: none;
         animation: shineSweep 2s var(--ease-out) forwards ${0.8 + i * 0.3}s;
       "></div>
@@ -1000,7 +1034,7 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
           ? `<div class="anim" id="s${index}-title" style="
         font-size: 42px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         margin-bottom: 40px;
       ">${escapeHtml(scene.headline)}</div>`
@@ -1046,7 +1080,7 @@ function demoScene(scene: SceneData, index: number, colors: ClipColors): string 
           justify-content: center;
           font-size: 18px;
           font-weight: 700;
-          color: #fff;
+          color: var(--text);
           box-shadow: 0 0 20px ${colors.primary}40;
           flex-shrink: 0;
         ">${i + 1}</div>
@@ -1064,7 +1098,7 @@ function demoScene(scene: SceneData, index: number, colors: ClipColors): string 
       <div style="
         font-size: 28px;
         font-weight: 500;
-        color: rgba(255,255,255,0.85);
+        color: var(--text-85);
         padding-top: 6px;
         line-height: 1.3;
       ">${escapeHtml(s)}</div>
@@ -1080,7 +1114,7 @@ function demoScene(scene: SceneData, index: number, colors: ClipColors): string 
           ? `<div class="anim-slam" id="s${index}-title" style="
         font-size: 48px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         margin-bottom: 50px;
         line-height: 1.2;
@@ -1094,8 +1128,8 @@ function demoScene(scene: SceneData, index: number, colors: ClipColors): string 
         width: 100%;
         max-width: 800px;
         padding: 40px;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--overlay-02);
+        border: 1px solid var(--overlay-06);
         border-radius: 24px;
       ">
         ${stepEls}
@@ -1116,7 +1150,7 @@ function transformationScene(
           ? `<div class="anim" id="s${index}-title" style="
         font-size: 38px;
         font-weight: 700;
-        color: rgba(255,255,255,0.6);
+        color: var(--text-60);
         text-align: center;
         margin-bottom: 60px;
       ">${escapeHtml(scene.headline)}</div>`
@@ -1188,7 +1222,7 @@ function statsScene(scene: SceneData, index: number, colors: ClipColors, theme: 
       flex: 1;
       min-width: 200px;
       padding: 36px 24px;
-      background: rgba(255,255,255,0.03);
+      background: var(--overlay-03);
       border: 2px solid ${colors.primary}18;
       border-radius: 20px;
       text-align: center;
@@ -1206,7 +1240,7 @@ function statsScene(scene: SceneData, index: number, colors: ClipColors, theme: 
       <div style="
         font-size: 22px;
         font-weight: 500;
-        color: rgba(255,255,255,0.5);
+        color: var(--text-50);
         line-height: 1.3;
       ">${escapeHtml(s.label)}</div>
     </div>
@@ -1221,7 +1255,7 @@ function statsScene(scene: SceneData, index: number, colors: ClipColors, theme: 
           ? `<div class="anim-slam" id="s${index}-title" style="
         font-size: 48px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         margin-bottom: 50px;
       ">${escapeHtml(scene.headline)}</div>`
@@ -1273,7 +1307,7 @@ function comparisonScene(
         color: rgba(255,80,80,0.8);
         font-weight: 700;
       ">&#10007;</div>
-      <span style="font-size: 24px; color: rgba(255,255,255,0.6); line-height: 1.3;">${escapeHtml(p)}</span>
+      <span style="font-size: 24px; color: var(--text-60); line-height: 1.3;">${escapeHtml(p)}</span>
     </div>
   `
     )
@@ -1303,7 +1337,7 @@ function comparisonScene(
         color: ${colors.primary};
         font-weight: 700;
       ">&#10003;</div>
-      <span style="font-size: 24px; color: rgba(255,255,255,0.85); font-weight: 500; line-height: 1.3;">${escapeHtml(s)}</span>
+      <span style="font-size: 24px; color: var(--text-85); font-weight: 500; line-height: 1.3;">${escapeHtml(s)}</span>
     </div>
   `
     )
@@ -1316,7 +1350,7 @@ function comparisonScene(
           ? `<div class="anim-slam" id="s${index}-title" style="
         font-size: 44px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         margin-bottom: 40px;
       ">${escapeHtml(scene.headline)}</div>`
@@ -1349,7 +1383,7 @@ function ctaScene(scene: SceneData, index: number, colors: ClipColors): string {
       <div class="anim-slam" id="s${index}-headline" style="
         font-size: 60px;
         font-weight: 900;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         line-height: 1.15;
         max-width: 800px;
@@ -1359,7 +1393,7 @@ function ctaScene(scene: SceneData, index: number, colors: ClipColors): string {
         scene.subheadline
           ? `<div class="anim" id="s${index}-sub" style="
         font-size: 30px;
-        color: rgba(255,255,255,0.5);
+        color: var(--text-50);
         text-align: center;
         margin-bottom: 40px;
         max-width: 700px;
@@ -1372,19 +1406,19 @@ function ctaScene(scene: SceneData, index: number, colors: ClipColors): string {
         border-radius: 60px;
         font-size: 32px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         cursor: pointer;
         box-shadow: 0 0 60px ${colors.accent}66, 0 0 100px ${colors.accent}22;
         will-change: transform, opacity;
         position: relative;
         overflow: hidden;
-      "><span style="position:relative;z-index:1;">${escapeHtml(scene.ctaText || "Start Free")}</span><div style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);pointer-events:none;animation:shineSweep 2.5s var(--ease-out) infinite 1.5s;"></div></div>
+      "><span style="position:relative;z-index:1;">${escapeHtml(scene.ctaText || "Start Free")}</span><div style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,var(--overlay-15),transparent);pointer-events:none;animation:shineSweep 2.5s var(--ease-out) infinite 1.5s;"></div></div>
       ${
         scene.url
           ? `<div class="anim" id="s${index}-url" style="
         margin-top: 30px;
         font-size: 22px;
-        color: rgba(255,255,255,0.3);
+        color: var(--text-30);
         letter-spacing: 1px;
       ">${escapeHtml(scene.url)}</div>`
           : ""
@@ -1428,18 +1462,18 @@ function narrativeScene(scene: SceneData, index: number, colors: ClipColors): st
   const moodColors: Record<string, string> = {
     hopeful: colors.primary,
     dark: "#ff4444",
-    neutral: "rgba(255,255,255,0.6)",
+    neutral: "var(--text-60)",
     inspiring: colors.accent,
     tense: "#ff8844",
   };
-  const borderColor = moodColors[scene.mood || "neutral"] || "rgba(255,255,255,0.6)";
+  const borderColor = moodColors[scene.mood || "neutral"] || "var(--text-60)";
 
   return `
     <div class="scene" id="scene-${index}">
       <div class="anim" id="s${index}-text" style="
         font-size: 38px;
         font-weight: 400;
-        color: rgba(255,255,255,0.85);
+        color: var(--text-85);
         text-align: center;
         line-height: 1.6;
         max-width: 820px;
@@ -1467,7 +1501,7 @@ function quoteScene(scene: SceneData, index: number, colors: ClipColors): string
         position: relative;
         max-width: 820px;
         padding: 60px 70px;
-        background: rgba(255,255,255,0.03);
+        background: var(--overlay-03);
         border: 1px solid ${colors.primary}20;
         border-radius: 24px;
       ">
@@ -1475,7 +1509,7 @@ function quoteScene(scene: SceneData, index: number, colors: ClipColors): string
         <div id="s${index}-quote-text" style="
           font-size: 44px;
           font-weight: 600;
-          color: #fff;
+          color: var(--text);
           line-height: 1.4;
           text-align: center;
           font-style: italic;
@@ -1493,7 +1527,7 @@ function quoteScene(scene: SceneData, index: number, colors: ClipColors): string
       ${scene.source ? `<div class="anim" id="s${index}-source" style="
         font-size: 20px;
         font-weight: 400;
-        color: rgba(255,255,255,0.4);
+        color: var(--text-40);
         margin-top: 10px;
         text-align: center;
       ">${escapeHtml(scene.source)}</div>` : ""}
@@ -1519,7 +1553,7 @@ function chapterScene(scene: SceneData, index: number, colors: ClipColors): stri
       <div class="anim-slam" id="s${index}-title" style="
         font-size: 56px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         margin-top: 30px;
         max-width: 800px;
@@ -1535,7 +1569,7 @@ function revealScene(scene: SceneData, index: number, colors: ClipColors): strin
       <div class="anim-reveal" id="s${index}-reveal" style="
         font-size: 90px;
         font-weight: 900;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         line-height: 1.1;
         max-width: 900px;
@@ -1544,7 +1578,7 @@ function revealScene(scene: SceneData, index: number, colors: ClipColors): strin
       ${scene.subtext ? `<div class="anim" id="s${index}-subtext" style="
         font-size: 32px;
         font-weight: 400;
-        color: rgba(255,255,255,0.5);
+        color: var(--text-50);
         text-align: center;
         margin-top: 30px;
         max-width: 700px;
@@ -1577,7 +1611,7 @@ function tipScene(scene: SceneData, index: number, colors: ClipColors): string {
           justify-content: center;
           font-size: 18px;
           font-weight: 800;
-          color: #fff;
+          color: var(--text);
         ">${tipNum}</span>
         <span style="
           font-size: 18px;
@@ -1590,7 +1624,7 @@ function tipScene(scene: SceneData, index: number, colors: ClipColors): string {
       <div class="anim-slam" id="s${index}-title" style="
         font-size: 52px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         max-width: 820px;
         line-height: 1.2;
@@ -1599,7 +1633,7 @@ function tipScene(scene: SceneData, index: number, colors: ClipColors): string {
       ${scene.tipBody ? `<div class="anim" id="s${index}-body" style="
         font-size: 30px;
         font-weight: 400;
-        color: rgba(255,255,255,0.6);
+        color: var(--text-60);
         text-align: center;
         max-width: 780px;
         line-height: 1.5;
@@ -1618,7 +1652,7 @@ function listicleScene(scene: SceneData, index: number, colors: ClipColors): str
       align-items: center;
       gap: 20px;
       padding: 24px 32px;
-      background: rgba(255,255,255,0.03);
+      background: var(--overlay-03);
       border: 1px solid ${colors.primary}15;
       border-radius: 16px;
       width: 100%;
@@ -1634,12 +1668,12 @@ function listicleScene(scene: SceneData, index: number, colors: ClipColors): str
         justify-content: center;
         font-size: 22px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
       ">${i + 1}</div>
       <span style="
         font-size: 28px;
         font-weight: 500;
-        color: rgba(255,255,255,0.85);
+        color: var(--text-85);
         line-height: 1.3;
       ">${escapeHtml(item)}</span>
     </div>
@@ -1652,7 +1686,7 @@ function listicleScene(scene: SceneData, index: number, colors: ClipColors): str
       ${scene.headline ? `<div class="anim-slam" id="s${index}-headline" style="
         font-size: 48px;
         font-weight: 800;
-        color: #fff;
+        color: var(--text);
         text-align: center;
         margin-bottom: 40px;
         max-width: 820px;
@@ -1783,7 +1817,7 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
             lines.push(`      var card = document.getElementById('s${i}-feat-' + idx);`);
             lines.push(`      if (!card) return;`);
             lines.push(`      var shine = document.createElement('div');`);
-            lines.push(`      shine.style.cssText = 'position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);pointer-events:none;';`);
+            lines.push(`      shine.style.cssText = 'position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,var(--overlay-06),transparent);pointer-events:none;';`);
             lines.push(`      card.appendChild(shine);`);
             lines.push(`      shine.style.animation = 'dynamicShineSweep 1.2s var(--ease-out) forwards';`);
             lines.push(`    }, 400);`);
@@ -2091,9 +2125,9 @@ function getParticlesScript(theme: ClipTheme, colors: ClipColors): string {
     (function() {
       var c = document.getElementById('particles');
       var types = [
-        { cls: 'particle', sizeMin: 2, sizeMax: 4, colors: ['rgba(255,255,255,0.25)', '${colors.primary}44', '${colors.accent}33'] },
+        { cls: 'particle', sizeMin: 2, sizeMax: 4, colors: ['var(--text-25)', '${colors.primary}44', '${colors.accent}33'] },
         { cls: 'particle-diamond', sizeMin: 3, sizeMax: 6, colors: ['${colors.primary}22', '${colors.secondary}22'] },
-        { cls: 'particle-line', sizeMin: 15, sizeMax: 40, colors: ['rgba(255,255,255,0.1)'] }
+        { cls: 'particle-line', sizeMin: 15, sizeMax: 40, colors: ['var(--text-10)'] }
       ];
       for (var i = 0; i < ${count}; i++) {
         var t = types[i % types.length];

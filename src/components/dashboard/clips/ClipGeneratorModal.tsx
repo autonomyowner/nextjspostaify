@@ -10,7 +10,7 @@ interface ClipGeneratorModalProps {
   isOpen: boolean
   onClose: () => void
   initialScript?: string
-  initialColors?: { primary: string; secondary: string; accent: string }
+  initialColors?: { primary: string; secondary: string; accent: string; background?: string }
   initialCategory?: ClipCategory
   initialTitle?: string
 }
@@ -79,7 +79,7 @@ const CLIP_CATEGORIES: Array<{
   },
 ]
 
-const COLOR_PRESETS = [
+const COLOR_PRESETS: Array<{ name: string; primary: string; secondary: string; accent: string; background?: string }> = [
   { name: 'Gold', primary: '#FACC15', secondary: '#EAB308', accent: '#F97316' },
   { name: 'Ocean', primary: '#3B82F6', secondary: '#1D4ED8', accent: '#06B6D4' },
   { name: 'Emerald', primary: '#10B981', secondary: '#059669', accent: '#34D399' },
@@ -88,7 +88,7 @@ const COLOR_PRESETS = [
   { name: 'Sunset', primary: '#F97316', secondary: '#EA580C', accent: '#FBBF24' },
   { name: 'Neon', primary: '#22D3EE', secondary: '#06B6D4', accent: '#A855F7' },
   { name: 'Coral', primary: '#FB923C', secondary: '#F87171', accent: '#FBBF24' },
-  { name: 'Sage', primary: '#91A8A4', secondary: '#F5F3ED', accent: '#CBB39E' },
+  { name: 'Sage', primary: '#91A8A4', secondary: '#F5F3ED', accent: '#CBB39E', background: '#F5F3ED' },
 ]
 
 const GENERATION_STEPS = [
@@ -110,7 +110,12 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
   const [step, setStep] = useState<'input' | 'generating' | 'result'>('input')
   const [script, setScript] = useState('')
   const [title, setTitle] = useState('')
-  const [colors, setColors] = useState({
+  const [colors, setColors] = useState<{
+    primary: string;
+    secondary: string;
+    accent: string;
+    background?: string;
+  }>({
     primary: '#FACC15',
     secondary: '#EAB308',
     accent: '#F97316',
@@ -567,6 +572,7 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
                             primary: preset.primary,
                             secondary: preset.secondary,
                             accent: preset.accent,
+                            background: preset.background,
                           })
                         }
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${

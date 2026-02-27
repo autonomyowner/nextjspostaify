@@ -60,6 +60,7 @@ export const create = mutation({
       primary: v.string(),
       secondary: v.string(),
       accent: v.string(),
+      background: v.optional(v.string()),
     }),
     htmlContent: v.string(),
     duration: v.number(),
