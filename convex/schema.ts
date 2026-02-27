@@ -242,6 +242,13 @@ export default defineSchema({
       accent: v.string(),
     }),
     theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
+    category: v.optional(v.union(
+      v.literal("saas"),
+      v.literal("storytelling"),
+      v.literal("educational"),
+      v.literal("ecommerce"),
+      v.literal("personal"),
+    )),
     htmlContent: v.string(),
     voiceoverUrl: v.optional(v.string()), // legacy: base64 data URL from earlier version
     voiceoverStorageId: v.optional(v.string()),

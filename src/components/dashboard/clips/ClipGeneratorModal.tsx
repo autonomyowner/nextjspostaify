@@ -35,6 +35,46 @@ const VOICE_STYLES = [
   { id: 'calm', label: 'Calm', desc: 'Soothing & measured' },
 ] as const
 
+type ClipCategory = 'saas' | 'storytelling' | 'educational' | 'ecommerce' | 'personal'
+
+const CLIP_CATEGORIES: Array<{
+  id: ClipCategory
+  label: string
+  desc: string
+  placeholder: string
+}> = [
+  {
+    id: 'saas',
+    label: 'SaaS Marketing',
+    desc: 'Product ads & demos',
+    placeholder: `Still spending 8 hours on content?\n---\nPostaify - AI Content Automation\n---\n1. Generate posts instantly\n2. Schedule across platforms\n3. AI voiceovers built-in\n---\nFrom 8 hours to 5 minutes\n---\nStart free at postaify.com`,
+  },
+  {
+    id: 'storytelling',
+    label: 'Storytelling',
+    desc: 'Narrative & chapters',
+    placeholder: `Chapter 1: The Problem\n---\nEvery creator faces the same wall. Hours wasted, content that never ships.\n---\n"The best creators aren't the most talented — they're the most consistent."\n---\nThen everything changed.\n---\nStart your story at postaify.com`,
+  },
+  {
+    id: 'educational',
+    label: 'Educational',
+    desc: 'Tips & how-tos',
+    placeholder: `3 Content Mistakes Killing Your Growth\n---\nTip 1: Posting without a content calendar\n---\nTip 2: Ignoring analytics and engagement data\n---\nTip 3: Not repurposing across platforms\n---\nFix all 3 at postaify.com`,
+  },
+  {
+    id: 'ecommerce',
+    label: 'E-Commerce',
+    desc: 'Product & sales',
+    placeholder: `Your competitors are already using AI\n---\nAutomate your product descriptions\nGenerate social ads in seconds\nSchedule posts across all platforms\n---\nFrom 20 orders to 200 orders\n---\nBoosted sales by 340% in 30 days\n---\nStart free at postaify.com`,
+  },
+  {
+    id: 'personal',
+    label: 'Personal Brand',
+    desc: 'Quotes & tips',
+    placeholder: `What nobody tells you about building in public\n---\n"Consistency beats talent when talent doesn't show up."\n---\nTip: Batch your content on Sunday, schedule for the week\n---\nThe real secret? Start before you're ready.\n---\nFollow for more — postaify.com`,
+  },
+]
+
 const COLOR_PRESETS = [
   { name: 'Gold', primary: '#FACC15', secondary: '#EAB308', accent: '#F97316' },
   { name: 'Ocean', primary: '#3B82F6', secondary: '#1D4ED8', accent: '#06B6D4' },
@@ -71,6 +111,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     accent: '#F97316',
   })
   const [autoSplit, setAutoSplit] = useState(false)
+  const [category, setCategory] = useState<ClipCategory>('saas')
   const [theme, setTheme] = useState<'classic' | 'cinematic'>('classic')
   const [voiceoverEnabled, setVoiceoverEnabled] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<string>(CLIP_VOICES[0].id)
@@ -110,6 +151,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
         title: title.trim() || undefined,
         autoSplit,
         theme,
+        category,
         voiceover: voiceoverEnabled ? {
           enabled: true,
           voiceId: selectedVoice,
@@ -201,6 +243,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     setScript('')
     setTitle('')
     setAutoSplit(false)
+    setCategory('saas')
     setTheme('classic')
     setVoiceoverEnabled(false)
     setSelectedVoice(CLIP_VOICES[0].id)
@@ -320,6 +363,28 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                     }`}
                   />
                 </button>
+              </div>
+
+              {/* Category selector */}
+              <div className="mb-4">
+                <label className="block text-xs text-white/40 mb-2">Category</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CLIP_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategory(cat.id)}
+                      className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                        category === cat.id
+                          ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
+                          : 'border-white/8 bg-white/3 text-white/40 hover:border-white/15 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="font-semibold">{cat.label}</div>
+                      <div className="text-[10px] opacity-60 mt-0.5">{cat.desc}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Theme selector */}
@@ -451,8 +516,8 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                   value={script}
                   onChange={(e) => setScript(e.target.value)}
                   placeholder={autoSplit
-                    ? `Just paste your full text here and AI will split it into scenes for you.\n\nExample:\nStill spending 8 hours on content? Postaify uses AI to automate your social media. Generate posts instantly, schedule across platforms, and get AI voiceovers built-in. Go from 8 hours to 5 minutes. Start free at postaify.com`
-                    : `Still spending 8 hours on content?\n---\nPostaify - AI Content Automation\n---\n1. Generate posts instantly\n2. Schedule across platforms\n3. AI voiceovers built-in\n---\nFrom 8 hours to 5 minutes\n---\nStart free at postaify.com`}
+                    ? `Just paste your full text here and AI will split it into scenes for you.\n\n${CLIP_CATEGORIES.find(c => c.id === category)?.placeholder || ''}`
+                    : CLIP_CATEGORIES.find(c => c.id === category)?.placeholder || ''}
                   rows={10}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors resize-none font-mono leading-relaxed"
                   maxLength={5000}
@@ -654,6 +719,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                   setStep('input')
                   setScript('')
                   setTitle('')
+                  setCategory('saas')
                   setTheme('classic')
                   setVoiceoverEnabled(false)
                   setResult(null)

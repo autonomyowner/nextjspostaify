@@ -23,7 +23,13 @@ export interface SceneData {
     | "stats"
     | "comparison"
     | "cta"
-    | "montage";
+    | "montage"
+    | "narrative"
+    | "quote"
+    | "chapter"
+    | "reveal"
+    | "tip"
+    | "listicle";
   // Common
   headline?: string;
   subheadline?: string;
@@ -50,6 +56,25 @@ export interface SceneData {
   url?: string;
   // Montage (cinematic only)
   montageItems?: string[];
+  // Narrative
+  text?: string;
+  mood?: string;
+  // Quote
+  quote?: string;
+  author?: string;
+  source?: string;
+  // Chapter
+  chapterNumber?: number;
+  chapterTitle?: string;
+  // Reveal
+  revealText?: string;
+  subtext?: string;
+  // Tip
+  tipNumber?: number;
+  tipTitle?: string;
+  tipBody?: string;
+  // Listicle
+  items?: string[];
 }
 
 export interface ClipConfig {
@@ -579,6 +604,64 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       30% { opacity: 0.4; }
       70% { opacity: 0.6; }
       100% { opacity: 0; transform: translate(30%, 30%) scale(1.2); }
+    }
+
+    /* ============================================================
+       NEW SCENE TYPE STYLES
+       ============================================================ */
+
+    .quote-mark {
+      font-size: 140px;
+      line-height: 0.6;
+      font-weight: 900;
+      opacity: 0.15;
+      position: absolute;
+    }
+
+    .quote-mark-open { top: -10px; left: -10px; }
+    .quote-mark-close { bottom: -10px; right: -10px; transform: rotate(180deg); }
+
+    .chapter-line {
+      width: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 2px;
+      transition: width 1s var(--ease-out);
+    }
+
+    .chapter-line.animate { width: 200px; }
+
+    @keyframes revealWord {
+      0% { opacity: 0; transform: scale(3) translateY(-20px); filter: blur(15px); letter-spacing: 20px; }
+      60% { opacity: 1; transform: scale(1.05) translateY(0); filter: blur(0); letter-spacing: 2px; }
+      100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); letter-spacing: -1px; }
+    }
+
+    .anim-reveal {
+      opacity: 0;
+    }
+
+    .anim-reveal.animate {
+      animation: revealWord 0.8s var(--ease-out-expo) forwards;
+    }
+
+    @keyframes tipBadgePop {
+      0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+      60% { transform: scale(1.1) rotate(2deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    .tip-badge {
+      opacity: 0;
+    }
+
+    .tip-badge.animate {
+      animation: tipBadgePop 0.6s var(--ease-out-back) forwards;
+    }
+
+    @keyframes listItemSlide {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
     }
   `;
 
@@ -1338,6 +1421,257 @@ function montageScene(scene: SceneData, index: number): string {
 }
 
 // ============================================================
+// NEW SCENE RENDERERS (narrative, quote, chapter, reveal, tip, listicle)
+// ============================================================
+
+function narrativeScene(scene: SceneData, index: number, colors: ClipColors): string {
+  const moodColors: Record<string, string> = {
+    hopeful: colors.primary,
+    dark: "#ff4444",
+    neutral: "rgba(255,255,255,0.6)",
+    inspiring: colors.accent,
+    tense: "#ff8844",
+  };
+  const borderColor = moodColors[scene.mood || "neutral"] || "rgba(255,255,255,0.6)";
+
+  return `
+    <div class="scene" id="scene-${index}">
+      <div class="anim" id="s${index}-text" style="
+        font-size: 38px;
+        font-weight: 400;
+        color: rgba(255,255,255,0.85);
+        text-align: center;
+        line-height: 1.6;
+        max-width: 820px;
+        padding: 50px 60px;
+        border-left: 4px solid ${borderColor};
+        position: relative;
+      ">${escapeHtml(scene.text || scene.headline || "")}</div>
+      ${scene.mood ? `<div class="anim" id="s${index}-mood" style="
+        font-size: 16px;
+        font-weight: 600;
+        color: ${borderColor};
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        margin-top: 30px;
+        opacity: 0.6;
+      ">${escapeHtml(scene.mood)}</div>` : ""}
+    </div>
+  `;
+}
+
+function quoteScene(scene: SceneData, index: number, colors: ClipColors): string {
+  return `
+    <div class="scene" id="scene-${index}">
+      <div class="anim-pop" id="s${index}-quote-box" style="
+        position: relative;
+        max-width: 820px;
+        padding: 60px 70px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid ${colors.primary}20;
+        border-radius: 24px;
+      ">
+        <div class="quote-mark quote-mark-open" style="color: ${colors.primary};">"</div>
+        <div id="s${index}-quote-text" style="
+          font-size: 44px;
+          font-weight: 600;
+          color: #fff;
+          line-height: 1.4;
+          text-align: center;
+          font-style: italic;
+          opacity: 0;
+        ">${escapeHtml(scene.quote || scene.headline || "")}</div>
+        <div class="quote-mark quote-mark-close" style="color: ${colors.primary};">"</div>
+      </div>
+      ${scene.author ? `<div class="anim" id="s${index}-author" style="
+        font-size: 28px;
+        font-weight: 700;
+        color: ${colors.primary};
+        margin-top: 30px;
+        text-align: center;
+      ">— ${escapeHtml(scene.author)}</div>` : ""}
+      ${scene.source ? `<div class="anim" id="s${index}-source" style="
+        font-size: 20px;
+        font-weight: 400;
+        color: rgba(255,255,255,0.4);
+        margin-top: 10px;
+        text-align: center;
+      ">${escapeHtml(scene.source)}</div>` : ""}
+    </div>
+  `;
+}
+
+function chapterScene(scene: SceneData, index: number, colors: ClipColors): string {
+  const num = scene.chapterNumber ?? 1;
+  return `
+    <div class="scene" id="scene-${index}">
+      <div class="anim-pop" id="s${index}-number" style="
+        font-size: 120px;
+        font-weight: 900;
+        background: linear-gradient(135deg, ${colors.primary}, ${colors.accent});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 20px;
+      ">${num < 10 ? "0" + num : num}</div>
+      <div class="chapter-line" id="s${index}-line"></div>
+      <div class="anim-slam" id="s${index}-title" style="
+        font-size: 56px;
+        font-weight: 800;
+        color: #fff;
+        text-align: center;
+        margin-top: 30px;
+        max-width: 800px;
+        line-height: 1.2;
+      ">${escapeHtml(scene.chapterTitle || scene.headline || "")}</div>
+    </div>
+  `;
+}
+
+function revealScene(scene: SceneData, index: number, colors: ClipColors): string {
+  return `
+    <div class="scene" id="scene-${index}">
+      <div class="anim-reveal" id="s${index}-reveal" style="
+        font-size: 90px;
+        font-weight: 900;
+        color: #fff;
+        text-align: center;
+        line-height: 1.1;
+        max-width: 900px;
+        text-shadow: 0 0 80px ${colors.primary}50;
+      ">${escapeHtml(scene.revealText || scene.headline || "")}</div>
+      ${scene.subtext ? `<div class="anim" id="s${index}-subtext" style="
+        font-size: 32px;
+        font-weight: 400;
+        color: rgba(255,255,255,0.5);
+        text-align: center;
+        margin-top: 30px;
+        max-width: 700px;
+      ">${escapeHtml(scene.subtext)}</div>` : ""}
+    </div>
+  `;
+}
+
+function tipScene(scene: SceneData, index: number, colors: ClipColors): string {
+  const tipNum = scene.tipNumber ?? 1;
+  return `
+    <div class="scene" id="scene-${index}">
+      <div class="tip-badge" id="s${index}-badge" style="
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 32px;
+        background: ${colors.primary}18;
+        border: 2px solid ${colors.primary}40;
+        border-radius: 50px;
+        margin-bottom: 40px;
+      ">
+        <span style="
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, ${colors.primary}, ${colors.accent});
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          font-weight: 800;
+          color: #fff;
+        ">${tipNum}</span>
+        <span style="
+          font-size: 18px;
+          font-weight: 700;
+          color: ${colors.primary};
+          text-transform: uppercase;
+          letter-spacing: 3px;
+        ">TIP</span>
+      </div>
+      <div class="anim-slam" id="s${index}-title" style="
+        font-size: 52px;
+        font-weight: 800;
+        color: #fff;
+        text-align: center;
+        max-width: 820px;
+        line-height: 1.2;
+        margin-bottom: 30px;
+      ">${escapeHtml(scene.tipTitle || scene.headline || "")}</div>
+      ${scene.tipBody ? `<div class="anim" id="s${index}-body" style="
+        font-size: 30px;
+        font-weight: 400;
+        color: rgba(255,255,255,0.6);
+        text-align: center;
+        max-width: 780px;
+        line-height: 1.5;
+      ">${escapeHtml(scene.tipBody)}</div>` : ""}
+    </div>
+  `;
+}
+
+function listicleScene(scene: SceneData, index: number, colors: ClipColors): string {
+  const listItems = scene.items || scene.features || [];
+  const itemEls = listItems
+    .map(
+      (item, i) => `
+    <div class="anim" id="s${index}-item-${i}" style="
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 32px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid ${colors.primary}15;
+      border-radius: 16px;
+      width: 100%;
+    ">
+      <div style="
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, ${colors.primary}, ${colors.accent});
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 800;
+        color: #fff;
+      ">${i + 1}</div>
+      <span style="
+        font-size: 28px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.85);
+        line-height: 1.3;
+      ">${escapeHtml(item)}</span>
+    </div>
+  `
+    )
+    .join("");
+
+  return `
+    <div class="scene" id="scene-${index}">
+      ${scene.headline ? `<div class="anim-slam" id="s${index}-headline" style="
+        font-size: 48px;
+        font-weight: 800;
+        color: #fff;
+        text-align: center;
+        margin-bottom: 40px;
+        max-width: 820px;
+        line-height: 1.2;
+      ">${escapeHtml(scene.headline)}</div>` : ""}
+      <div style="
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        max-width: 860px;
+      ">
+        ${itemEls}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
 // SCENE RENDERER MAP
 // ============================================================
 
@@ -1353,6 +1687,12 @@ const SCENE_RENDERERS: Record<string, SceneRenderer> = {
   comparison: (s, i, c, _t) => comparisonScene(s, i, c),
   cta: (s, i, c, _t) => ctaScene(s, i, c),
   montage: (s, i, _c, _t) => montageScene(s, i),
+  narrative: (s, i, c, _t) => narrativeScene(s, i, c),
+  quote: (s, i, c, _t) => quoteScene(s, i, c),
+  chapter: (s, i, c, _t) => chapterScene(s, i, c),
+  reveal: (s, i, c, _t) => revealScene(s, i, c),
+  tip: (s, i, c, _t) => tipScene(s, i, c),
+  listicle: (s, i, c, _t) => listicleScene(s, i, c),
 };
 
 // ============================================================
@@ -1521,6 +1861,79 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
         break;
       }
 
+      case "narrative":
+        lines.push(`  anim('s${i}-text');`);
+        lines.push(`  await wait(600);`);
+        if (scene.mood) {
+          lines.push(`  anim('s${i}-mood');`);
+        }
+        lines.push(`  await wait(3000);`);
+        break;
+
+      case "quote":
+        lines.push(`  anim('s${i}-quote-box');`);
+        lines.push(`  await wait(400);`);
+        lines.push(`  var quoteText = document.getElementById('s${i}-quote-text');`);
+        lines.push(`  if (quoteText) { quoteText.style.opacity = '1'; quoteText.style.transition = 'opacity 0.8s var(--ease-out)'; }`);
+        lines.push(`  await wait(600);`);
+        if (scene.author) {
+          lines.push(`  anim('s${i}-author');`);
+          lines.push(`  await wait(300);`);
+        }
+        if (scene.source) {
+          lines.push(`  anim('s${i}-source');`);
+        }
+        lines.push(`  await wait(2500);`);
+        break;
+
+      case "chapter":
+        lines.push(`  anim('s${i}-number');`);
+        lines.push(`  await wait(400);`);
+        lines.push(`  el('s${i}-line', function(l) { l.classList.add('animate'); });`);
+        lines.push(`  await wait(500);`);
+        lines.push(`  anim('s${i}-title');`);
+        lines.push(`  await wait(2500);`);
+        break;
+
+      case "reveal":
+        lines.push(`  anim('s${i}-reveal');`);
+        lines.push(`  await wait(800);`);
+        // Camera shake for dramatic reveal
+        lines.push(`  var viewport = document.getElementById('viewport');`);
+        lines.push(`  if (viewport) viewport.style.animation = 'zoomShake 0.6s var(--ease-out) forwards';`);
+        lines.push(`  await wait(600);`);
+        lines.push(`  if (viewport) viewport.style.animation = '';`);
+        if (scene.subtext) {
+          lines.push(`  anim('s${i}-subtext');`);
+        }
+        lines.push(`  await wait(2500);`);
+        break;
+
+      case "tip":
+        lines.push(`  anim('s${i}-badge');`);
+        lines.push(`  await wait(400);`);
+        lines.push(`  anim('s${i}-title');`);
+        lines.push(`  await wait(400);`);
+        if (scene.tipBody) {
+          lines.push(`  anim('s${i}-body');`);
+        }
+        lines.push(`  await wait(3000);`);
+        break;
+
+      case "listicle": {
+        if (scene.headline) {
+          lines.push(`  anim('s${i}-headline');`);
+          lines.push(`  await wait(400);`);
+        }
+        const listItems = scene.items || scene.features || [];
+        listItems.forEach((_, li) => {
+          lines.push(`  anim('s${i}-item-${li}');`);
+          lines.push(`  await wait(300);`);
+        });
+        lines.push(`  await wait(${1500 + listItems.length * 400});`);
+        break;
+      }
+
       case "cta":
         if (isCinematic) {
           lines.push(`  setLetterbox(5);`);
@@ -1599,11 +2012,6 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
   // Cinematic-only helper functions
   const cinematicHelpers = isCinematic
     ? `
-    function el(id, fn) {
-      var e = document.getElementById(id);
-      if (e) fn(e);
-    }
-
     function setLetterbox(pct) {
       var h = Math.round(1920 * pct / 100) + 'px';
       var top = document.getElementById('letterbox-top');
@@ -1642,6 +2050,14 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
     `
     : "";
 
+  // Common helper: element access (used by chapter, cinematic letterbox, etc.)
+  const commonHelpers = `
+    function el(id, fn) {
+      var e = document.getElementById(id);
+      if (e) fn(e);
+    }
+  `;
+
   return `
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -1651,6 +2067,7 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
     }
 
     ${switchSceneFn}
+    ${commonHelpers}
     ${cinematicHelpers}
 
     async function playVideo() {
@@ -1823,6 +2240,24 @@ export function estimateDuration(scenes: SceneData[]): number {
         break;
       case "cta":
         ms += 4500;
+        break;
+      case "narrative":
+        ms += 4200;
+        break;
+      case "quote":
+        ms += 4000;
+        break;
+      case "chapter":
+        ms += 3600;
+        break;
+      case "reveal":
+        ms += 4200;
+        break;
+      case "tip":
+        ms += 4200;
+        break;
+      case "listicle":
+        ms += 2200 + ((scene.items?.length || scene.features?.length || 0) * 700);
         break;
     }
     ms += 600; // transition time

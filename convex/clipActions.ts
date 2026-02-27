@@ -39,17 +39,37 @@ const SCENE_TYPES = [
   "comparison",
   "cta",
   "montage",
+  "narrative",
+  "quote",
+  "chapter",
+  "reveal",
+  "tip",
+  "listicle",
 ] as const;
+
+// Category → recommended scene types mapping
+const CATEGORY_SCENE_HINTS: Record<string, string[]> = {
+  saas: ["hook", "brand", "features", "demo", "transformation", "stats", "comparison", "cta"],
+  storytelling: ["chapter", "narrative", "quote", "reveal", "cta"],
+  educational: ["hook", "tip", "listicle", "demo", "cta"],
+  ecommerce: ["hook", "features", "transformation", "stats", "cta"],
+  personal: ["hook", "quote", "tip", "narrative", "cta"],
+};
 
 async function parseScriptWithAI(
   script: string,
   maxScenes: number,
   apiKey: string,
-  autoSplit: boolean = false
+  autoSplit: boolean = false,
+  category: string = "saas"
 ): Promise<SceneData[]> {
   const splitInstruction = autoSplit
     ? `- The user has NOT separated scenes manually. You MUST intelligently split the text into logical scenes (${maxScenes} max). Identify natural breaks: opening hooks, brand mentions, feature lists, stats, comparisons, and closing CTAs. Create the best possible scene breakdown from the raw text.`
     : `- If the script uses "---" as separators, treat each section as a scene. If no separators, split intelligently.`;
+
+  // Build category-specific guidance
+  const recommendedTypes = CATEGORY_SCENE_HINTS[category] || CATEGORY_SCENE_HINTS.saas;
+  const categoryHint = `- PREFERRED scene types for this "${category}" clip: ${recommendedTypes.join(", ")}. Strongly favor these types unless the content clearly demands otherwise.`;
 
   const systemPrompt = `You are a video script parser for motion graphic clips. Your job is to analyze a user's script and split it into structured scenes.
 
@@ -62,6 +82,12 @@ Available scene types:
 - "stats": Key numbers/metrics. Fields: headline (optional), stats (array of {value, label})
 - "comparison": Problems vs solutions columns. Fields: headline (optional), problems (array), solutions (array)
 - "cta": Call to action ending. Fields: headline, subheadline (optional), ctaText (button text), url (optional)
+- "narrative": Story paragraph with mood. Fields: text, mood (optional: "hopeful"|"dark"|"neutral"|"inspiring"|"tense")
+- "quote": Quote with attribution. Fields: quote, author (optional), source (optional)
+- "chapter": Section/chapter marker. Fields: chapterNumber (number), chapterTitle
+- "reveal": Dramatic single-word/phrase reveal. Fields: revealText, subtext (optional)
+- "tip": Educational tip card. Fields: tipNumber (number), tipTitle, tipBody (optional)
+- "listicle": Numbered list of items. Fields: headline (optional), items (array of strings)
 
 Rules:
 - Maximum ${maxScenes} scenes
@@ -70,6 +96,7 @@ Rules:
 - If text is too long, shorten it while keeping the meaning
 - Auto-detect the best scene type for each section
 ${splitInstruction}
+${categoryHint}
 - Always try to include a CTA as the last scene
 - Return ONLY valid JSON array, no other text
 
@@ -141,13 +168,61 @@ Example output:
 // Convert parsed scenes into a TTS-optimized voiceover script
 // ============================================================
 
+// Estimate per-scene duration in ms (mirrors estimateDuration logic)
+function getSceneDurationMs(scene: SceneData): number {
+  switch (scene.type) {
+    case "montage":
+      return ((scene.montageItems?.length || 3) * 1100) + 500 + 600;
+    case "hook":
+      return 3500 + 600;
+    case "brand":
+      return 3200 + 600;
+    case "features":
+      return 2000 + (scene.features?.length || 0) * 520 + 600;
+    case "demo":
+      return 2000 + (scene.demoSteps?.length || 0) * 800 + 600;
+    case "transformation":
+      return 4500 + 600;
+    case "stats":
+      return 2500 + (scene.stats?.length || 0) * 300 + 600;
+    case "comparison":
+      return 2500 + ((scene.problems?.length || 0) + (scene.solutions?.length || 0)) * 150 + 600;
+    case "cta":
+      return 4500 + 600;
+    case "narrative":
+      return 4200 + 600;
+    case "quote":
+      return 4000 + 600;
+    case "chapter":
+      return 3600 + 600;
+    case "reveal":
+      return 4200 + 600;
+    case "tip":
+      return 4200 + 600;
+    case "listicle":
+      return 2200 + ((scene.items?.length || scene.features?.length || 0) * 700) + 600;
+    default:
+      return 3500 + 600;
+  }
+}
+
+// Compute pause marker based on scene duration
+function getPauseMarker(durationMs: number): string {
+  if (durationMs < 3200) return "";
+  if (durationMs < 4000) return "...";
+  if (durationMs < 5000) return "... ...";
+  return "... ... ...";
+}
+
 function buildNarrationFromScenes(scenes: SceneData[]): string {
-  const parts: string[] = [];
+  const segments: string[] = [];
 
   for (const scene of scenes) {
+    const parts: string[] = [];
+
     switch (scene.type) {
       case "hook":
-        parts.push(scene.headline || "");
+        if (scene.headline) parts.push(scene.headline);
         if (scene.subheadline) parts.push(scene.subheadline);
         break;
       case "brand":
@@ -184,18 +259,60 @@ function buildNarrationFromScenes(scenes: SceneData[]): string {
         if (scene.headline) parts.push(scene.headline);
         break;
       case "cta":
-        parts.push(scene.headline || "");
+        if (scene.headline) parts.push(scene.headline);
         if (scene.subheadline) parts.push(scene.subheadline);
         if (scene.ctaText) parts.push(scene.ctaText);
         if (scene.url) parts.push(scene.url);
+        break;
+      case "narrative":
+        if (scene.text) parts.push(scene.text);
+        else if (scene.headline) parts.push(scene.headline);
+        break;
+      case "quote":
+        if (scene.quote) parts.push(scene.quote);
+        if (scene.author) parts.push(`by ${scene.author}`);
+        break;
+      case "chapter":
+        if (scene.chapterTitle) parts.push(scene.chapterTitle);
+        else if (scene.headline) parts.push(scene.headline);
+        break;
+      case "reveal":
+        if (scene.revealText) parts.push(scene.revealText);
+        if (scene.subtext) parts.push(scene.subtext);
+        break;
+      case "tip":
+        if (scene.tipTitle) parts.push(scene.tipTitle);
+        if (scene.tipBody) parts.push(scene.tipBody);
+        break;
+      case "listicle":
+        if (scene.headline) parts.push(scene.headline);
+        if (scene.items) {
+          parts.push(scene.items.join(". ") + ".");
+        }
         break;
       case "montage":
         // Montage is visual-only, skip narration
         break;
     }
+
+    const text = parts.filter(Boolean).join(" ");
+    if (text) segments.push(text);
   }
 
-  return parts.filter(Boolean).join(" ");
+  // Join segments with paragraph breaks and pause markers proportional to scene duration
+  const result: string[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    result.push(segments[i]);
+    if (i < segments.length - 1) {
+      const sceneDuration = getSceneDurationMs(scenes[i]);
+      const pause = getPauseMarker(sceneDuration);
+      // Always add paragraph break for TTS pacing
+      result.push("\n\n");
+      if (pause) result.push(pause + "\n\n");
+    }
+  }
+
+  return result.join("");
 }
 
 // ============================================================
@@ -247,7 +364,8 @@ Rules:
 4. Write numbers as words when appropriate
 5. Keep it concise - match the pace of a 15-30 second video
 6. Make it sound natural when spoken aloud
-7. Add brief pauses via ellipses or commas where needed
+7. IMPORTANT: Preserve all paragraph breaks (\\n\\n) and ellipsis pauses (...) — these sync the voiceover to visual scene transitions. Do NOT remove or merge them.
+8. Add brief pauses via commas where needed within segments
 
 Output ONLY the voiceover script.`,
             },
@@ -325,6 +443,13 @@ export const generate = action({
     autoSplit: v.optional(v.boolean()),
     brandId: v.optional(v.id("brands")),
     theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
+    category: v.optional(v.union(
+      v.literal("saas"),
+      v.literal("storytelling"),
+      v.literal("educational"),
+      v.literal("ecommerce"),
+      v.literal("personal"),
+    )),
     voiceover: v.optional(v.object({
       enabled: v.boolean(),
       voiceId: v.optional(v.string()),
@@ -383,13 +508,16 @@ export const generate = action({
       ? Math.max(limits.maxScenesPerClip - 1, 1) // reserve 1 slot for montage
       : limits.maxScenesPerClip;
 
+    const category = args.category || "saas";
+
     let scenes: SceneData[];
     try {
       scenes = await parseScriptWithAI(
         script,
         maxScenes,
         apiKey,
-        args.autoSplit ?? false
+        args.autoSplit ?? false,
+        category
       );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -519,6 +647,7 @@ export const generate = action({
         scenesCount: allScenes.length,
         brandId: args.brandId,
         theme: theme !== "classic" ? theme : undefined,
+        category: category !== "saas" ? category : undefined,
         voiceoverStorageId,
         voiceoverText,
         voiceId,
@@ -544,7 +673,7 @@ export const generate = action({
       voiceoverUrl: voiceoverPlayUrl,
       scenes: allScenes.map((s) => ({
         type: s.type,
-        headline: s.headline || s.brandName || s.demoTitle || (s.type === "montage" ? "Montage Intro" : ""),
+        headline: s.headline || s.brandName || s.demoTitle || s.chapterTitle || s.tipTitle || s.revealText || s.quote?.slice(0, 40) || s.text?.slice(0, 40) || (s.type === "montage" ? "Montage Intro" : ""),
       })),
     };
   },
