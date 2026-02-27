@@ -28,9 +28,10 @@ interface GenerateModalProps {
   isOpen: boolean
   onClose: () => void
   initialImageUrl?: string
+  onConvertToClip?: (content: string, brandColor?: string) => void
 }
 
-function GenerateModalComponent({ isOpen, onClose, initialImageUrl }: GenerateModalProps) {
+function GenerateModalComponent({ isOpen, onClose, initialImageUrl, onConvertToClip }: GenerateModalProps) {
   const { t } = useTranslation()
   const { brands, selectedBrandId, addPost } = useData()
   const { canCreatePost, incrementPostCount, openUpgradeModal, getUsagePercentage, getRemainingCount } = useSubscription()
@@ -439,6 +440,18 @@ function GenerateModalComponent({ isOpen, onClose, initialImageUrl }: GenerateMo
                   <Button variant="outline" onClick={handleSaveAsDraft} className="flex-1 h-8 sm:h-10 text-[10px] sm:text-sm px-1 sm:px-4">
                     {t('generateModal.saveDraft')}
                   </Button>
+                  {onConvertToClip && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        onConvertToClip(generatedContent, selectedBrand?.color)
+                        handleClose()
+                      }}
+                      className="flex-1 h-8 sm:h-10 text-[10px] sm:text-sm px-1 sm:px-4"
+                    >
+                      Clip
+                    </Button>
+                  )}
                   <Button onClick={handleOpenScheduler} className="flex-1 h-8 sm:h-10 text-[10px] sm:text-sm px-1 sm:px-4">
                     {t('generateModal.schedule')}
                   </Button>

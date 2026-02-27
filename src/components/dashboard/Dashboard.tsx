@@ -203,6 +203,13 @@ export function Dashboard() {
         isOpen={isGenerateModalOpen}
         onClose={handleGenerateModalClose}
         initialImageUrl={pendingImageUrl}
+        onConvertToClip={(content, brandColor) => {
+          setPendingClipData({
+            script: content,
+            colors: brandColor ? { primary: brandColor, secondary: brandColor, accent: '#F97316' } : undefined,
+          })
+          setIsClipModalOpen(true)
+        }}
       />
       <VideoToPostsModal
         isOpen={isVideoModalOpen}
