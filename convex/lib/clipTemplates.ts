@@ -2093,7 +2093,30 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
     }
   `;
 
+  // _baseDurMs = total unscaled animation time; _wr = wait ratio (overridden at runtime by voiceover injection)
+  const baseDurMs = scenes.reduce((sum, s) => {
+    switch (s.type) {
+      case "montage": return sum + ((s.montageItems?.length || 3) * 1100) + 500 + 600;
+      case "hook": return sum + 3500 + 600;
+      case "brand": return sum + 3200 + 600;
+      case "features": return sum + 2000 + (s.features?.length || 0) * 520 + 600;
+      case "demo": return sum + 2000 + (s.demoSteps?.length || 0) * 800 + 600;
+      case "transformation": return sum + 4500 + 600;
+      case "stats": return sum + 2500 + (s.stats?.length || 0) * 300 + 600;
+      case "comparison": return sum + 2500 + ((s.problems?.length || 0) + (s.solutions?.length || 0)) * 150 + 600;
+      case "cta": return sum + 4500 + 600;
+      case "narrative": return sum + 4200 + 600;
+      case "quote": return sum + 4000 + 600;
+      case "chapter": return sum + 3600 + 600;
+      case "reveal": return sum + 4200 + 600;
+      case "tip": return sum + 4200 + 600;
+      case "listicle": return sum + 2200 + ((s.items?.length || s.features?.length || 0) * 700) + 600;
+      default: return sum + 3000 + 600;
+    }
+  }, 0);
+
   return `
+    var _baseDurMs = ${baseDurMs};
     var _wr = ${waitRatio.toFixed(4)};
     function wait(ms) { return new Promise(r => setTimeout(r, Math.round(ms * _wr))); }
 

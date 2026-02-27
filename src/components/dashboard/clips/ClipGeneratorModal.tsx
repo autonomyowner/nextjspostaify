@@ -200,9 +200,21 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
         (function() {
           var vo = document.getElementById('clip-voiceover');
           if (!vo) return;
+
+          // Recalculate wait ratio from actual audio duration at runtime
+          function recalcRatio() {
+            if (vo.duration && isFinite(vo.duration) && typeof _baseDurMs === 'number' && _baseDurMs > 0) {
+              var audioDurMs = vo.duration * 1000;
+              _wr = Math.max(0.6, Math.min(1.8, audioDurMs / _baseDurMs));
+            }
+          }
+          if (vo.readyState >= 1) { recalcRatio(); }
+          else { vo.addEventListener('loadedmetadata', recalcRatio); }
+
           var origPlay = window.playVideo;
           if (origPlay) {
             window.playVideo = async function() {
+              recalcRatio();
               vo.currentTime = 0;
               vo.play().catch(function(){});
               await origPlay();
@@ -217,7 +229,7 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
           }
           // Also auto-play on first user click
           document.addEventListener('click', function handler() {
-            if (vo.paused) { vo.currentTime = 0; vo.play().catch(function(){}); }
+            if (vo.paused) { recalcRatio(); vo.currentTime = 0; vo.play().catch(function(){}); }
             document.removeEventListener('click', handler);
           });
         })();
@@ -239,9 +251,21 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
         (function() {
           var vo = document.getElementById('clip-voiceover');
           if (!vo) return;
+
+          // Recalculate wait ratio from actual audio duration at runtime
+          function recalcRatio() {
+            if (vo.duration && isFinite(vo.duration) && typeof _baseDurMs === 'number' && _baseDurMs > 0) {
+              var audioDurMs = vo.duration * 1000;
+              _wr = Math.max(0.6, Math.min(1.8, audioDurMs / _baseDurMs));
+            }
+          }
+          if (vo.readyState >= 1) { recalcRatio(); }
+          else { vo.addEventListener('loadedmetadata', recalcRatio); }
+
           var origPlay = window.playVideo;
           if (origPlay) {
             window.playVideo = async function() {
+              recalcRatio();
               vo.currentTime = 0;
               vo.play().catch(function(){});
               await origPlay();
@@ -255,7 +279,7 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
             };
           }
           document.addEventListener('click', function handler() {
-            if (vo.paused) { vo.currentTime = 0; vo.play().catch(function(){}); }
+            if (vo.paused) { recalcRatio(); vo.currentTime = 0; vo.play().catch(function(){}); }
             document.removeEventListener('click', handler);
           });
         })();
