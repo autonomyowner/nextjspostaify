@@ -16,8 +16,23 @@ interface GeneratedClip {
   scenesCount: number
   duration: number
   htmlContent: string
+  hasVoiceover?: boolean
   scenes: Array<{ type: string; headline: string }>
 }
+
+const CLIP_VOICES = [
+  { id: "794f9389-aac1-45b6-b726-9d9369183238", name: "Confident Narrator", gender: "male" },
+  { id: "a0e99571-b01d-4dab-983d-db22d8e3376b", name: "Energetic Host", gender: "female" },
+  { id: "638efaaa-4d0c-442e-b701-3fae16aad012", name: "Calm Explainer", gender: "male" },
+  { id: "c2ac25f9-ecc4-4f56-9095-651354df60c0", name: "Upbeat Creator", gender: "female" },
+] as const
+
+const VOICE_STYLES = [
+  { id: 'conversational', label: 'Conversational', desc: 'Natural & friendly' },
+  { id: 'professional', label: 'Professional', desc: 'Clear & polished' },
+  { id: 'energetic', label: 'Energetic', desc: 'Upbeat & dynamic' },
+  { id: 'calm', label: 'Calm', desc: 'Soothing & measured' },
+] as const
 
 const COLOR_PRESETS = [
   { name: 'Gold', primary: '#FACC15', secondary: '#EAB308', accent: '#F97316' },
@@ -37,6 +52,14 @@ const GENERATION_STEPS = [
   { label: 'Finalizing', description: 'Polishing your clip' },
 ]
 
+const GENERATION_STEPS_WITH_VO = [
+  { label: 'Parsing Script', description: 'AI is analyzing your scenes' },
+  { label: 'Building Scenes', description: 'Mapping to motion templates' },
+  { label: 'Generating Voiceover', description: 'Cartesia AI is narrating your clip' },
+  { label: 'Rendering Clip', description: 'Syncing audio to animations' },
+  { label: 'Finalizing', description: 'Polishing your clip' },
+]
+
 export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps) {
   const [step, setStep] = useState<'input' | 'generating' | 'result'>('input')
   const [script, setScript] = useState('')
@@ -48,6 +71,9 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
   })
   const [autoSplit, setAutoSplit] = useState(false)
   const [theme, setTheme] = useState<'classic' | 'cinematic'>('classic')
+  const [voiceoverEnabled, setVoiceoverEnabled] = useState(false)
+  const [selectedVoice, setSelectedVoice] = useState<string>(CLIP_VOICES[0].id)
+  const [voiceStyle, setVoiceStyle] = useState<'conversational' | 'professional' | 'energetic' | 'calm'>('energetic')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<GeneratedClip | null>(null)
@@ -83,6 +109,11 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
         title: title.trim() || undefined,
         autoSplit,
         theme,
+        voiceover: voiceoverEnabled ? {
+          enabled: true,
+          voiceId: selectedVoice,
+          style: voiceStyle,
+        } : undefined,
       })
 
       setResult(res as unknown as GeneratedClip)
@@ -119,6 +150,9 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
     setTitle('')
     setAutoSplit(false)
     setTheme('classic')
+    setVoiceoverEnabled(false)
+    setSelectedVoice(CLIP_VOICES[0].id)
+    setVoiceStyle('energetic')
     setError('')
     setResult(null)
     onClose()
@@ -272,6 +306,90 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                 )}
               </div>
 
+              {/* Voiceover toggle + settings */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between px-1 mb-2">
+                  <div>
+                    <p className="text-xs text-white/60 font-medium">AI Voiceover</p>
+                    <p className="text-[11px] text-white/30 mt-0.5">
+                      {voiceoverEnabled
+                        ? 'Cartesia AI narration synced to your clip'
+                        : 'Add AI-generated voiceover narration'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVoiceoverEnabled(!voiceoverEnabled)}
+                    className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${
+                      voiceoverEnabled ? 'bg-yellow-500' : 'bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all ${
+                        voiceoverEnabled ? 'left-[22px]' : 'left-[3px]'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {voiceoverEnabled && (
+                  <div className="space-y-3 p-3 rounded-xl bg-white/3 border border-white/5">
+                    {/* Voice selection */}
+                    <div>
+                      <label className="block text-[11px] text-white/40 mb-1.5">Voice</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {CLIP_VOICES.map((voice) => (
+                          <button
+                            key={voice.id}
+                            type="button"
+                            onClick={() => setSelectedVoice(voice.id)}
+                            className={`px-3 py-2 rounded-lg border text-left transition-all ${
+                              selectedVoice === voice.id
+                                ? 'border-yellow-500/40 bg-yellow-500/10'
+                                : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
+                            }`}
+                          >
+                            <span className={`text-xs font-medium ${
+                              selectedVoice === voice.id ? 'text-yellow-400' : 'text-white/60'
+                            }`}>{voice.name}</span>
+                            <span className={`block text-[10px] mt-0.5 ${
+                              selectedVoice === voice.id ? 'text-yellow-400/50' : 'text-white/25'
+                            }`}>{voice.gender}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Voice style */}
+                    <div>
+                      <label className="block text-[11px] text-white/40 mb-1.5">Style</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {VOICE_STYLES.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setVoiceStyle(s.id as typeof voiceStyle)}
+                            className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+                              voiceStyle === s.id
+                                ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
+                                : 'border-white/5 bg-white/2 text-white/40 hover:border-white/10'
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {userPlan === 'free' && (
+                      <p className="text-[10px] text-yellow-400/40 px-1">
+                        Voiceover uses your monthly voiceover credits. PRO plan includes 30/month.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Script input */}
               <div className="mb-4">
                 <label className="block text-xs text-white/40 mb-1.5">
@@ -375,7 +493,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                     : 'bg-white/5 text-white/30 cursor-not-allowed'
                 }`}
               >
-                Generate Clip
+                {voiceoverEnabled ? 'Generate Clip + Voiceover' : 'Generate Clip'}
               </button>
             </div>
           )}
@@ -387,7 +505,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
               <p className="text-sm text-white/40 mb-8">AI is building your motion graphic...</p>
 
               <div className="w-full max-w-sm space-y-4">
-                {GENERATION_STEPS.map((s, i) => (
+                {(voiceoverEnabled ? GENERATION_STEPS_WITH_VO : GENERATION_STEPS).map((s, i) => (
                   <motion.div
                     key={s.label}
                     initial={{ opacity: 0, x: -20 }}
@@ -425,9 +543,20 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
           {step === 'result' && result && (
             <div className="p-6">
               <h2 className="text-xl font-bold text-white mb-1">Clip Ready</h2>
-              <p className="text-sm text-white/40 mb-6">
+              <p className="text-sm text-white/40 mb-2">
                 {result.scenesCount} scenes, ~{result.duration}s duration
               </p>
+              {result.hasVoiceover && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 mb-4">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-yellow-400">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                    <line x1="12" y1="19" x2="12" y2="23" />
+                    <line x1="8" y1="23" x2="16" y2="23" />
+                  </svg>
+                  <span className="text-[11px] font-medium text-yellow-400">AI Voiceover Included</span>
+                </div>
+              )}
 
               {/* Scene breakdown */}
               <div className="mb-6 space-y-2">
@@ -474,6 +603,7 @@ export function ClipGeneratorModal({ isOpen, onClose }: ClipGeneratorModalProps)
                   setScript('')
                   setTitle('')
                   setTheme('classic')
+                  setVoiceoverEnabled(false)
                   setResult(null)
                   setError('')
                 }}

@@ -14,6 +14,17 @@ import {
 } from "./lib/clipTemplates";
 
 // ============================================================
+// BUILT-IN CARTESIA VOICES (curated for clips)
+// ============================================================
+
+const CLIP_VOICES = [
+  { id: "794f9389-aac1-45b6-b726-9d9369183238", name: "Confident Narrator", gender: "male" },
+  { id: "a0e99571-b01d-4dab-983d-db22d8e3376b", name: "Energetic Host", gender: "female" },
+  { id: "638efaaa-4d0c-442e-b701-3fae16aad012", name: "Calm Explainer", gender: "male" },
+  { id: "c2ac25f9-ecc4-4f56-9095-651354df60c0", name: "Upbeat Creator", gender: "female" },
+] as const;
+
+// ============================================================
 // AI SCRIPT PARSER
 // Parse user's raw script into structured scenes
 // ============================================================
@@ -81,7 +92,7 @@ Example output:
         "X-Title": "POSTAIFY",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+        model: "anthropic/claude-3.5-haiku",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -126,6 +137,179 @@ Example output:
 }
 
 // ============================================================
+// NARRATION BUILDER
+// Convert parsed scenes into a TTS-optimized voiceover script
+// ============================================================
+
+function buildNarrationFromScenes(scenes: SceneData[]): string {
+  const parts: string[] = [];
+
+  for (const scene of scenes) {
+    switch (scene.type) {
+      case "hook":
+        parts.push(scene.headline || "");
+        if (scene.subheadline) parts.push(scene.subheadline);
+        break;
+      case "brand":
+        if (scene.brandName) parts.push(scene.brandName);
+        if (scene.tagline) parts.push(scene.tagline);
+        break;
+      case "features":
+        if (scene.headline) parts.push(scene.headline);
+        if (scene.features) {
+          parts.push(scene.features.join(". ") + ".");
+        }
+        break;
+      case "demo":
+        parts.push(scene.demoTitle || scene.headline || "Here's how it works.");
+        if (scene.demoSteps) {
+          parts.push(scene.demoSteps.join(". ") + ".");
+        }
+        break;
+      case "transformation":
+        if (scene.headline) parts.push(scene.headline);
+        if (scene.before && scene.after) {
+          parts.push(`From ${scene.before}, to ${scene.after}.`);
+        }
+        break;
+      case "stats":
+        if (scene.headline) parts.push(scene.headline);
+        if (scene.stats) {
+          parts.push(
+            scene.stats.map((s) => `${s.value} ${s.label}`).join(". ") + "."
+          );
+        }
+        break;
+      case "comparison":
+        if (scene.headline) parts.push(scene.headline);
+        break;
+      case "cta":
+        parts.push(scene.headline || "");
+        if (scene.subheadline) parts.push(scene.subheadline);
+        if (scene.ctaText) parts.push(scene.ctaText);
+        if (scene.url) parts.push(scene.url);
+        break;
+      case "montage":
+        // Montage is visual-only, skip narration
+        break;
+    }
+  }
+
+  return parts.filter(Boolean).join(" ");
+}
+
+// ============================================================
+// CARTESIA TTS
+// Generate voiceover audio from narration text
+// ============================================================
+
+async function generateCartesiaTTS(
+  text: string,
+  voiceId: string,
+  apiKey: string,
+  style: "conversational" | "professional" | "energetic" | "calm" = "conversational",
+  openRouterKey?: string
+): Promise<{ url: string; finalText: string }> {
+  // Optimize text for voiceover if OpenRouter key is available
+  let finalText = text;
+  if (openRouterKey) {
+    const styleInstructions: Record<string, string> = {
+      conversational:
+        "Natural, like talking to a friend. Casual pacing with natural pauses.",
+      professional:
+        "Clear, authoritative, and polished. Suitable for business content.",
+      energetic:
+        "Upbeat, enthusiastic, and dynamic. Great for motivational content.",
+      calm: "Soothing, measured, and relaxed. Perfect for educational content.",
+    };
+
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openRouterKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-haiku-4.5",
+          messages: [
+            {
+              role: "system",
+              content: `Transform text into a voiceover script optimized for TTS on a short-form video (TikTok/Reels).
+
+Style: ${styleInstructions[style]}
+
+Rules:
+1. Remove hashtags, @mentions, emojis, URLs
+2. Use proper punctuation for pacing
+3. Break long sentences
+4. Write numbers as words when appropriate
+5. Keep it concise - match the pace of a 15-30 second video
+6. Make it sound natural when spoken aloud
+7. Add brief pauses via ellipses or commas where needed
+
+Output ONLY the voiceover script.`,
+            },
+            {
+              role: "user",
+              content: `Transform this into a ${style} voiceover script:\n\n${text}`,
+            },
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
+        }),
+      }
+    );
+
+    if (response.ok) {
+      const data = (await response.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      finalText = data.choices?.[0]?.message?.content || text;
+    }
+  }
+
+  // Call Cartesia TTS
+  const response = await fetch("https://api.cartesia.ai/tts/bytes", {
+    method: "POST",
+    headers: {
+      "X-API-Key": apiKey,
+      "Cartesia-Version": "2025-04-16",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model_id: "sonic-2",
+      transcript: finalText,
+      voice: {
+        mode: "id",
+        id: voiceId,
+      },
+      output_format: {
+        container: "mp3",
+        bit_rate: 128000,
+        sample_rate: 44100,
+      },
+      language: "en",
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("Invalid Cartesia API key");
+    }
+    const errorText = await response.text().catch(() => "");
+    throw new Error(`Cartesia TTS failed: ${errorText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  const dataUrl = `data:audio/mpeg;base64,${base64}`;
+
+  return { url: dataUrl, finalText };
+}
+
+// ============================================================
 // MAIN GENERATE ACTION
 // ============================================================
 
@@ -141,6 +325,16 @@ export const generate = action({
     autoSplit: v.optional(v.boolean()),
     brandId: v.optional(v.id("brands")),
     theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
+    voiceover: v.optional(v.object({
+      enabled: v.boolean(),
+      voiceId: v.optional(v.string()),
+      style: v.optional(v.union(
+        v.literal("conversational"),
+        v.literal("professional"),
+        v.literal("energetic"),
+        v.literal("calm")
+      )),
+    })),
   },
   handler: async (ctx, args) => {
     // Auth check
@@ -189,32 +383,38 @@ export const generate = action({
       ? Math.max(limits.maxScenesPerClip - 1, 1) // reserve 1 slot for montage
       : limits.maxScenesPerClip;
 
-    const scenes = await parseScriptWithAI(
-      script,
-      maxScenes,
-      apiKey,
-      args.autoSplit ?? false
-    );
+    let scenes: SceneData[];
+    try {
+      scenes = await parseScriptWithAI(
+        script,
+        maxScenes,
+        apiKey,
+        args.autoSplit ?? false
+      );
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`Script parsing failed: ${msg}`);
+    }
 
     // Cinematic: auto-generate montage scene from parsed content
     let allScenes: SceneData[] = scenes;
     if (theme === "cinematic") {
       const montageItems: string[] = [];
-      const hookScene = scenes.find((s) => s.type === "hook");
-      if (hookScene?.headline) {
-        montageItems.push(hookScene.headline.split(" ").slice(0, 4).join(" "));
+      const hookS = scenes.find((s) => s.type === "hook");
+      if (hookS?.headline) {
+        montageItems.push(hookS.headline.split(" ").slice(0, 4).join(" "));
       }
-      const brandScene = scenes.find((s) => s.type === "brand");
-      if (brandScene?.brandName) {
-        montageItems.push(brandScene.brandName);
+      const brandS = scenes.find((s) => s.type === "brand");
+      if (brandS?.brandName) {
+        montageItems.push(brandS.brandName);
       }
-      const featScene = scenes.find((s) => s.type === "features");
-      if (featScene?.features?.[0]) {
-        montageItems.push(featScene.features[0]);
+      const featS = scenes.find((s) => s.type === "features");
+      if (featS?.features?.[0]) {
+        montageItems.push(featS.features[0]);
       }
-      const ctaScene = scenes.find((s) => s.type === "cta");
-      if (ctaScene?.ctaText) {
-        montageItems.push(ctaScene.ctaText);
+      const ctaS = scenes.find((s) => s.type === "cta");
+      if (ctaS?.ctaText) {
+        montageItems.push(ctaS.ctaText);
       }
       // Ensure at least 3 items
       if (montageItems.length < 3) {
@@ -234,44 +434,125 @@ export const generate = action({
       }
     }
 
+    // Generate voiceover (if enabled and Cartesia key available)
+    let voiceoverUrl: string | undefined;
+    let voiceoverText: string | undefined;
+    let voiceId: string | undefined;
+
+    if (args.voiceover?.enabled) {
+      const cartesiaKey = process.env.CARTESIA_API_KEY;
+      if (!cartesiaKey) {
+        throw new Error("Cartesia API key not configured for voiceover");
+      }
+
+      // Check voiceover plan access (FREE plan has hasVoiceover=true but limited to 2/mo)
+      if ((user as any).usage?.voiceoversThisMonth >= (user as any).usage?.voiceoversLimit) {
+        throw new Error("You've reached your monthly voiceover limit. Upgrade for more.");
+      }
+
+      voiceId = args.voiceover.voiceId || CLIP_VOICES[0].id;
+      const voiceStyle = args.voiceover.style || "energetic";
+
+      // Build narration script from parsed scenes
+      const rawNarration = buildNarrationFromScenes(allScenes);
+      if (rawNarration.length < 5) {
+        throw new Error("Not enough text in scenes for voiceover narration");
+      }
+
+      try {
+        const ttsResult = await generateCartesiaTTS(
+          rawNarration,
+          voiceId,
+          cartesiaKey,
+          voiceStyle,
+          apiKey // OpenRouter key for text optimization
+        );
+        voiceoverUrl = ttsResult.url;
+        voiceoverText = ttsResult.finalText;
+
+        // Increment voiceover usage
+        await ctx.runMutation(api.users.incrementVoiceoverUsage);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Don't fail the whole clip — generate without voiceover
+        console.error(`Voiceover generation failed: ${msg}`);
+      }
+    }
+
     // Generate HTML
     const colors: ClipColors = args.colors;
     const title =
       args.title || `Clip - ${new Date().toLocaleDateString()}`;
 
-    const htmlContent = generateClipHTML({
-      title,
-      scenes: allScenes,
-      colors,
-      brandName: allScenes.find((s) => s.type === "brand")?.brandName,
-      theme,
-    });
+    let htmlContent: string;
+    try {
+      htmlContent = generateClipHTML({
+        title,
+        scenes: allScenes,
+        colors,
+        brandName: allScenes.find((s) => s.type === "brand")?.brandName,
+        theme,
+        voiceoverUrl,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`HTML generation failed: ${msg}`);
+    }
 
     const duration = estimateDuration(allScenes);
 
     // Save to DB
-    const clipId: string = await ctx.runMutation((api as any).clips.create, {
-      title,
-      script,
-      scenes: allScenes,
-      colors,
-      htmlContent,
-      duration,
-      scenesCount: allScenes.length,
-      brandId: args.brandId,
-      theme: theme !== "classic" ? theme : undefined,
-    });
+    let clipId: string;
+    try {
+      clipId = await ctx.runMutation((api as any).clips.create, {
+        title,
+        script,
+        scenes: allScenes,
+        colors,
+        htmlContent,
+        duration,
+        scenesCount: allScenes.length,
+        brandId: args.brandId,
+        theme: theme !== "classic" ? theme : undefined,
+        voiceoverUrl,
+        voiceoverText,
+        voiceId,
+        voiceProvider: voiceoverUrl ? "cartesia" as const : undefined,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`DB save failed: ${msg}`);
+    }
 
     return {
       clipId,
       scenesCount: allScenes.length,
       duration,
       htmlContent,
+      hasVoiceover: !!voiceoverUrl,
       scenes: allScenes.map((s) => ({
         type: s.type,
         headline: s.headline || s.brandName || s.demoTitle || (s.type === "montage" ? "Montage Intro" : ""),
       })),
     };
+  },
+});
+
+// ============================================================
+// GET AVAILABLE CLIP VOICES
+// ============================================================
+
+export const getClipVoices = action({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await authComponent.getAuthUser(ctx);
+    if (!authUser) throw new Error("Not authenticated");
+
+    return CLIP_VOICES.map((v) => ({
+      id: v.id,
+      name: v.name,
+      gender: v.gender,
+    }));
   },
 });
 

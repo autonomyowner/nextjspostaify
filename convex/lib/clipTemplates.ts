@@ -58,6 +58,7 @@ export interface ClipConfig {
   colors: ClipColors;
   brandName?: string;
   theme?: ClipTheme;
+  voiceoverUrl?: string; // base64 data URL for embedded audio
 }
 
 // ============================================================
@@ -79,6 +80,11 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
       --snappy: cubic-bezier(0.2, 0, 0, 1);
       --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      --elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      --elastic-subtle: cubic-bezier(0.34, 0.8, 0.2, 1.2);
+      --rubber-band: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --anticipation: cubic-bezier(0.42, 0, 0.58, 1);
+      --sharp-exit: cubic-bezier(0.165, 0.84, 0.44, 1);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -191,12 +197,24 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       position: absolute;
       inset: 0;
       background-image:
-        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
       background-size: 60px 60px;
       opacity: 0;
       animation: fadeIn 2s var(--ease-out) forwards 0.5s;
       z-index: 2;
+    }
+
+    .grain-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      opacity: 0.4;
+      z-index: 5;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      animation: grainDrift 8s linear infinite;
     }
 
     .glow-orb {
@@ -207,36 +225,36 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
     }
 
     .glow-orb-1 {
-      width: 400px;
-      height: 400px;
-      top: -100px;
-      right: -50px;
+      width: 500px;
+      height: 500px;
+      top: -150px;
+      right: -100px;
       background: var(--primary);
-      filter: blur(80px);
-      opacity: 0.25;
-      animation: pulseGlow 4s ease-in-out infinite;
+      filter: blur(100px);
+      opacity: 0.2;
+      animation: pulseGlow 4s ease-in-out infinite, orbDrift1 14s ease-in-out infinite;
     }
 
     .glow-orb-2 {
-      width: 300px;
-      height: 300px;
-      bottom: 200px;
-      left: -80px;
+      width: 400px;
+      height: 400px;
+      bottom: 150px;
+      left: -120px;
       background: var(--accent);
-      filter: blur(90px);
-      opacity: 0.2;
-      animation: pulseGlow 5s ease-in-out infinite reverse;
+      filter: blur(110px);
+      opacity: 0.15;
+      animation: pulseGlow 5s ease-in-out infinite reverse, orbDrift2 18s ease-in-out infinite;
     }
 
     .glow-orb-3 {
-      width: 250px;
-      height: 250px;
-      bottom: -50px;
-      right: -30px;
+      width: 350px;
+      height: 350px;
+      bottom: -80px;
+      right: -60px;
       background: var(--secondary);
-      filter: blur(80px);
-      opacity: 0.2;
-      animation: pulseGlow 6s ease-in-out infinite 1s;
+      filter: blur(95px);
+      opacity: 0.15;
+      animation: pulseGlow 6s ease-in-out infinite 1s, orbDrift3 16s ease-in-out infinite;
     }
 
     #particles {
@@ -248,11 +266,24 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
 
     .particle {
       position: absolute;
-      width: 3px;
-      height: 3px;
       background: rgba(255,255,255,0.3);
       border-radius: 50%;
       animation: floatParticle 8s infinite ease-in-out;
+    }
+
+    .particle-diamond {
+      position: absolute;
+      background: var(--primary);
+      opacity: 0.15;
+      transform: rotate(45deg);
+      animation: floatParticle 10s infinite ease-in-out;
+    }
+
+    .particle-line {
+      position: absolute;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: floatParticle 12s infinite ease-in-out;
     }
 
     /* Scene system */
@@ -320,6 +351,41 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
 
     .anim-pop.animate {
       animation: scalePop 0.8s var(--ease-out-back) forwards;
+    }
+
+    .anim-glitch {
+      opacity: 0;
+    }
+
+    .anim-glitch.animate {
+      animation: glitchReveal 0.6s var(--snappy) forwards;
+    }
+
+    .anim-flip {
+      opacity: 0;
+      transform: perspective(1200px) rotateY(90deg);
+      filter: blur(8px);
+    }
+
+    .anim-flip.animate {
+      animation: flip3D 0.7s var(--ease-out-expo) forwards;
+    }
+
+    .anim-neon {
+      opacity: 0;
+    }
+
+    .anim-neon.animate {
+      animation: neonReveal 0.5s var(--ease-out) forwards;
+    }
+
+    .anim-cascade {
+      opacity: 0;
+      transform: translateX(-30px) rotate(-2deg);
+    }
+
+    .anim-cascade.animate {
+      animation: staggerCascade 0.6s var(--elastic-subtle) forwards;
     }
 
     /* Controls outside capture */
@@ -417,6 +483,103 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
     @keyframes arrowPulse {
       0%, 100% { transform: translateX(0) scale(1); opacity: 0.8; }
       50% { transform: translateX(10px) scale(1.15); opacity: 1; }
+    }
+
+    /* ============================================================
+       ADVANCED ANIMATIONS - Kinetic Typography, Glitch, 3D, Neon
+       ============================================================ */
+
+    @keyframes charReveal {
+      0% { opacity: 0; transform: translateY(12px) scaleY(0.85); filter: blur(3px); }
+      100% { opacity: 1; transform: translateY(0) scaleY(1); filter: blur(0); }
+    }
+
+    @keyframes glitchReveal {
+      0% { opacity: 0; transform: translateX(-5px); clip-path: inset(0 0 100% 0); }
+      15% { opacity: 1; transform: translateX(3px); clip-path: inset(80% 0 0 0); }
+      30% { transform: translateX(-2px); clip-path: inset(0 0 60% 0); }
+      45% { transform: translateX(4px); clip-path: inset(40% 0 0 0); }
+      60% { transform: translateX(-1px); clip-path: inset(0 0 20% 0); }
+      75% { transform: translateX(2px); clip-path: inset(10% 0 0 0); }
+      100% { opacity: 1; transform: translateX(0); clip-path: inset(0 0 0 0); }
+    }
+
+    @keyframes flip3D {
+      0% { opacity: 0; transform: perspective(1200px) rotateY(90deg) rotateX(8deg); filter: blur(8px); }
+      100% { opacity: 1; transform: perspective(1200px) rotateY(0deg) rotateX(0deg); filter: blur(0); }
+    }
+
+    @keyframes zoomShake {
+      0% { transform: scale(1) translate(0, 0); }
+      10% { transform: scale(1.03) translate(3px, -2px); }
+      20% { transform: scale(1.03) translate(-3px, 2px); }
+      30% { transform: scale(1.03) translate(2px, 3px); }
+      40% { transform: scale(1.04) translate(-2px, -3px); }
+      50% { transform: scale(1.05) translate(0, 0); }
+      60% { transform: scale(1.03) translate(-3px, 2px); }
+      70% { transform: scale(1.02) translate(3px, -2px); }
+      80% { transform: scale(1.01) translate(-1px, 0); }
+      100% { transform: scale(1) translate(0, 0); }
+    }
+
+    @keyframes neonReveal {
+      0% { opacity: 0; text-shadow: none; filter: blur(8px); }
+      40% { opacity: 1; text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; filter: blur(0); }
+      70% { text-shadow: 0 0 30px currentColor, 0 0 60px currentColor, 0 0 100px currentColor; }
+      100% { opacity: 1; text-shadow: 0 0 15px currentColor, 0 0 30px currentColor, 0 0 60px currentColor; }
+    }
+
+    @keyframes neonPulse {
+      0%, 100% { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor; filter: brightness(1); }
+      50% { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 80px currentColor, 0 0 120px currentColor; filter: brightness(1.15); }
+    }
+
+    @keyframes chromaticFlash {
+      0%, 100% { filter: none; }
+      25% { filter: drop-shadow(-3px 0 0 rgba(255,0,128,0.5)) drop-shadow(3px 0 0 rgba(0,255,255,0.5)); }
+      50% { filter: drop-shadow(2px 0 0 rgba(255,0,128,0.3)) drop-shadow(-2px 0 0 rgba(0,255,255,0.3)); }
+      75% { filter: drop-shadow(-1px 0 0 rgba(255,0,128,0.2)) drop-shadow(1px 0 0 rgba(0,255,255,0.2)); }
+    }
+
+    @keyframes liquidMorph {
+      0% { border-radius: 20px; transform: scale(0.8) skewX(-3deg); filter: blur(4px); opacity: 0; }
+      50% { border-radius: 50%; transform: scale(1.05) skewX(0deg); opacity: 1; }
+      100% { border-radius: 16px; transform: scale(1) skewX(0deg); filter: blur(0); opacity: 1; }
+    }
+
+    @keyframes staggerCascade {
+      0% { opacity: 0; transform: translateX(-30px) rotate(-2deg); }
+      100% { opacity: 1; transform: translateX(0) rotate(0deg); }
+    }
+
+    @keyframes grainDrift {
+      0% { background-position: 0 0; }
+      100% { background-position: 200px 200px; }
+    }
+
+    @keyframes orbDrift1 {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(40px, -50px); }
+      50% { transform: translate(-30px, 60px); }
+      75% { transform: translate(50px, 30px); }
+    }
+
+    @keyframes orbDrift2 {
+      0%, 100% { transform: translate(0, 0); }
+      33% { transform: translate(-60px, 50px); }
+      66% { transform: translate(70px, -40px); }
+    }
+
+    @keyframes orbDrift3 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-50px, -60px); }
+    }
+
+    @keyframes spotlightSweep {
+      0% { opacity: 0; transform: translate(-30%, -30%) scale(0.8); }
+      30% { opacity: 0.4; }
+      70% { opacity: 0.6; }
+      100% { opacity: 0; transform: translate(30%, 30%) scale(1.2); }
     }
   `;
 
@@ -578,14 +741,27 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
 // SCENE HTML GENERATORS
 // ============================================================
 
+function renderKineticText(text: string, elementId: string): string {
+  const chars = text.split('');
+  const spans = chars.map((char, i) => {
+    if (char === ' ') return ' ';
+    return `<span class="kinetic-char" style="display:inline-block;opacity:0;animation:charReveal 0.5s var(--ease-out) forwards ${i * 0.035}s;">${escapeHtml(char)}</span>`;
+  }).join('');
+  return `<span id="${elementId}" class="kinetic-text">${spans}</span>`;
+}
+
 function hookScene(scene: SceneData, index: number, _colors: ClipColors, theme: ClipTheme): string {
   const underlineHtml = theme === "cinematic"
     ? `<div class="hook-underline" id="s${index}-underline"></div>`
     : "";
 
+  const isCinematic = theme === "cinematic";
+  const headlineText = escapeHtml(scene.headline || "");
+
   return `
     <div class="scene" id="scene-${index}">
-      <div class="anim-slam" id="s${index}-headline" style="
+      ${isCinematic ? `
+      <div class="anim-glitch" id="s${index}-headline" style="
         font-size: 72px;
         font-weight: 900;
         color: #fff;
@@ -593,8 +769,21 @@ function hookScene(scene: SceneData, index: number, _colors: ClipColors, theme: 
         line-height: 1.15;
         letter-spacing: -1px;
         max-width: 900px;
-        text-shadow: 0 0 60px ${`var(--primary)`}40;
-      ">${escapeHtml(scene.headline || "")}</div>
+        text-shadow: 0 0 60px var(--primary)40;
+      ">${headlineText}</div>
+      ` : `
+      <div id="s${index}-headline" style="
+        font-size: 72px;
+        font-weight: 900;
+        color: #fff;
+        text-align: center;
+        line-height: 1.15;
+        letter-spacing: -1px;
+        max-width: 900px;
+        text-shadow: 0 0 60px var(--primary)40;
+        opacity: 0;
+      ">${renderKineticText(scene.headline || "", `s${index}-kinetic`)}</div>
+      `}
       ${underlineHtml}
       ${
         scene.subheadline
@@ -623,22 +812,22 @@ function brandScene(scene: SceneData, index: number, colors: ClipColors, theme: 
   return `
     <div class="scene" id="scene-${index}">
       ${introBadge}
-      <div class="anim-pop" id="s${index}-logo" style="
-        width: 120px;
-        height: 120px;
-        border-radius: 28px;
+      <div class="anim-flip" id="s${index}-logo" style="
+        width: 130px;
+        height: 130px;
+        border-radius: 32px;
         background: linear-gradient(135deg, var(--primary), var(--secondary));
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 48px;
+        font-size: 52px;
         font-weight: 900;
         color: #fff;
         margin-bottom: 40px;
-        box-shadow: 0 0 60px ${colors.primary}40;
+        box-shadow: 0 0 80px ${colors.primary}50, 0 0 120px ${colors.primary}20;
         will-change: transform, opacity;
       ">${(scene.brandName || "B").charAt(0).toUpperCase()}</div>
-      <div class="anim" id="s${index}-name" style="
+      <div class="anim-neon" id="s${index}-name" style="
         font-size: 80px;
         font-weight: 900;
         background: linear-gradient(90deg, #fff, var(--primary), var(--secondary), var(--primary));
@@ -649,6 +838,7 @@ function brandScene(scene: SceneData, index: number, colors: ClipColors, theme: 
         animation: gradientShift 3s linear infinite;
         letter-spacing: -2px;
         text-align: center;
+        color: var(--primary);
       ">${escapeHtml(scene.brandName || "")}</div>
       ${
         scene.tagline
@@ -672,7 +862,7 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
   const featureCards = items
     .map(
       (f, i) => `
-    <div class="anim-pop" id="s${index}-feat-${i}" style="
+    <div class="anim-cascade" id="s${index}-feat-${i}" style="
       display: flex;
       align-items: center;
       gap: 24px;
@@ -684,6 +874,7 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
       position: relative;
       overflow: hidden;
       will-change: transform, opacity;
+      backdrop-filter: blur(4px);
     ">
       <div style="
         width: 56px;
@@ -1101,9 +1292,11 @@ function ctaScene(scene: SceneData, index: number, colors: ClipColors): string {
         font-weight: 800;
         color: #fff;
         cursor: pointer;
-        box-shadow: 0 0 40px ${colors.accent}66;
+        box-shadow: 0 0 60px ${colors.accent}66, 0 0 100px ${colors.accent}22;
         will-change: transform, opacity;
-      ">${escapeHtml(scene.ctaText || "Start Free")}</div>
+        position: relative;
+        overflow: hidden;
+      "><span style="position:relative;z-index:1;">${escapeHtml(scene.ctaText || "Start Free")}</span><div style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);pointer-events:none;animation:shineSweep 2.5s var(--ease-out) infinite 1.5s;"></div></div>
       ${
         scene.url
           ? `<div class="anim" id="s${index}-url" style="
@@ -1189,11 +1382,20 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
       }
 
       case "hook":
-        lines.push(`  anim('s${i}-headline');`);
-        lines.push(`  await wait(600);`);
         if (isCinematic) {
+          lines.push(`  anim('s${i}-headline');`);
+          lines.push(`  await wait(400);`);
+          // Chromatic flash on headline
+          lines.push(`  var hookEl = document.getElementById('s${i}-headline');`);
+          lines.push(`  if (hookEl) hookEl.style.animation = 'glitchReveal 0.6s var(--snappy) forwards, chromaticFlash 1.5s ease-in-out 0.6s';`);
+          lines.push(`  await wait(300);`);
           lines.push(`  el('s${i}-underline', function(u) { u.classList.add('animate'); });`);
           lines.push(`  await wait(400);`);
+        } else {
+          // Kinetic typography: reveal parent, chars animate via CSS
+          lines.push(`  var kinParent = document.getElementById('s${i}-headline');`);
+          lines.push(`  if (kinParent) { kinParent.style.opacity = '1'; }`);
+          lines.push(`  await wait(800);`);
         }
         if (scene.subheadline) {
           lines.push(`  anim('s${i}-sub');`);
@@ -1209,10 +1411,14 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
           lines.push(`  anim('s${i}-badge');`);
           lines.push(`  await wait(400);`);
         }
-        lines.push(`  anim('s${i}-logo');`);
-        lines.push(`  await wait(500);`);
-        lines.push(`  anim('s${i}-name');`);
-        lines.push(`  await wait(400);`);
+        lines.push(`  anim('s${i}-logo');`); // 3D flip animation
+        lines.push(`  await wait(600);`);
+        lines.push(`  anim('s${i}-name');`); // Neon reveal
+        lines.push(`  await wait(300);`);
+        // Add neon pulse loop after reveal
+        lines.push(`  var nameEl = document.getElementById('s${i}-name');`);
+        lines.push(`  if (nameEl) nameEl.style.animation = 'neonReveal 0.5s var(--ease-out) forwards, neonPulse 2s ease-in-out infinite 0.5s';`);
+        lines.push(`  await wait(300);`);
         if (scene.tagline) {
           lines.push(`  anim('s${i}-tagline');`);
         }
@@ -1230,9 +1436,9 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
         }
         const feats = scene.features || [];
         feats.forEach((_, fi) => {
-          lines.push(`  anim('s${i}-feat-${fi}');`);
+          lines.push(`  anim('s${i}-feat-${fi}');`); // cascade animation
           if (isCinematic) {
-            // Dynamic shine sweep after each card pops
+            // Dynamic shine sweep after cascade
             lines.push(`  (function(idx) {`);
             lines.push(`    setTimeout(function() {`);
             lines.push(`      var card = document.getElementById('s${i}-feat-' + idx);`);
@@ -1243,9 +1449,9 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
             lines.push(`      shine.style.animation = 'dynamicShineSweep 1.2s var(--ease-out) forwards';`);
             lines.push(`    }, 400);`);
             lines.push(`  })(${fi});`);
-            lines.push(`  await wait(200);`);
+            lines.push(`  await wait(180);`);
           } else {
-            lines.push(`  await wait(120);`);
+            lines.push(`  await wait(150);`);
           }
         });
         lines.push(`  await wait(${1500 + feats.length * 400});`);
@@ -1330,6 +1536,11 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme): string {
         }
         lines.push(`  anim('s${i}-btn');`);
         lines.push(`  await wait(300);`);
+        // Camera shake on button pop for dramatic impact
+        lines.push(`  var viewport = document.getElementById('viewport');`);
+        lines.push(`  if (viewport) viewport.style.animation = 'zoomShake 0.6s var(--ease-out) forwards';`);
+        lines.push(`  await wait(600);`);
+        lines.push(`  if (viewport) viewport.style.animation = '';`);
         if (isCinematic) {
           lines.push(
             `  document.getElementById('s${i}-btn').style.animation = 'scalePop 0.8s var(--ease-out-back) forwards, buttonGlowEnhanced 2s ease-in-out infinite 0.8s';`
@@ -1459,37 +1670,33 @@ ${sceneTimings.join("\n\n")}
 // ============================================================
 
 function getParticlesScript(theme: ClipTheme, colors: ClipColors): string {
-  if (theme === "cinematic") {
-    return `
-    (function() {
-      var c = document.getElementById('particles');
-      for (var i = 0; i < 25; i++) {
-        var p = document.createElement('div');
-        p.className = 'particle';
-        var size = 2 + Math.random() * 2;
-        p.style.width = size + 'px';
-        p.style.height = size + 'px';
-        p.style.background = '${colors.primary}66';
-        p.style.left = Math.random() * 100 + '%';
-        p.style.top = Math.random() * 100 + '%';
-        p.style.animationDelay = Math.random() * 5 + 's';
-        p.style.animationDuration = (5 + Math.random() * 5) + 's';
-        c.appendChild(p);
-      }
-    })();
-  `;
-  }
-
+  const count = theme === "cinematic" ? 40 : 30;
   return `
     (function() {
       var c = document.getElementById('particles');
-      for (var i = 0; i < 20; i++) {
+      var types = [
+        { cls: 'particle', sizeMin: 2, sizeMax: 4, colors: ['rgba(255,255,255,0.25)', '${colors.primary}44', '${colors.accent}33'] },
+        { cls: 'particle-diamond', sizeMin: 3, sizeMax: 6, colors: ['${colors.primary}22', '${colors.secondary}22'] },
+        { cls: 'particle-line', sizeMin: 15, sizeMax: 40, colors: ['rgba(255,255,255,0.1)'] }
+      ];
+      for (var i = 0; i < ${count}; i++) {
+        var t = types[i % types.length];
         var p = document.createElement('div');
-        p.className = 'particle';
+        p.className = t.cls;
+        var size = t.sizeMin + Math.random() * (t.sizeMax - t.sizeMin);
+        if (t.cls === 'particle-line') {
+          p.style.width = size + 'px';
+          p.style.height = '1px';
+        } else {
+          p.style.width = size + 'px';
+          p.style.height = size + 'px';
+        }
+        p.style.background = t.colors[Math.floor(Math.random() * t.colors.length)];
         p.style.left = Math.random() * 100 + '%';
         p.style.top = Math.random() * 100 + '%';
-        p.style.animationDelay = Math.random() * 5 + 's';
-        p.style.animationDuration = (5 + Math.random() * 5) + 's';
+        p.style.animationDelay = (Math.random() * 6) + 's';
+        p.style.animationDuration = (6 + Math.random() * 8) + 's';
+        p.style.opacity = (0.1 + Math.random() * 0.3).toFixed(2);
         c.appendChild(p);
       }
     })();
@@ -1644,6 +1851,36 @@ export function generateClipHTML(config: ClipConfig): string {
           <div class="letterbox-bottom" id="letterbox-bottom"></div>`
     : "";
 
+  // Voiceover audio element (hidden, synced to animation start)
+  const voiceoverHtml = config.voiceoverUrl
+    ? `<audio id="clip-voiceover" preload="auto" style="display:none;"><source src="${config.voiceoverUrl}" type="audio/mpeg"></audio>`
+    : "";
+
+  // Voiceover playback script — starts audio when first scene plays
+  const voiceoverScript = config.voiceoverUrl
+    ? `
+    // Voiceover sync: play audio when animation starts
+    var voiceoverAudio = document.getElementById('clip-voiceover');
+    var originalPlayVideo = playVideo;
+    playVideo = async function() {
+      if (voiceoverAudio) {
+        voiceoverAudio.currentTime = 0;
+        voiceoverAudio.play().catch(function() {});
+      }
+      await originalPlayVideo();
+    };
+    // Also expose for manual replay
+    document.querySelectorAll('#controls button').forEach(function(btn) {
+      if (btn.textContent === 'Play') {
+        var origClick = btn.onclick;
+        btn.onclick = function() {
+          if (voiceoverAudio) { voiceoverAudio.currentTime = 0; voiceoverAudio.play().catch(function() {}); }
+        };
+      }
+    });
+    `
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1658,6 +1895,7 @@ export function generateClipHTML(config: ClipConfig): string {
   </style>
 </head>
 <body>
+  ${voiceoverHtml}
   <div class="page-wrapper">
     <div class="capture-label">CAPTURE THIS AREA</div>
     <div class="capture-frame">
@@ -1665,6 +1903,7 @@ export function generateClipHTML(config: ClipConfig): string {
         <div id="viewport">
           <div class="bg-gradient"></div>
           <div class="grid-overlay"></div>
+          <div class="grain-overlay"></div>
           <div class="glow-orb glow-orb-1"></div>
           <div class="glow-orb glow-orb-2"></div>
           <div class="glow-orb glow-orb-3"></div>${cinematicHtml}
@@ -1684,6 +1923,7 @@ export function generateClipHTML(config: ClipConfig): string {
     ${getScalingScript()}
     ${getParticlesScript(theme, colors)}
     ${getAnimationTimeline(scenes, theme)}
+    ${voiceoverScript}
   </script>
 </body>
 </html>`;

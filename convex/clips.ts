@@ -66,6 +66,10 @@ export const create = mutation({
     scenesCount: v.number(),
     brandId: v.optional(v.id("brands")),
     theme: v.optional(v.union(v.literal("classic"), v.literal("cinematic"))),
+    voiceoverUrl: v.optional(v.string()),
+    voiceoverText: v.optional(v.string()),
+    voiceId: v.optional(v.string()),
+    voiceProvider: v.optional(v.union(v.literal("cartesia"), v.literal("elevenlabs"))),
   },
   handler: async (ctx, args) => {
     let authUser;
@@ -91,6 +95,10 @@ export const create = mutation({
       colors: args.colors,
       theme: args.theme,
       htmlContent: args.htmlContent,
+      voiceoverUrl: args.voiceoverUrl,
+      voiceoverText: args.voiceoverText,
+      voiceId: args.voiceId,
+      voiceProvider: args.voiceProvider,
       renderStatus: "draft",
       duration: args.duration,
       scenesCount: args.scenesCount,
