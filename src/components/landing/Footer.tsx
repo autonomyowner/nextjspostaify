@@ -120,6 +120,17 @@ export function Footer() {
               ZST
             </a>
           </p>
+          <p className="text-sm text-muted-foreground">
+            Developed by{" "}
+            <a
+              href="https://sitedz.store"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              SiteDz
+            </a>
+          </p>
         </div>
       </div>
     </footer>
