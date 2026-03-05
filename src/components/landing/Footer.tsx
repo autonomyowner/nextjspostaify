@@ -112,23 +112,12 @@ export function Footer() {
           <p className="text-sm text-muted-foreground">
             In partnership with{" "}
             <a
-              href="https://www.zsst.xyz"
+              href="https://aitridi.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              ZST
-            </a>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Developed by{" "}
-            <a
-              href="https://sitedz.store"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              SiteDz
+              aitridi
             </a>
           </p>
         </div>
