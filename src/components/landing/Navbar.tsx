@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils'
 
 export const Navbar = memo(function Navbar() {
   const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const { t } = useTranslation()
   const { isAuthenticated, isLoading } = useConvexAuth()
   const user = useQuery(api.users.viewer)
@@ -24,6 +23,7 @@ export const Navbar = memo(function Navbar() {
 
     const handleScroll = () => {
       if (!ticking) {
+        // Throttle with requestAnimationFrame for better performance
         requestAnimationFrame(() => {
           setScrolled(window.scrollY > 20)
           ticking = false
@@ -32,60 +32,50 @@ export const Navbar = memo(function Navbar() {
       }
     }
 
+    // Use passive listener for better scroll performance
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Close mobile menu on route change / resize
-  useEffect(() => {
-    const close = () => setMobileOpen(false)
-    window.addEventListener('resize', close)
-    return () => window.removeEventListener('resize', close)
-  }, [])
-
-  const navLinks = [
-    { href: '#agents', label: t('nav.features') },
-    { href: '/tools', label: 'Free Tools', isLink: true },
-    { href: '/blog', label: 'Blog', isLink: true },
-    { href: '#pricing', label: t('nav.pricing') },
-    { href: '#faq', label: t('nav.faq') },
-  ]
-
   return (
     <nav
       className={cn(
-        'fixed z-50 transition-all duration-500',
-        scrolled
-          ? 'top-4 left-4 right-4 glass rounded-2xl py-3 shadow-lg shadow-black/20'
-          : 'top-0 left-0 right-0 bg-transparent py-5'
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        scrolled ? 'glass py-3' : 'bg-transparent py-5'
       )}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <Logo size="lg" />
 
-        {/* Nav Links — Desktop */}
+        {/* Nav Links */}
         <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) =>
-            link.isLink ? (
-              <Link key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-white transition-colors">
-                {link.label}
-              </Link>
-            ) : (
-              <a key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-white transition-colors">
-                {link.label}
-              </a>
-            )
-          )}
+          <a href="#agents" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            {t('nav.features')}
+          </a>
+          <Link href="/tools" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            Free Tools
+          </Link>
+          <Link href="/blog" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            Blog
+          </Link>
+          <a href="#pricing" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            {t('nav.pricing')}
+          </a>
+          <a href="#faq" className="text-sm text-muted-foreground hover:text-white transition-colors">
+            {t('nav.faq')}
+          </a>
         </div>
 
-        {/* CTA + Mobile Toggle */}
-        <div className="flex items-center gap-3">
+        {/* CTA - Auth aware */}
+        <div className="flex items-center gap-4">
           <LanguageSwitcher />
 
           {isLoading ? (
+            // Loading state
             <div className="w-20 h-8 bg-muted/20 rounded animate-pulse" />
           ) : isAuthenticated ? (
+            // Signed in state
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
                 <Button size="sm">
@@ -105,6 +95,7 @@ export const Navbar = memo(function Navbar() {
               )}
             </div>
           ) : (
+            // Signed out state
             <>
               <Link href="/sign-in">
                 <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
@@ -117,37 +108,6 @@ export const Navbar = memo(function Navbar() {
                 </Button>
               </Link>
             </>
-          )}
-
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden flex flex-col gap-1 p-2 cursor-pointer"
-            aria-label="Toggle menu"
-          >
-            <span className={cn('block w-5 h-0.5 bg-white transition-all duration-300', mobileOpen && 'rotate-45 translate-y-1.5')} />
-            <span className={cn('block w-5 h-0.5 bg-white transition-all duration-300', mobileOpen && 'opacity-0')} />
-            <span className={cn('block w-5 h-0.5 bg-white transition-all duration-300', mobileOpen && '-rotate-45 -translate-y-1.5')} />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu dropdown */}
-      <div className={cn(
-        'md:hidden overflow-hidden transition-all duration-300',
-        mobileOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
-      )}>
-        <div className="px-6 pt-4 pb-6 flex flex-col gap-3 border-t border-white/5 mt-3">
-          {navLinks.map((link) =>
-            link.isLink ? (
-              <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="text-sm text-muted-foreground hover:text-white transition-colors py-2">
-                {link.label}
-              </Link>
-            ) : (
-              <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="text-sm text-muted-foreground hover:text-white transition-colors py-2">
-                {link.label}
-              </a>
-            )
           )}
         </div>
       </div>

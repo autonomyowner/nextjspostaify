@@ -41,26 +41,34 @@ export const WhatIsPostaify = memo(function WhatIsPostaify() {
 
           {/* Structured capabilities for AI parsing */}
           <div className="grid md:grid-cols-2 gap-4 mt-8">
-            {[
-              { title: 'AI Content Generation', desc: 'Generate posts for Instagram, LinkedIn, Twitter/X, TikTok, and Facebook. Supports brand voice cloning from your existing writing style.' },
-              { title: 'AI Image Generation', desc: 'Create 1024x1024px photorealistic images in 8 seconds using Flux AI models. Includes logo generation with Ideogram V2 and product photography with Bria AI.' },
-              { title: 'AI Voiceovers', desc: 'Create professional voiceovers with 11 ElevenLabs AI voices (5 male, 6 female) for video content and social media reels.' },
-              { title: 'YouTube Repurposing', desc: 'Extract 5-10 optimized social media posts from any YouTube video automatically. Turn one video into a full week of content across all platforms.' },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 15 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.4, delay: 0.2 + i * 0.08 }}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/30 transition-colors duration-300 group"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  <h3 className="font-semibold text-white group-hover:text-primary transition-colors duration-300">{item.title}</h3>
-                </div>
-                <p className="text-sm text-zinc-400 pl-[18px]">{item.desc}</p>
-              </motion.div>
-            ))}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <h3 className="font-semibold text-white mb-2">AI Content Generation</h3>
+              <p className="text-sm text-zinc-400">
+                Generate posts for Instagram, LinkedIn, Twitter/X, TikTok, and Facebook.
+                Supports brand voice cloning from your existing writing style.
+              </p>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <h3 className="font-semibold text-white mb-2">AI Image Generation</h3>
+              <p className="text-sm text-zinc-400">
+                Create 1024x1024px photorealistic images in 8 seconds using Flux AI models.
+                Includes logo generation with Ideogram V2 and product photography with Bria AI.
+              </p>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <h3 className="font-semibold text-white mb-2">AI Voiceovers</h3>
+              <p className="text-sm text-zinc-400">
+                Create professional voiceovers with 11 ElevenLabs AI voices (5 male, 6 female)
+                for video content and social media reels.
+              </p>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <h3 className="font-semibold text-white mb-2">YouTube Repurposing</h3>
+              <p className="text-sm text-zinc-400">
+                Extract 5-10 optimized social media posts from any YouTube video automatically.
+                Turn one video into a full week of content across all platforms.
+              </p>
+            </div>
           </div>
 
           {/* Pricing summary for AI engines */}

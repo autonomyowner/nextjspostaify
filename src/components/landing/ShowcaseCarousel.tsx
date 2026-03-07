@@ -43,20 +43,18 @@ export function ShowcaseCarousel() {
           {doubledImages.map((image, index) => (
             <div
               key={index}
-              className="relative flex-shrink-0 w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden bg-gray-900 border border-white/5 shadow-xl hover:border-primary/30 hover:shadow-[0_0_40px_rgba(234,179,8,0.08)] transition-all duration-300 group cursor-pointer"
+              className="relative flex-shrink-0 w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden bg-gray-900 border border-gray-800 shadow-xl hover:border-yellow-500/50 transition-colors"
             >
               <Image
                 src={image.src}
                 alt={image.alt}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                className="object-cover"
                 sizes="(max-width: 768px) 256px, 320px"
                 loading="lazy"
               />
-              {/* Overlay with image label on hover */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                <span className="text-xs text-white/80 font-medium">{image.alt}</span>
-              </div>
+              {/* Subtle overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
             </div>
           ))}
         </div>
