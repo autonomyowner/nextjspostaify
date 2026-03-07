@@ -107,7 +107,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 Post<span className="text-primary">aify</span>. {t('footer.rights')}
+            © 2025 Post<span className="text-primary">aify</span>. {t('footer.rights')}
           </p>
           <p className="text-sm text-muted-foreground">
             In partnership with{" "}

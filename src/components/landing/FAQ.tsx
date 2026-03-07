@@ -87,7 +87,7 @@ export const FAQ = memo(function FAQ() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-center mt-12 p-6 rounded-2xl bg-card border border-white/10"
+          className="text-center mt-12 p-6 rounded-2xl bg-card border border-white/10 hover:border-primary/20 transition-colors duration-300"
         >
           <p className="text-muted-foreground mb-2">{t('faq.stillHaveQuestions')}</p>
           <p className="text-white font-medium">

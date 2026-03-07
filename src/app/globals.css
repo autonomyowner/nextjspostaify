@@ -247,6 +247,17 @@ html[dir="rtl"] .bg-gradient-to-l {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Section divider gradient */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(234, 179, 8, 0.15), transparent);
+}
+
+/* Subtle card hover glow */
+.card-glow:hover {
+  box-shadow: 0 0 30px rgba(234, 179, 8, 0.06);
+}
+
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }

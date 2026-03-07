@@ -278,24 +278,29 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.25 }}
-          className="flex items-center justify-center gap-3 sm:gap-4 mb-10"
+          className="flex items-center justify-center gap-3 sm:gap-5 mb-10"
         >
-          <div className="flex flex-col items-center px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+          <div className="flex flex-col items-center px-5 py-3 rounded-xl bg-red-500/8 border border-red-500/15 backdrop-blur-sm">
             <span className="text-2xl sm:text-3xl font-bold text-red-400 line-through decoration-2">
               {t('hero.transformationBefore') || '8+ hours'}
             </span>
-            <span className="text-xs sm:text-sm text-red-400/70">{t('hero.transformationLabel') || 'of content work'}</span>
+            <span className="text-xs sm:text-sm text-red-400/60">{t('hero.transformationLabel') || 'of content work'}</span>
           </div>
           <div className="flex items-center">
-            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
+            <motion.div
+              animate={{ x: [0, 4, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </motion.div>
           </div>
-          <div className="flex flex-col items-center px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+          <div className="flex flex-col items-center px-5 py-3 rounded-xl bg-primary/8 border border-primary/20 backdrop-blur-sm shadow-[0_0_30px_rgba(234,179,8,0.1)]">
             <span className="text-2xl sm:text-3xl font-bold text-primary">
               {t('hero.transformationAfter') || '15 min'}
             </span>
-            <span className="text-xs sm:text-sm text-primary/70">{t('hero.transformationLabel') || 'of content work'}</span>
+            <span className="text-xs sm:text-sm text-primary/60">{t('hero.transformationLabel') || 'of content work'}</span>
           </div>
         </motion.div>
 
@@ -307,26 +312,24 @@ export function Hero() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           {isAuthenticated ? (
-            // Signed in - show dashboard button
-            <Button size="lg" className="w-full sm:w-auto min-w-[200px]" asChild>
+            <Button size="lg" className="w-full sm:w-auto min-w-[200px] shadow-[0_0_30px_rgba(234,179,8,0.3)]" asChild>
               <Link href="/dashboard">
                 {t('hero.goToDashboard') || 'Go to Dashboard'}
               </Link>
             </Button>
           ) : (
-            // Signed out - show sign up flow
             <>
               <div className="flex flex-col items-center">
-                <Button size="lg" className="w-full sm:w-auto min-w-[200px]" asChild>
+                <Button size="lg" className="w-full sm:w-auto min-w-[200px] shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:shadow-[0_0_40px_rgba(234,179,8,0.4)] transition-shadow" asChild>
                   <Link href="/sign-up">
                     {t('hero.ctaFree') || 'Start Free - No Credit Card'}
                   </Link>
                 </Button>
-                <span className="text-xs text-muted-foreground mt-2">
+                <span className="text-xs text-muted-foreground mt-2.5">
                   {t('hero.freePlanInfo') || '2 brands, 20 posts/month free'}
                 </span>
               </div>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px]" asChild>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px] border-white/15 hover:border-white/30" asChild>
                 <a href="#pricing">
                   {t('hero.viewPricing') || 'View Pricing'}
                 </a>
@@ -340,26 +343,16 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10"
+          className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-10"
         >
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>{t('hero.trustNoCreditCard')}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>{t('hero.trustCancel')}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>{t('hero.trustLocalData')}</span>
-          </div>
+          {[t('hero.trustNoCreditCard'), t('hero.trustCancel'), t('hero.trustLocalData')].map((text, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+              <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{text}</span>
+            </div>
+          ))}
         </motion.div>
 
       </div>

@@ -90,14 +90,14 @@ export const AgentFeatures = memo(function AgentFeatures() {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 * index }}
             >
-              <Card className="h-full hover:border-primary/50 transition-colors duration-300 group">
+              <Card className="h-full transition-all duration-300 group cursor-pointer hover:border-primary/40 hover:shadow-[0_0_30px_rgba(234,179,8,0.06)] hover:-translate-y-0.5">
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs group-hover:border-primary/40 group-hover:text-primary transition-colors">
                       {agent.category}
                     </Badge>
                   </div>
-                  <CardTitle className="group-hover:text-primary transition-colors">
+                  <CardTitle className="group-hover:text-primary transition-colors duration-300">
                     {agent.title}
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
@@ -109,7 +109,7 @@ export const AgentFeatures = memo(function AgentFeatures() {
                     {agent.features.map((feature) => (
                       <span
                         key={feature}
-                        className="text-xs px-2 py-1 bg-white/5 rounded-md text-muted-foreground"
+                        className="text-xs px-2.5 py-1 bg-white/5 rounded-md text-muted-foreground group-hover:bg-primary/5 group-hover:text-white/70 transition-colors duration-300"
                       >
                         {feature}
                       </span>

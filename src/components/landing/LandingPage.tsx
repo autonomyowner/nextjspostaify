@@ -14,6 +14,10 @@ import { FAQ } from './FAQ'
 import { BlogPreview } from './BlogPreview'
 import { Footer } from './Footer'
 
+function SectionDivider() {
+  return <div className="section-divider max-w-4xl mx-auto" />
+}
+
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-black text-white">
@@ -21,13 +25,21 @@ export function LandingPage() {
       <Hero />
       <LogoBar />
       <ShowcaseCarousel />
+      <SectionDivider />
       <ProblemSolution />
+      <SectionDivider />
       <AgentFeatures />
+      <SectionDivider />
       <MotionClipShowcase />
+      <SectionDivider />
       <HowItWorks />
+      <SectionDivider />
       <WhatIsPostaify />
+      <SectionDivider />
       <Pricing />
+      <SectionDivider />
       <FAQ />
+      <SectionDivider />
       <BlogPreview />
       <Footer />
     </div>
