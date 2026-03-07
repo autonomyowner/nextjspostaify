@@ -46,8 +46,15 @@ async function generateWithRunware(
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(`Runware API error: ${errorText || response.statusText}`);
+    if (response.status === 401) {
+      throw new Error("PROVIDER_ERROR: Image generation service authentication failed. Please contact support.");
+    }
+    if (response.status === 402 || response.status === 429) {
+      throw new Error(
+        "PROVIDER_CREDITS: Image generation is temporarily unavailable due to provider limits. Please try again later."
+      );
+    }
+    throw new Error("PROVIDER_ERROR: Image generation failed. Please try again.");
   }
 
   const result = (await response.json()) as {
@@ -84,8 +91,15 @@ async function generateLogoWithIdeogram(
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(`Ideogram API error: ${errorText || response.statusText}`);
+    if (response.status === 401) {
+      throw new Error("PROVIDER_ERROR: Logo generation service authentication failed. Please contact support.");
+    }
+    if (response.status === 402 || response.status === 429) {
+      throw new Error(
+        "PROVIDER_CREDITS: Logo generation is temporarily unavailable due to provider limits. Please try again later."
+      );
+    }
+    throw new Error("PROVIDER_ERROR: Logo generation failed. Please try again.");
   }
 
   const result = (await response.json()) as {

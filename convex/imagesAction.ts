@@ -78,13 +78,15 @@ async function generateWithRunware(
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     if (response.status === 401) {
-      throw new Error("Invalid Runware API key");
+      throw new Error("PROVIDER_ERROR: Image generation service authentication failed. Please contact support.");
     }
-    if (response.status === 402) {
-      throw new Error("Insufficient Runware credits");
+    if (response.status === 402 || response.status === 429) {
+      throw new Error(
+        "PROVIDER_CREDITS: Image generation is temporarily unavailable due to provider limits. Please try again later."
+      );
     }
     throw new Error(
-      `Runware API error: ${errorText || response.statusText}`
+      "PROVIDER_ERROR: Image generation failed. Please try again."
     );
   }
 
@@ -147,14 +149,17 @@ async function generateWithFal(
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new Error("Invalid Fal.ai API key");
+      throw new Error("PROVIDER_ERROR: Image generation service authentication failed. Please contact support.");
     }
-    if (response.status === 402) {
-      throw new Error("Insufficient Fal.ai credits");
+    if (response.status === 402 || response.status === 429) {
+      const modelName = isIdeogramModel(model) ? "Logo" : isRecraftModel(model) ? "Recraft" : "Image";
+      throw new Error(
+        `PROVIDER_CREDITS: ${modelName} generation is temporarily unavailable due to provider limits. Please try again later or use a different model.`
+      );
     }
     const errorText = await response.text().catch(() => "");
     throw new Error(
-      `Fal.ai API error: ${errorText || response.statusText}`
+      `PROVIDER_ERROR: Image generation failed. Please try again or use a different model.`
     );
   }
 
@@ -680,14 +685,16 @@ export const generateProductShot = action({
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error("Invalid Fal.ai API key");
+        throw new Error("PROVIDER_ERROR: Product photography service authentication failed. Please contact support.");
       }
-      if (response.status === 402) {
-        throw new Error("Insufficient Fal.ai credits");
+      if (response.status === 402 || response.status === 429) {
+        throw new Error(
+          "PROVIDER_CREDITS: Product photography is temporarily unavailable due to provider limits. Please try again later."
+        );
       }
       const errorText = await response.text().catch(() => "");
       throw new Error(
-        `Failed to generate product shot: ${errorText || response.statusText}`
+        `PROVIDER_ERROR: Product photography generation failed. Please try again.`
       );
     }
 

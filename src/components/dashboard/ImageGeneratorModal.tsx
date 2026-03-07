@@ -335,6 +335,11 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
         const convexErr = err as { data?: string; message?: string }
         errorMessage = convexErr.data || convexErr.message || errorMessage
       }
+      // Clean up internal error prefixes for user-facing display
+      errorMessage = errorMessage
+        .replace(/^PROVIDER_CREDITS:\s*/, '')
+        .replace(/^PROVIDER_ERROR:\s*/, '')
+        .replace(/^LIMIT_REACHED:\s*/, '')
       setError(errorMessage)
     } finally {
       setIsGenerating(false)
@@ -947,10 +952,8 @@ function ImageGeneratorModalComponent({ isOpen, onClose, onCreatePost }: ImageGe
                   {/* Error */}
                   {error && (
                     <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm">
-                      <p className="text-red-400">
-                        {error.includes('LIMIT_REACHED:') ? error.replace('LIMIT_REACHED: ', '') : error}
-                      </p>
-                      {(error.includes('LIMIT_REACHED') || error.includes('Upgrade')) && (
+                      <p className="text-red-400">{error}</p>
+                      {error.includes('Upgrade') && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -65,7 +65,12 @@ export function BrandKitModal({ isOpen, onClose, brandId }: BrandKitModalProps) 
       setKitId(result.kitId)
       setStep('reveal')
     } catch (e: any) {
-      setError(e.message || 'Failed to generate brand kit')
+      let msg = e.message || 'Failed to generate brand kit'
+      if (msg.includes('Uncaught Error:')) {
+        msg = msg.split('Uncaught Error:').pop()?.trim() || msg
+      }
+      msg = msg.replace(/^PROVIDER_CREDITS:\s*/, '').replace(/^PROVIDER_ERROR:\s*/, '')
+      setError(msg)
       setStep('input')
     } finally {
       setIsLoading(false)
