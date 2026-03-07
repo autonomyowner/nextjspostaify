@@ -9,11 +9,12 @@ import { canAccessModel, getModelRequiredPlan, Plan } from "./lib/planLimits";
 // Provider types
 type ImageProvider = "runware" | "fal";
 
-// Model to provider mapping - Runware for Flux, Fal.ai for Ideogram/Bria/Recraft
+// Model to provider mapping - temporarily routing ALL through Runware (Fal.ai credits exhausted)
 function getProvider(model: string): ImageProvider {
-  if (model.includes("ideogram") || model.includes("bria") || model.includes("recraft")) {
-    return "fal";
-  }
+  // TODO: Re-enable Fal.ai when credits are topped up
+  // if (model.includes("ideogram") || model.includes("bria") || model.includes("recraft")) {
+  //   return "fal";
+  // }
   return "runware";
 }
 
@@ -29,7 +30,10 @@ function getRunwareModelId(model: string): string {
     "fal-ai/flux/dev": "runware:101@1", // Flux Dev - $0.0038 (PRO tier)
     "fal-ai/flux-pro": "civitai:618692@691639", // Flux Pro 1.1 (PRO tier)
     "fal-ai/flux-pro/v1.1": "civitai:618692@691639", // Flux Pro 1.1 (PRO tier)
-    // Note: Recraft V3 uses Fal.ai, not Runware
+    // Temporary Runware fallbacks while Fal.ai credits are exhausted
+    "fal-ai/ideogram/v2/turbo": "runware:101@1", // Logos fallback to Flux Dev
+    "fal-ai/ideogram/v2": "runware:101@1", // Logos fallback to Flux Dev
+    "fal-ai/recraft-v3": "runware:101@1", // Recraft fallback to Flux Dev
   };
   return modelMap[model] || "runware:400@4"; // Default to FLUX.2 klein 4B (cheapest)
 }
@@ -579,6 +583,9 @@ export const generateProductShot = action({
     closeUp: v.optional(v.boolean()), // Close-up framing (product fills more of frame)
   },
   handler: async (ctx, args) => {
+    // TODO: Re-enable when Fal.ai credits are topped up (Bria requires Fal.ai)
+    throw new Error("Product photography is temporarily unavailable. Please try again later.");
+
     const authUser = await authComponent.getAuthUser(ctx);
     if (!authUser) {
       throw new Error("Not authenticated");

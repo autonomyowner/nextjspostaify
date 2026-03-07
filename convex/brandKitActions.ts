@@ -321,10 +321,11 @@ Vibes: ${args.vibes.join(", ")}`,
       for (const logo of logosToGenerate) {
         try {
           let url: string;
-          if (falKey) {
-            url = await generateLogoWithIdeogram(logo.prompt, falKey);
-          } else if (runwareKey) {
+          // TODO: Re-enable Ideogram when Fal.ai credits are topped up
+          if (runwareKey) {
             url = await generateWithRunware(logo.prompt, 1024, 1024, runwareKey);
+          } else if (falKey) {
+            url = await generateLogoWithIdeogram(logo.prompt, falKey);
           } else {
             throw new Error("No image API key configured");
           }
