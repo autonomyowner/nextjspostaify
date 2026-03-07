@@ -806,41 +806,100 @@ export const exportMp4 = action({
 
       // Calculate recording duration (clip duration + 2s buffer) in ms
       const recordDurationMs = (clip.duration + 2) * 1000;
-      // Browserless timeout in seconds: recording time + 30s for setup/teardown
-      const browserlessTimeout = Math.ceil(clip.duration + 2 + 30);
 
       const browserlessUrl = process.env.BROWSERLESS_URL || "https://chrome.browserless.io";
 
-      // Puppeteer function that runs on Browserless server
+      // Two-phase approach:
+      // Phase 1: Navigate to clip URL, capture JPEG frames via CDP Page.startScreencast
+      // Phase 2: Encode all frames into WebM using Chrome's MediaRecorder in page.evaluate()
+      // This works on any Browserless plan (no recording extension needed).
       const functionCode = `
-        module.exports = async ({ page, context }) => {
-          await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
-          await page.goto(context.url, { waitUntil: 'networkidle0', timeout: 60000 });
+export default async function ({ page }) {
+  const CLIP_URL = ${JSON.stringify(clipRenderUrl)};
+  const DURATION_MS = ${recordDurationMs};
 
-          // Record the animation using Puppeteer screencast
-          const recorder = await page.screencast({ path: '/tmp/clip.webm' });
-          await new Promise(r => setTimeout(r, context.durationMs));
-          await recorder.stop();
+  await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+  await page.goto(CLIP_URL, { waitUntil: 'networkidle0', timeout: 60000 });
 
-          // Read recorded file and return as base64
-          const fs = require('fs');
-          const videoBuffer = fs.readFileSync('/tmp/clip.webm');
-          return { data: videoBuffer.toString('base64'), type: 'video/webm' };
-        };
+  // Phase 1: Capture frames via CDP while animation plays
+  const cdp = await page.createCDPSession();
+  const frames = [];
+  cdp.on('Page.screencastFrame', params => {
+    frames.push(params.data);
+    cdp.send('Page.screencastFrameAck', { sessionId: params.sessionId }).catch(() => {});
+  });
+  await cdp.send('Page.startScreencast', {
+    format: 'jpeg', quality: 70, maxWidth: 1080, maxHeight: 1920, everyNthFrame: 1
+  });
+
+  // Wait for the full clip animation to play
+  await new Promise(r => setTimeout(r, DURATION_MS));
+  await cdp.send('Page.stopScreencast');
+
+  // Phase 2: Encode frames into WebM inside the browser page
+  // Chrome's MediaRecorder does hardware-accelerated VP8 encoding
+  const videoBase64 = await page.evaluate(async (allFrames) => {
+    if (!allFrames.length) return '';
+
+    const W = 1080, H = 1920;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    const chunks = [];
+    const stream = c.captureStream(0);
+    const vTrack = stream.getVideoTracks()[0];
+    const rec = new MediaRecorder(stream, {
+      mimeType: 'video/webm;codecs=vp8',
+      videoBitsPerSecond: 4000000
+    });
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+
+    // Draw first frame and start recording
+    const loadImg = (b64) => new Promise(r => {
+      const i = new Image();
+      i.onload = () => r(i);
+      i.onerror = () => r(i);
+      i.src = 'data:image/jpeg;base64,' + b64;
+    });
+
+    const firstImg = await loadImg(allFrames[0]);
+    ctx.drawImage(firstImg, 0, 0, W, H);
+    rec.start(200);
+
+    // Draw each frame with timing to approximate original playback speed
+    const frameDelay = Math.max(33, Math.floor(${recordDurationMs} / allFrames.length));
+    for (let i = 0; i < allFrames.length; i++) {
+      const img = await loadImg(allFrames[i]);
+      ctx.drawImage(img, 0, 0, W, H);
+      if (vTrack.requestFrame) vTrack.requestFrame();
+      await new Promise(r => setTimeout(r, frameDelay));
+    }
+
+    // Stop and collect video
+    return new Promise(resolve => {
+      rec.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1] || '');
+        reader.readAsDataURL(blob);
+      };
+      rec.stop();
+    });
+  }, frames);
+
+  return { data: videoBase64, type: 'application/json' };
+}
       `;
+
+      // Browserless timeout: 2x recording time (capture + encode) + 60s overhead
+      const browserlessTimeout = recordDurationMs * 2 + 60000;
 
       const response = await fetch(
         `${browserlessUrl}/function?token=${browserlessToken}&timeout=${browserlessTimeout}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            code: functionCode,
-            context: {
-              url: clipRenderUrl,
-              durationMs: recordDurationMs,
-            },
-          }),
+          headers: { "Content-Type": "application/javascript" },
+          body: functionCode,
         }
       );
 
@@ -849,7 +908,7 @@ export const exportMp4 = action({
         throw new Error(`Browserless error (${response.status}): ${errorText}`);
       }
 
-      const result = (await response.json()) as { data: string; type: string };
+      const result = (await response.json()) as { data: string };
       if (!result.data) {
         throw new Error("Browserless returned empty video data");
       }
