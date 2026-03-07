@@ -359,7 +359,8 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       opacity: 0;
       transform: scale(0.9);
       filter: blur(5px);
-      transition: all 0.5s var(--ease-out);
+      transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out), filter 0.5s var(--ease-out);
+      will-change: opacity, transform;
     }
 
     .scene.active {
@@ -372,14 +373,6 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       opacity: 0;
       transform: scale(1.1);
       filter: blur(5px);
-    }
-
-    /* GPU optimization */
-    .scene, .scene * {
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      -webkit-transform-style: preserve-3d;
-      transform-style: preserve-3d;
     }
 
     /* Animated elements default state */
@@ -571,14 +564,14 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
 
     @keyframes zoomShake {
       0% { transform: scale(1) translate(0, 0); }
-      10% { transform: scale(1.03) translate(3px, -2px); }
-      20% { transform: scale(1.03) translate(-3px, 2px); }
-      30% { transform: scale(1.03) translate(2px, 3px); }
-      40% { transform: scale(1.04) translate(-2px, -3px); }
-      50% { transform: scale(1.05) translate(0, 0); }
-      60% { transform: scale(1.03) translate(-3px, 2px); }
-      70% { transform: scale(1.02) translate(3px, -2px); }
-      80% { transform: scale(1.01) translate(-1px, 0); }
+      10% { transform: scale(1.015) translate(1px, -1px); }
+      20% { transform: scale(1.015) translate(-1px, 1px); }
+      30% { transform: scale(1.015) translate(1px, 1px); }
+      40% { transform: scale(1.02) translate(-1px, -1px); }
+      50% { transform: scale(1.025) translate(0, 0); }
+      60% { transform: scale(1.015) translate(-1px, 1px); }
+      70% { transform: scale(1.01) translate(1px, -1px); }
+      80% { transform: scale(1.005) translate(0, 0); }
       100% { transform: scale(1) translate(0, 0); }
     }
 
@@ -1824,12 +1817,12 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
             lines.push(`      shine.style.animation = 'dynamicShineSweep 1.2s var(--ease-out) forwards';`);
             lines.push(`    }, 400);`);
             lines.push(`  })(${fi});`);
-            lines.push(`  await wait(180);`);
+            lines.push(`  await wait(400);`);
           } else {
-            lines.push(`  await wait(150);`);
+            lines.push(`  await wait(350);`);
           }
         });
-        lines.push(`  await wait(${1500 + feats.length * 400});`);
+        lines.push(`  await wait(${2000 + feats.length * 600});`);
         break;
       }
 
@@ -1843,7 +1836,7 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
           lines.push(`  anim('s${i}-step-${si}');`);
           lines.push(`  await wait(800);`);
         });
-        lines.push(`  await wait(1500);`);
+        lines.push(`  await wait(2500);`);
         break;
       }
 
@@ -1857,7 +1850,7 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
         lines.push(`  anim('s${i}-arrow');`);
         lines.push(`  await wait(500);`);
         lines.push(`  anim('s${i}-after');`);
-        lines.push(`  await wait(2500);`);
+        lines.push(`  await wait(3200);`);
         break;
 
       case "stats": {
@@ -1871,9 +1864,9 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
           if (isCinematic) {
             lines.push(`  animateNumber('s${i}-stat-val-${si}', '${st.value.replace(/'/g, "\\'")}');`);
           }
-          lines.push(`  await wait(300);`);
+          lines.push(`  await wait(500);`);
         });
-        lines.push(`  await wait(2000);`);
+        lines.push(`  await wait(3000);`);
         break;
       }
 
@@ -1885,15 +1878,15 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
         const probs = scene.problems || [];
         probs.forEach((_, pi) => {
           lines.push(`  anim('s${i}-prob-${pi}');`);
-          lines.push(`  await wait(150);`);
+          lines.push(`  await wait(350);`);
         });
         lines.push(`  await wait(600);`);
         const sols = scene.solutions || [];
         sols.forEach((_, si) => {
           lines.push(`  anim('s${i}-sol-${si}');`);
-          lines.push(`  await wait(150);`);
+          lines.push(`  await wait(350);`);
         });
-        lines.push(`  await wait(2000);`);
+        lines.push(`  await wait(3000);`);
         break;
       }
 
@@ -1964,9 +1957,9 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
         const listItems = scene.items || scene.features || [];
         listItems.forEach((_, li) => {
           lines.push(`  anim('s${i}-item-${li}');`);
-          lines.push(`  await wait(300);`);
+          lines.push(`  await wait(500);`);
         });
-        lines.push(`  await wait(${1500 + listItems.length * 400});`);
+        lines.push(`  await wait(${2000 + listItems.length * 600});`);
         break;
       }
 
@@ -1983,12 +1976,7 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
           lines.push(`  await wait(400);`);
         }
         lines.push(`  anim('s${i}-btn');`);
-        lines.push(`  await wait(300);`);
-        // Camera shake on button pop for dramatic impact
-        lines.push(`  var viewport = document.getElementById('viewport');`);
-        lines.push(`  if (viewport) viewport.style.animation = 'zoomShake 0.6s var(--ease-out) forwards';`);
-        lines.push(`  await wait(600);`);
-        lines.push(`  if (viewport) viewport.style.animation = '';`);
+        lines.push(`  await wait(500);`);
         if (isCinematic) {
           lines.push(
             `  document.getElementById('s${i}-btn').style.animation = 'scalePop 0.8s var(--ease-out-back) forwards, buttonGlowEnhanced 2s ease-in-out infinite 0.8s';`
@@ -2018,7 +2006,7 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
       if (current) {
         current.classList.add('exit');
         current.classList.remove('active');
-        await wait(400);
+        await wait(700);
         current.classList.remove('exit');
         current.querySelectorAll('.animate').forEach(function(el) {
           el.classList.remove('animate');
@@ -2037,14 +2025,14 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
       if (current) {
         current.classList.add('exit');
         current.classList.remove('active');
-        await wait(400);
+        await wait(600);
         current.classList.remove('exit');
         current.querySelectorAll('.animate').forEach(function(el) {
           el.classList.remove('animate');
         });
       }
       next.classList.add('active');
-      await wait(100);
+      await wait(200);
     }`;
 
   // Cinematic-only helper functions
@@ -2099,22 +2087,22 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
   // _baseDurMs = total unscaled animation time; _wr = wait ratio (overridden at runtime by voiceover injection)
   const baseDurMs = scenes.reduce((sum, s) => {
     switch (s.type) {
-      case "montage": return sum + ((s.montageItems?.length || 3) * 1100) + 500 + 600;
-      case "hook": return sum + 3500 + 600;
-      case "brand": return sum + 3200 + 600;
-      case "features": return sum + 2000 + (s.features?.length || 0) * 520 + 600;
-      case "demo": return sum + 2000 + (s.demoSteps?.length || 0) * 800 + 600;
-      case "transformation": return sum + 4500 + 600;
-      case "stats": return sum + 2500 + (s.stats?.length || 0) * 300 + 600;
-      case "comparison": return sum + 2500 + ((s.problems?.length || 0) + (s.solutions?.length || 0)) * 150 + 600;
-      case "cta": return sum + 4500 + 600;
-      case "narrative": return sum + 4200 + 600;
-      case "quote": return sum + 4000 + 600;
-      case "chapter": return sum + 3600 + 600;
-      case "reveal": return sum + 4200 + 600;
-      case "tip": return sum + 4200 + 600;
-      case "listicle": return sum + 2200 + ((s.items?.length || s.features?.length || 0) * 700) + 600;
-      default: return sum + 3000 + 600;
+      case "montage": return sum + ((s.montageItems?.length || 3) * 1100) + 500 + 800;
+      case "hook": return sum + 3500 + 800;
+      case "brand": return sum + 3200 + 800;
+      case "features": return sum + 2400 + (s.features?.length || 0) * 750 + 800;
+      case "demo": return sum + 3000 + (s.demoSteps?.length || 0) * 800 + 800;
+      case "transformation": return sum + 5200 + 800;
+      case "stats": return sum + 3500 + (s.stats?.length || 0) * 500 + 800;
+      case "comparison": return sum + 3600 + ((s.problems?.length || 0) + (s.solutions?.length || 0)) * 350 + 800;
+      case "cta": return sum + 4500 + 800;
+      case "narrative": return sum + 4200 + 800;
+      case "quote": return sum + 4000 + 800;
+      case "chapter": return sum + 3600 + 800;
+      case "reveal": return sum + 4200 + 800;
+      case "tip": return sum + 4200 + 800;
+      case "listicle": return sum + 2400 + ((s.items?.length || s.features?.length || 0) * 1100) + 800;
+      default: return sum + 3000 + 800;
     }
   }, 0);
 
@@ -2305,22 +2293,22 @@ export function estimateDuration(scenes: SceneData[]): number {
         ms += 3200;
         break;
       case "features":
-        ms += 2000 + (scene.features?.length || 0) * 520;
+        ms += 2400 + (scene.features?.length || 0) * 750;
         break;
       case "demo":
-        ms += 2000 + (scene.demoSteps?.length || 0) * 800;
+        ms += 3000 + (scene.demoSteps?.length || 0) * 800;
         break;
       case "transformation":
-        ms += 4500;
+        ms += 5200;
         break;
       case "stats":
-        ms += 2500 + (scene.stats?.length || 0) * 300;
+        ms += 3500 + (scene.stats?.length || 0) * 500;
         break;
       case "comparison":
         ms +=
-          2500 +
+          3600 +
           ((scene.problems?.length || 0) + (scene.solutions?.length || 0)) *
-            150;
+            350;
         break;
       case "cta":
         ms += 4500;
@@ -2341,10 +2329,10 @@ export function estimateDuration(scenes: SceneData[]): number {
         ms += 4200;
         break;
       case "listicle":
-        ms += 2200 + ((scene.items?.length || scene.features?.length || 0) * 700);
+        ms += 2400 + ((scene.items?.length || scene.features?.length || 0) * 1100);
         break;
     }
-    ms += 600; // transition time
+    ms += 800; // transition time
   }
   return Math.round(ms / 1000);
 }
@@ -2362,7 +2350,7 @@ export function generateClipHTML(config: ClipConfig): string {
   if (config.voiceoverDurationMs && config.voiceoverDurationMs > 0) {
     const animDurationMs = estimateDuration(scenes) * 1000;
     if (animDurationMs > 0) {
-      waitRatio = Math.max(0.6, Math.min(1.8, config.voiceoverDurationMs / animDurationMs));
+      waitRatio = Math.max(0.8, Math.min(1.8, config.voiceoverDurationMs / animDurationMs));
     }
   }
 
