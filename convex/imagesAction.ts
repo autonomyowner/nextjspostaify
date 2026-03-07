@@ -583,9 +583,6 @@ export const generateProductShot = action({
     closeUp: v.optional(v.boolean()), // Close-up framing (product fills more of frame)
   },
   handler: async (ctx, args) => {
-    // TODO: Re-enable when Fal.ai credits are topped up (Bria requires Fal.ai)
-    throw new Error("Product photography is temporarily unavailable. Please try again later.");
-
     const authUser = await authComponent.getAuthUser(ctx);
     if (!authUser) {
       throw new Error("Not authenticated");
@@ -609,6 +606,10 @@ export const generateProductShot = action({
       );
     }
 
+    // TODO: Re-enable when Fal.ai credits are topped up (Bria requires Fal.ai)
+    throw new Error("Product photography is temporarily unavailable. Please try again later.");
+
+    /* eslint-disable no-unreachable */
     const falApiKey = process.env.FAL_API_KEY;
     if (!falApiKey) {
       throw new Error("Fal.ai API key not configured");
@@ -630,8 +631,9 @@ export const generateProductShot = action({
 
     // Get scene description
     let sceneDescription = args.customScene || "";
-    if (args.scenePreset && scenePresets[args.scenePreset]) {
-      sceneDescription = scenePresets[args.scenePreset];
+    const presetKey = args.scenePreset as string;
+    if (presetKey && scenePresets[presetKey]) {
+      sceneDescription = scenePresets[presetKey];
       // If custom scene also provided, append it
       if (args.customScene) {
         sceneDescription = `${sceneDescription}, ${args.customScene}`;
@@ -709,7 +711,8 @@ export const generateProductShot = action({
       images?: Array<{ url: string }>;
     };
 
-    if (!result.images || result.images.length === 0) {
+    const images = result.images!;
+    if (!images || images.length === 0) {
       throw new Error("No product shot was generated");
     }
 
@@ -717,7 +720,7 @@ export const generateProductShot = action({
     await ctx.runMutation(api.users.incrementImageUsage);
 
     return {
-      url: result.images[0].url,
+      url: images[0].url,
       scene: sceneDescription,
       aspectRatio: args.aspectRatio || "1:1",
     };
