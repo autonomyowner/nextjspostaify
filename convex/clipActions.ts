@@ -12,6 +12,7 @@ import {
   ClipColors,
   ClipTheme,
 } from "./lib/clipTemplates";
+import { createHmac } from "crypto";
 
 // ============================================================
 // BUILT-IN CARTESIA VOICES (curated for clips)
@@ -749,9 +750,13 @@ export const getClipVoices = action({
 });
 
 // ============================================================
-// EXPORT TO MP4 (Shotstack)
-// PRO/BUSINESS only
+// EXPORT TO MP4 (Browserless.io)
+// PRO/BUSINESS only — uses real headless Chrome to record animations
 // ============================================================
+
+function generateHmac(data: string, secret: string): string {
+  return createHmac("sha256", secret).update(data).digest("hex");
+}
 
 export const exportMp4 = action({
   args: {
@@ -776,9 +781,15 @@ export const exportMp4 = action({
     const clip = await ctx.runQuery((api as any).clips.getById, { id: args.clipId });
     if (!clip) throw new Error("Clip not found");
 
-    const shotstackKey = process.env.SHOTSTACK_API_KEY;
-    if (!shotstackKey) {
+    const browserlessToken = process.env.BROWSERLESS_TOKEN;
+    if (!browserlessToken) {
       throw new Error("Video export is not configured yet. Coming soon!");
+    }
+
+    const convexSiteUrl = process.env.CONVEX_SITE_URL;
+    const authSecret = process.env.BETTER_AUTH_SECRET;
+    if (!convexSiteUrl || !authSecret) {
+      throw new Error("Server misconfigured: missing CONVEX_SITE_URL or BETTER_AUTH_SECRET");
     }
 
     // Update status to rendering
@@ -788,61 +799,79 @@ export const exportMp4 = action({
     });
 
     try {
-      // POST to Shotstack Edit API
+      // Build HMAC-signed clip render URL
+      const clipIdStr = args.clipId as string;
+      const hmacToken = generateHmac(clipIdStr, authSecret);
+      const clipRenderUrl = `${convexSiteUrl}/clip-render/${clipIdStr}?token=${hmacToken}`;
+
+      // Calculate recording duration (clip duration + 2s buffer) in ms
+      const recordDurationMs = (clip.duration + 2) * 1000;
+      // Browserless timeout in seconds: recording time + 30s for setup/teardown
+      const browserlessTimeout = Math.ceil(clip.duration + 2 + 30);
+
+      const browserlessUrl = process.env.BROWSERLESS_URL || "https://chrome.browserless.io";
+
+      // Puppeteer function that runs on Browserless server
+      const functionCode = `
+        module.exports = async ({ page, context }) => {
+          await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+          await page.goto(context.url, { waitUntil: 'networkidle0', timeout: 60000 });
+
+          // Record the animation using Puppeteer screencast
+          const recorder = await page.screencast({ path: '/tmp/clip.webm' });
+          await new Promise(r => setTimeout(r, context.durationMs));
+          await recorder.stop();
+
+          // Read recorded file and return as base64
+          const fs = require('fs');
+          const videoBuffer = fs.readFileSync('/tmp/clip.webm');
+          return { data: videoBuffer.toString('base64'), type: 'video/webm' };
+        };
+      `;
+
       const response = await fetch(
-        "https://api.shotstack.io/edit/v1/render",
+        `${browserlessUrl}/function?token=${browserlessToken}&timeout=${browserlessTimeout}`,
         {
           method: "POST",
-          headers: {
-            "x-api-key": shotstackKey,
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            timeline: {
-              tracks: [
-                {
-                  clips: [
-                    {
-                      asset: {
-                        type: "html",
-                        html: clip.htmlContent,
-                        width: 1080,
-                        height: 1920,
-                      },
-                      start: 0,
-                      length: clip.duration,
-                    },
-                  ],
-                },
-              ],
-            },
-            output: {
-              format: "mp4",
-              resolution: "1080",
-              aspectRatio: "9:16",
-              fps: 30,
+            code: functionCode,
+            context: {
+              url: clipRenderUrl,
+              durationMs: recordDurationMs,
             },
           }),
         }
       );
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Shotstack error: ${error}`);
+        const errorText = await response.text();
+        throw new Error(`Browserless error (${response.status}): ${errorText}`);
       }
 
-      const data = (await response.json()) as {
-        response: { id: string };
-      };
+      const result = (await response.json()) as { data: string; type: string };
+      if (!result.data) {
+        throw new Error("Browserless returned empty video data");
+      }
 
-      // Save render job ID
+      // Decode base64 video and store in Convex file storage
+      const videoBuffer = Buffer.from(result.data, "base64");
+      const blob = new Blob([videoBuffer], { type: "video/webm" });
+      const storageId = await ctx.storage.store(blob);
+      const storageUrl = await ctx.storage.getUrl(storageId);
+
+      if (!storageUrl) {
+        throw new Error("Failed to get storage URL for recorded video");
+      }
+
+      // Update clip with video URL — done!
       await ctx.runMutation((api as any).clips.updateRenderStatus, {
         clipId: args.clipId,
-        renderStatus: "rendering",
-        renderJobId: data.response.id,
+        renderStatus: "ready",
+        mp4Url: storageUrl,
       });
 
-      return { renderJobId: data.response.id };
+      return { mp4Url: storageUrl };
     } catch (e: unknown) {
       await ctx.runMutation((api as any).clips.updateRenderStatus, {
         clipId: args.clipId,
@@ -850,57 +879,5 @@ export const exportMp4 = action({
       });
       throw e;
     }
-  },
-});
-
-// ============================================================
-// CHECK RENDER STATUS (Shotstack polling)
-// ============================================================
-
-export const checkRenderStatus = action({
-  args: {
-    clipId: v.id("clips"),
-    renderJobId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const authUser = await authComponent.getAuthUser(ctx);
-    if (!authUser) throw new Error("Not authenticated");
-
-    const shotstackKey = process.env.SHOTSTACK_API_KEY;
-    if (!shotstackKey) throw new Error("Export not configured");
-
-    const response = await fetch(
-      `https://api.shotstack.io/edit/v1/render/${args.renderJobId}`,
-      {
-        headers: { "x-api-key": shotstackKey },
-      }
-    );
-
-    if (!response.ok) throw new Error("Failed to check render status");
-
-    const data = (await response.json()) as {
-      response: { status: string; url?: string };
-    };
-
-    const status = data.response.status;
-
-    if (status === "done" && data.response.url) {
-      await ctx.runMutation((api as any).clips.updateRenderStatus, {
-        clipId: args.clipId,
-        renderStatus: "ready",
-        mp4Url: data.response.url,
-      });
-      return { status: "ready", url: data.response.url };
-    }
-
-    if (status === "failed") {
-      await ctx.runMutation((api as any).clips.updateRenderStatus, {
-        clipId: args.clipId,
-        renderStatus: "failed",
-      });
-      return { status: "failed" };
-    }
-
-    return { status: "rendering" };
   },
 });

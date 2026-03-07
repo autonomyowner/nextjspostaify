@@ -194,6 +194,111 @@ http.route({
   }),
 });
 
+// ============================================================
+// Clip render route — serves clip HTML for Browserless recording
+// URL: /clip-render/{clipId}?token={hmac}
+// ============================================================
+
+async function computeHmac(data: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function prepareClipHtml(html: string, voiceoverUrl?: string | null): string {
+  let h = html;
+
+  // Remove Google Fonts @import (external requests may be slow/blocked)
+  h = h.replace(/@import url\([^)]*\);?/g, "");
+
+  // Remove the viewport-scaling script (resizes for browser preview, not needed for fixed viewport)
+  h = h.replace(
+    /\(function\(\)\s*\{\s*var canvas = document\.getElementById\('video-canvas'\)[\s\S]*?}\)\(\);/,
+    ""
+  );
+
+  const overrideCSS = `
+    /* Render overrides */
+    * { margin: 0; padding: 0; }
+    body, html { width: 1080px; height: 1920px; overflow: hidden; }
+    .page-wrapper { padding: 0 !important; width: 1080px !important; height: 1920px !important; overflow: hidden !important; }
+    .capture-frame { border: none !important; border-radius: 0 !important; }
+    .capture-label, .capture-dimensions { display: none !important; }
+    #controls { display: none !important; }
+    #video-canvas { transform: none !important; width: 1080px !important; height: 1920px !important; }
+    body, * { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; }
+  `;
+  h = h.replace("</style>", `${overrideCSS}\n</style>`);
+
+  // Inject voiceover audio if available
+  if (voiceoverUrl) {
+    h = h.replace(
+      "</body>",
+      `<audio autoplay src="${voiceoverUrl}"></audio>\n</body>`
+    );
+  }
+
+  return h;
+}
+
+http.route({
+  pathPrefix: "/clip-render/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    // pathParts = ["clip-render", "<clipId>"]
+    const clipId = pathParts[pathParts.length - 1];
+    const token = url.searchParams.get("token");
+
+    if (!clipId || !token) {
+      return new Response("Missing clipId or token", { status: 400 });
+    }
+
+    // Verify HMAC token
+    const secret = process.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      return new Response("Server misconfigured", { status: 500 });
+    }
+
+    const expected = await computeHmac(clipId, secret);
+    if (expected !== token) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    // Fetch clip via internal query
+    const clip = await ctx.runQuery(internal.clips.getByIdInternal, {
+      id: clipId as any,
+    });
+    if (!clip || !clip.htmlContent) {
+      return new Response("Clip not found", { status: 404 });
+    }
+
+    // Get voiceover URL if present
+    let voiceoverUrl: string | null = null;
+    if (clip.voiceoverStorageId) {
+      voiceoverUrl = await ctx.storage.getUrl(clip.voiceoverStorageId as any);
+    }
+
+    // Prepare HTML for headless recording
+    const html = prepareClipHtml(clip.htmlContent, voiceoverUrl);
+
+    return new Response(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }),
+});
+
 // Telegram webhook handler
 http.route({
   path: "/webhooks/telegram",

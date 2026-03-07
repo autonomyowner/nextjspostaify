@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { authComponent } from "./auth";
 
 // ============================================================
@@ -47,6 +47,12 @@ export const getById = query({
   },
 });
 
+// Internal query for HTTP route (no auth needed)
+export const getByIdInternal = internalQuery({
+  args: { id: v.id("clips") },
+  handler: async (ctx, args) => ctx.db.get(args.id),
+});
+
 // ============================================================
 // MUTATIONS
 // ============================================================
@@ -77,7 +83,7 @@ export const create = mutation({
     voiceoverStorageId: v.optional(v.string()),
     voiceoverText: v.optional(v.string()),
     voiceId: v.optional(v.string()),
-    voiceProvider: v.optional(v.union(v.literal("cartesia"), v.literal("elevenlabs"))),
+    voiceProvider: v.optional(v.literal("cartesia")),
     voiceoverDurationMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

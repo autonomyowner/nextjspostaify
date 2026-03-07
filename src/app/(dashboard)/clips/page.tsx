@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery, useAction } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { motion } from 'framer-motion'
@@ -27,56 +27,28 @@ export default function ClipsPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const exportMp4Action = useAction((api as any).clipActions.exportMp4)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const checkRenderAction = useAction((api as any).clipActions.checkRenderStatus)
 
-  // Track render state per clip: { [clipId]: { status, jobId, mp4Url, error } }
+  // Track render state per clip (rendering/failed only — ready state comes from DB via reactive query)
   const [renderStates, setRenderStates] = useState<Record<string, {
-    status: 'rendering' | 'ready' | 'failed'
-    jobId?: string
-    mp4Url?: string
+    status: 'rendering' | 'failed'
     error?: string
   }>>({})
-  const pollRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
-
-  // Cleanup all polls on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(pollRefs.current).forEach(clearTimeout)
-    }
-  }, [])
-
-  const pollRender = useCallback(async (clipId: string, jobId: string) => {
-    try {
-      const res = await checkRenderAction({
-        clipId: clipId as Id<"clips">,
-        renderJobId: jobId,
-      })
-      if (res.status === 'ready' && res.url) {
-        setRenderStates(prev => ({ ...prev, [clipId]: { status: 'ready', mp4Url: res.url } }))
-        delete pollRefs.current[clipId]
-      } else if (res.status === 'failed') {
-        setRenderStates(prev => ({ ...prev, [clipId]: { status: 'failed', error: 'Rendering failed' } }))
-        delete pollRefs.current[clipId]
-      } else {
-        pollRefs.current[clipId] = setTimeout(() => pollRender(clipId, jobId), 5000)
-      }
-    } catch {
-      setRenderStates(prev => ({ ...prev, [clipId]: { status: 'failed', error: 'Status check failed' } }))
-      delete pollRefs.current[clipId]
-    }
-  }, [checkRenderAction])
 
   const handleExportMp4 = useCallback(async (clipId: string) => {
     setRenderStates(prev => ({ ...prev, [clipId]: { status: 'rendering' } }))
     try {
-      const res = await exportMp4Action({ clipId: clipId as Id<"clips"> })
-      setRenderStates(prev => ({ ...prev, [clipId]: { status: 'rendering', jobId: res.renderJobId } }))
-      pollRefs.current[clipId] = setTimeout(() => pollRender(clipId, res.renderJobId), 5000)
+      await exportMp4Action({ clipId: clipId as Id<"clips"> })
+      // Action is synchronous — clip document already has mp4Url set.
+      // Convex reactive query auto-updates the UI, so just clear local state.
+      setRenderStates(prev => {
+        const next = { ...prev }
+        delete next[clipId]
+        return next
+      })
     } catch (e: any) {
       setRenderStates(prev => ({ ...prev, [clipId]: { status: 'failed', error: e.message || 'Export failed' } }))
     }
-  }, [exportMp4Action, pollRender])
+  }, [exportMp4Action])
 
   const [previewId, setPreviewId] = useState<string | null>(null)
   const previewClip = clips.find((c: any) => c._id === previewId)
@@ -213,9 +185,9 @@ export default function ClipsPage() {
                       HTML
                     </button>
                     {/* MP4 download / export */}
-                    {(clip.mp4Url || renderStates[clip._id]?.mp4Url) ? (
+                    {clip.mp4Url ? (
                       <a
-                        href={clip.mp4Url || renderStates[clip._id]?.mp4Url}
+                        href={clip.mp4Url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20 transition-all text-center"
