@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 
 const languages = [
   { code: 'en', label: 'ENG' },
-  { code: 'fr', label: 'FR' },
   { code: 'ar', label: 'AR' },
 ]
 
