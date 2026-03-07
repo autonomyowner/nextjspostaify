@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { useQuery } from 'convex/react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useQuery, useAction } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { motion } from 'framer-motion'
 import { useSubscription } from '@/context/SubscriptionContext'
@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { Logo } from '@/components/ui/Logo'
 import { Button } from '@/components/ui/button'
 import { MobileNav } from '@/components/dashboard/MobileNav'
+import { Id } from '../../../../convex/_generated/dataModel'
 import Link from 'next/link'
 
 export default function ClipsPage() {
@@ -23,6 +24,59 @@ export default function ClipsPage() {
   const { isAuthenticated } = useConvexAuth()
   const signOut = () => authClient.signOut().then(() => window.location.href = '/')
   const hasMp4Export = subscription.plan !== 'free'
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exportMp4Action = useAction((api as any).clipActions.exportMp4)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkRenderAction = useAction((api as any).clipActions.checkRenderStatus)
+
+  // Track render state per clip: { [clipId]: { status, jobId, mp4Url, error } }
+  const [renderStates, setRenderStates] = useState<Record<string, {
+    status: 'rendering' | 'ready' | 'failed'
+    jobId?: string
+    mp4Url?: string
+    error?: string
+  }>>({})
+  const pollRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+  // Cleanup all polls on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pollRefs.current).forEach(clearTimeout)
+    }
+  }, [])
+
+  const pollRender = useCallback(async (clipId: string, jobId: string) => {
+    try {
+      const res = await checkRenderAction({
+        clipId: clipId as Id<"clips">,
+        renderJobId: jobId,
+      })
+      if (res.status === 'ready' && res.url) {
+        setRenderStates(prev => ({ ...prev, [clipId]: { status: 'ready', mp4Url: res.url } }))
+        delete pollRefs.current[clipId]
+      } else if (res.status === 'failed') {
+        setRenderStates(prev => ({ ...prev, [clipId]: { status: 'failed', error: 'Rendering failed' } }))
+        delete pollRefs.current[clipId]
+      } else {
+        pollRefs.current[clipId] = setTimeout(() => pollRender(clipId, jobId), 5000)
+      }
+    } catch {
+      setRenderStates(prev => ({ ...prev, [clipId]: { status: 'failed', error: 'Status check failed' } }))
+      delete pollRefs.current[clipId]
+    }
+  }, [checkRenderAction])
+
+  const handleExportMp4 = useCallback(async (clipId: string) => {
+    setRenderStates(prev => ({ ...prev, [clipId]: { status: 'rendering' } }))
+    try {
+      const res = await exportMp4Action({ clipId: clipId as Id<"clips"> })
+      setRenderStates(prev => ({ ...prev, [clipId]: { status: 'rendering', jobId: res.renderJobId } }))
+      pollRefs.current[clipId] = setTimeout(() => pollRender(clipId, res.renderJobId), 5000)
+    } catch (e: any) {
+      setRenderStates(prev => ({ ...prev, [clipId]: { status: 'failed', error: e.message || 'Export failed' } }))
+    }
+  }, [exportMp4Action, pollRender])
 
   const [previewId, setPreviewId] = useState<string | null>(null)
   const previewClip = clips.find((c: any) => c._id === previewId)
@@ -156,18 +210,42 @@ export default function ClipsPage() {
                       onClick={() => handleDownload(clip.htmlContent, clip.title)}
                       className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs font-medium hover:bg-white/10 transition-all"
                     >
-                      Download
+                      HTML
                     </button>
-                    {clip.mp4Url && (
+                    {/* MP4 download / export */}
+                    {(clip.mp4Url || renderStates[clip._id]?.mp4Url) ? (
                       <a
-                        href={clip.mp4Url}
+                        href={clip.mp4Url || renderStates[clip._id]?.mp4Url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20 transition-all text-center"
                       >
                         MP4
                       </a>
-                    )}
+                    ) : renderStates[clip._id]?.status === 'rendering' ? (
+                      <div className="flex-1 py-2 rounded-lg bg-yellow-500/5 border border-yellow-500/15 text-yellow-400/70 text-xs font-medium text-center flex items-center justify-center gap-1.5">
+                        <motion.span
+                          className="inline-block w-3 h-3 border border-yellow-400/40 border-t-yellow-400 rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        />
+                        Rendering
+                      </div>
+                    ) : renderStates[clip._id]?.status === 'failed' ? (
+                      <button
+                        onClick={() => handleExportMp4(clip._id)}
+                        className="flex-1 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-all"
+                      >
+                        Retry
+                      </button>
+                    ) : hasMp4Export && clip.renderStatus !== 'rendering' ? (
+                      <button
+                        onClick={() => handleExportMp4(clip._id)}
+                        className="flex-1 py-2 rounded-lg bg-green-500/5 border border-green-500/15 text-green-400/70 text-xs font-medium hover:bg-green-500/15 hover:text-green-400 transition-all"
+                      >
+                        Export MP4
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </motion.div>

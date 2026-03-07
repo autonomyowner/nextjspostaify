@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAction } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { useSubscription } from '@/context/SubscriptionContext'
+import { Id } from '../../../../convex/_generated/dataModel'
 
 interface ClipGeneratorModalProps {
   isOpen: boolean
@@ -143,6 +144,17 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
   const { subscription, openUpgradeModal } = useSubscription()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generateClip = useAction((api as any).clipActions.generate)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exportMp4Action = useAction((api as any).clipActions.exportMp4)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkRenderAction = useAction((api as any).clipActions.checkRenderStatus)
+
+  // MP4 export state
+  const [renderStatus, setRenderStatus] = useState<'idle' | 'rendering' | 'ready' | 'failed'>('idle')
+  const [renderJobId, setRenderJobId] = useState<string | null>(null)
+  const [mp4Url, setMp4Url] = useState<string | null>(null)
+  const [exportError, setExportError] = useState('')
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const userPlan = subscription.plan
   const clipsUsed = subscription.clipsThisMonth
@@ -303,8 +315,59 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
     URL.revokeObjectURL(url)
   }, [result, title])
 
+  // Poll Shotstack for render completion
+  const pollRenderStatus = useCallback(async (clipId: string, jobId: string) => {
+    try {
+      const res = await checkRenderAction({
+        clipId: clipId as Id<"clips">,
+        renderJobId: jobId,
+      })
+      if (res.status === 'ready' && res.url) {
+        setRenderStatus('ready')
+        setMp4Url(res.url)
+        setRenderJobId(null)
+      } else if (res.status === 'failed') {
+        setRenderStatus('failed')
+        setExportError('Video rendering failed. Please try again.')
+        setRenderJobId(null)
+      } else {
+        // Still rendering — poll again in 5s
+        pollRef.current = setTimeout(() => pollRenderStatus(clipId, jobId), 5000)
+      }
+    } catch {
+      setRenderStatus('failed')
+      setExportError('Failed to check render status.')
+      setRenderJobId(null)
+    }
+  }, [checkRenderAction])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearTimeout(pollRef.current)
+    }
+  }, [])
+
+  const handleExportMp4 = useCallback(async () => {
+    if (!result?.clipId || renderStatus === 'rendering') return
+    setRenderStatus('rendering')
+    setExportError('')
+    setMp4Url(null)
+
+    try {
+      const res = await exportMp4Action({ clipId: result.clipId as Id<"clips"> })
+      setRenderJobId(res.renderJobId)
+      // Start polling
+      pollRef.current = setTimeout(() => pollRenderStatus(result.clipId, res.renderJobId), 5000)
+    } catch (e: any) {
+      setRenderStatus('failed')
+      setExportError(e.message || 'Failed to start MP4 export')
+    }
+  }, [result, renderStatus, exportMp4Action, pollRenderStatus])
+
   const handleClose = () => {
     if (step === 'generating') return
+    if (pollRef.current) clearTimeout(pollRef.current)
     setStep('input')
     setScript('')
     setTitle('')
@@ -316,6 +379,10 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
     setVoiceStyle('energetic')
     setError('')
     setResult(null)
+    setRenderStatus('idle')
+    setRenderJobId(null)
+    setMp4Url(null)
+    setExportError('')
     onClose()
   }
 
@@ -776,13 +843,87 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
                   disabled={!result?.htmlContent}
                   className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 transition-colors disabled:opacity-30"
                 >
-                  Download
+                  Download HTML
                 </button>
               </div>
+
+              {/* MP4 Export Section */}
+              {hasMp4Export ? (
+                <div className="mt-4">
+                  {renderStatus === 'idle' && !mp4Url && (
+                    <button
+                      onClick={handleExportMp4}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 font-semibold text-sm hover:from-green-500/30 hover:to-emerald-500/30 transition-all flex items-center justify-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Export as MP4 Video
+                    </button>
+                  )}
+
+                  {renderStatus === 'rendering' && (
+                    <div className="w-full py-3 px-4 rounded-xl bg-yellow-500/5 border border-yellow-500/15 flex items-center gap-3">
+                      <motion.div
+                        className="w-5 h-5 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full flex-shrink-0"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-400">Rendering MP4...</p>
+                        <p className="text-[11px] text-white/30">This may take 1-2 minutes. You can close this modal.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {renderStatus === 'ready' && mp4Url && (
+                    <a
+                      href={mp4Url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold text-sm hover:from-green-400 hover:to-emerald-400 transition-all flex items-center justify-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Download MP4
+                    </a>
+                  )}
+
+                  {renderStatus === 'failed' && exportError && (
+                    <div className="w-full py-3 px-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                      <p className="text-xs text-red-400 mb-2">{exportError}</p>
+                      <button
+                        onClick={handleExportMp4}
+                        className="text-xs text-red-400/70 underline hover:text-red-400 transition-colors"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                  <p className="text-xs text-yellow-400/60 mb-2">
+                    Upgrade to PRO for one-click MP4 video export. Free plan includes HTML download for screen recording.
+                  </p>
+                  <button
+                    onClick={() => { handleClose(); openUpgradeModal('post'); }}
+                    className="w-full py-2 px-4 text-xs rounded-lg border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+                  >
+                    Upgrade for MP4 Export
+                  </button>
+                </div>
+              )}
 
               {/* New clip button */}
               <button
                 onClick={() => {
+                  if (pollRef.current) clearTimeout(pollRef.current)
                   setStep('input')
                   setScript('')
                   setTitle('')
@@ -791,20 +932,15 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
                   setVoiceoverEnabled(false)
                   setResult(null)
                   setError('')
+                  setRenderStatus('idle')
+                  setRenderJobId(null)
+                  setMp4Url(null)
+                  setExportError('')
                 }}
                 className="w-full mt-3 py-2.5 rounded-xl bg-white/3 text-white/40 text-xs hover:bg-white/5 transition-colors"
               >
                 Create Another Clip
               </button>
-
-              {/* MP4 export info */}
-              {!hasMp4Export && (
-                <div className="mt-4 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
-                  <p className="text-xs text-yellow-400/60">
-                    Upgrade to PRO for one-click MP4 video export. Free plan includes HTML download for screen recording.
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </motion.div>

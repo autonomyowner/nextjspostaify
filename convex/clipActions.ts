@@ -790,7 +790,7 @@ export const exportMp4 = action({
     try {
       // POST to Shotstack Edit API
       const response = await fetch(
-        "https://api.shotstack.io/edit/stage/render",
+        "https://api.shotstack.io/edit/v1/render",
         {
           method: "POST",
           headers: {
@@ -870,7 +870,7 @@ export const checkRenderStatus = action({
     if (!shotstackKey) throw new Error("Export not configured");
 
     const response = await fetch(
-      `https://api.shotstack.io/edit/stage/render/${args.renderJobId}`,
+      `https://api.shotstack.io/edit/v1/render/${args.renderJobId}`,
       {
         headers: { "x-api-key": shotstackKey },
       }
