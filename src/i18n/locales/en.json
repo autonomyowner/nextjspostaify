@@ -7,7 +7,12 @@
     "getStarted": "Get Started",
     "dashboard": "Dashboard",
     "posts": "Posts",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "generate": "Generate",
+    "brands": "Brands",
+    "brandKit": "Brand Kit",
+    "clips": "Clips",
+    "signOut": "Sign Out"
   },
   "hero": {
     "title": "30 Days of Content",
@@ -265,12 +270,18 @@
   },
   "dashboard": {
     "welcome": "Welcome back",
+    "welcomeSub": "Here's an overview of your content",
     "overview": "Overview",
     "stats": {
       "totalPosts": "Total Posts",
       "scheduled": "Scheduled",
       "published": "Published",
-      "drafts": "Drafts"
+      "drafts": "Drafts",
+      "posts": "Posts",
+      "brands": "Brands",
+      "queued": "Queued",
+      "plan": "Plan",
+      "upgrade": "Upgrade"
     },
     "recentPosts": "Recent Posts",
     "quickActions": "Quick Actions",
@@ -280,7 +291,13 @@
     "noPosts": "No posts yet",
     "createFirst": "Create your first post to get started",
     "generate": "Generate",
-    "brands": "Brands"
+    "brands": "Brands",
+    "total": "total",
+    "copy": "Copy",
+    "clip": "Clip",
+    "notScheduled": "Not scheduled",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
   },
   "posts": {
     "title": "Posts",
@@ -317,8 +334,10 @@
     "noEvents": "No posts scheduled for this day"
   },
   "brandSelector": {
-    "select": "Select Brand",
-    "manage": "Manage Brands"
+    "select": "Select brand",
+    "create": "Create Brand",
+    "manage": "Manage Brands",
+    "editBrand": "Edit brand"
   },
   "brandModal": {
     "create": "Create New Brand",
@@ -406,14 +425,28 @@
     "error": "Failed to generate content. Please try again."
   },
   "quickActions": {
+    "title": "Quick Actions",
     "generate": "Generate Content",
+    "generateDesc": "Create new posts with AI",
+    "generateButton": "Start Creating",
     "createBrand": "Create Brand",
+    "createBrandDesc": "Add a new brand profile",
+    "createBrandButton": "Add Brand",
+    "brandKit": "Brand Kit",
+    "brandKitDesc": "AI brand identity in 60s",
+    "brandKitButton": "Generate Kit",
+    "image": "Generate Image",
+    "imageDesc": "Create AI images with Flux & SDXL",
+    "imageButton": "Create Image",
     "voiceover": "Script + Voiceover",
-    "voiceoverDesc": "Create scripts and generate AI voiceovers",
+    "voiceoverDesc": "Generate professional voiceovers",
     "voiceoverButton": "Create Voiceover",
     "videoToPosts": "YouTube to Posts",
-    "videoToPostsDesc": "Turn any YouTube video into multiple posts",
-    "videoToPostsButton": "Import Video"
+    "videoToPostsDesc": "Turn videos into multiple posts",
+    "videoToPostsButton": "Upload Video",
+    "clip": "Motion Clip",
+    "clipDesc": "AI video from your script",
+    "clipButton": "Create Clip"
   },
   "videoToPosts": {
     "title": "YouTube to Posts",

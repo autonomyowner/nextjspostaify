@@ -1,10 +1,12 @@
 'use client'
 
 import { motion } from "framer-motion"
+import { useTranslation } from "react-i18next"
 import { useData } from "@/context/DataContext"
 import { useSubscription } from "@/context/SubscriptionContext"
 
 export function StatsCards() {
+  const { t } = useTranslation()
   const { getStats, brands } = useData()
   const { subscription, currentLimits, getUsagePercentage, openUpgradeModal } = useSubscription()
   const stats = getStats()
@@ -32,7 +34,7 @@ export function StatsCards() {
         className={`group flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.05] transition-all ${postsPercentage >= 80 ? 'cursor-pointer' : 'cursor-default'}`}
       >
         <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/40">
-          Posts
+          {t('dashboard.stats.posts')}
         </span>
         <div className="flex items-center gap-0.5 sm:gap-1">
           <span className="font-mono text-xs sm:text-sm font-semibold text-white/90">{subscription.postsThisMonth}</span>
@@ -56,7 +58,7 @@ export function StatsCards() {
         onClick={() => brandsPercentage >= 80 && openUpgradeModal('brand')}
         className={`group flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.05] transition-all ${brandsPercentage >= 80 ? 'cursor-pointer' : 'cursor-default'}`}
       >
-        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/40">Brands</span>
+        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/40">{t('dashboard.stats.brands')}</span>
         <div className="flex items-center gap-0.5 sm:gap-1">
           <span className="font-mono text-xs sm:text-sm font-semibold text-white/90">{brands.length}</span>
           <span className="font-mono text-[9px] sm:text-[10px] text-white/30">/{currentLimits.maxBrands}</span>
@@ -79,7 +81,7 @@ export function StatsCards() {
         className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06]"
       >
         <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/40">
-          Queued
+          {t('dashboard.stats.queued')}
         </span>
         <span className="font-mono text-xs sm:text-sm font-semibold text-white/90">{stats.postsScheduled}</span>
         {stats.postsScheduled > 0 && (
@@ -99,14 +101,14 @@ export function StatsCards() {
             : 'bg-emerald-500/10 border border-emerald-500/20 cursor-default'
         }`}
       >
-        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/40">Plan</span>
+        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-white/40">{t('dashboard.stats.plan')}</span>
         <span className={`font-mono text-xs sm:text-sm font-semibold ${
           subscription.plan === 'free' ? 'text-amber-400' : 'text-emerald-400'
         }`}>
           {subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}
         </span>
         {subscription.plan === 'free' && (
-          <span className="text-[9px] text-amber-400/70 hidden sm:inline">Upgrade</span>
+          <span className="text-[9px] text-amber-400/70 hidden sm:inline">{t('dashboard.stats.upgrade')}</span>
         )}
       </motion.button>
     </div>

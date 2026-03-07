@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { authClient } from "@/lib/auth-client"
@@ -35,6 +36,7 @@ export function Dashboard() {
   const [isClipModalOpen, setIsClipModalOpen] = useState(false)
   const [pendingImageUrl, setPendingImageUrl] = useState<string | undefined>(undefined)
   const [pendingClipData, setPendingClipData] = useState<{ script: string; colors?: { primary: string; secondary: string; accent: string }; title?: string } | undefined>(undefined)
+  const { t } = useTranslation()
   const { user, brands } = useData()
   const { isAuthenticated } = useConvexAuth()
 
@@ -77,23 +79,23 @@ export function Dashboard() {
           <div className="flex items-center gap-4 sm:gap-8">
             <Logo />
             <nav className="hidden md:flex items-center gap-6">
-              <Link href="/dashboard" className="text-sm text-white font-medium">Dashboard</Link>
-              <Link href="/posts" className="text-sm text-muted-foreground hover:text-white transition-colors">Posts</Link>
-              <Link href="/calendar" className="text-sm text-muted-foreground hover:text-white transition-colors">Calendar</Link>
+              <Link href="/dashboard" className="text-sm text-white font-medium">{t('nav.dashboard')}</Link>
+              <Link href="/posts" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.posts')}</Link>
+              <Link href="/calendar" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.calendar')}</Link>
               <button
                 onClick={() => setIsGenerateModalOpen(true)}
                 className="text-sm text-muted-foreground hover:text-white transition-colors"
               >
-                Generate
+                {t('nav.generate')}
               </button>
               <button
                 onClick={() => setIsBrandModalOpen(true)}
                 className="text-sm text-muted-foreground hover:text-white transition-colors"
               >
-                Brands
+                {t('nav.brands')}
               </button>
-              <Link href="/brand-kit" className="text-sm text-muted-foreground hover:text-white transition-colors">Brand Kit</Link>
-              <Link href="/clips" className="text-sm text-muted-foreground hover:text-white transition-colors">Clips</Link>
+              <Link href="/brand-kit" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.brandKit')}</Link>
+              <Link href="/clips" className="text-sm text-muted-foreground hover:text-white transition-colors">{t('nav.clips')}</Link>
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -108,7 +110,7 @@ export function Dashboard() {
               size="sm"
               onClick={() => setIsSettingsModalOpen(true)}
               className="text-muted-foreground hover:text-white h-8 w-8 sm:h-9 sm:w-9 p-0"
-              title="Settings"
+              title={t('common.settings')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -121,12 +123,12 @@ export function Dashboard() {
                   {user?.name?.slice(0, 1) || user?.email?.slice(0, 1)?.toUpperCase() || 'U'}
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => authClient.signOut().then(() => window.location.href = '/')} className="text-xs hidden sm:inline-flex">
-                  Sign Out
+                  {t('nav.signOut')}
                 </Button>
               </div>
             ) : (
               <Link href="/sign-in">
-                <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4">Sign In</Button>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4">{t('nav.signIn')}</Button>
               </Link>
             )}
           </div>
@@ -141,8 +143,8 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-4 sm:mb-8"
         >
-          <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Welcome back, {userName}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Here&apos;s an overview of your content</p>
+          <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">{t('dashboard.welcome')}, {userName}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('dashboard.welcomeSub')}</p>
         </motion.div>
 
         {/* Stats Cards */}

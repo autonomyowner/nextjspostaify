@@ -24,7 +24,7 @@ npx convex deploy    # Deploy Convex functions to production
 - **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS v4
 - **Backend:** Convex (serverless DB + functions)
 - **Auth:** Better-Auth with `@convex-dev/better-auth`
-- **i18n:** react-i18next (en, ar, fr)
+- **i18n:** react-i18next (en, ar)
 - **UI:** Radix UI primitives, Framer Motion, Recharts
 
 ### Route Structure

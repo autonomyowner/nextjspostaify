@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from "react-i18next"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -14,60 +15,62 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoiceover, onGenerateImage, onBrandKit, onCreateClip }: QuickActionsProps) {
+  const { t } = useTranslation()
+
   const actions = [
     {
       id: 'generate',
-      title: 'Generate Content',
-      description: "Create new posts with AI",
-      buttonText: "Start Creating",
+      titleKey: 'quickActions.generate',
+      descKey: 'quickActions.generateDesc',
+      buttonKey: 'quickActions.generateButton',
       primary: true,
       gradient: "from-primary/20 to-yellow-500/20"
     },
     {
       id: 'brand-kit',
-      title: 'Brand Kit',
-      description: 'AI brand identity in 60s',
-      buttonText: 'Generate Kit',
+      titleKey: 'quickActions.brandKit',
+      descKey: 'quickActions.brandKitDesc',
+      buttonKey: 'quickActions.brandKitButton',
       primary: false,
       gradient: "from-violet-500/10 to-fuchsia-500/10"
     },
     {
       id: 'image',
-      title: "Generate Image",
-      description: "Create AI images with Flux & SDXL",
-      buttonText: "Create Image",
+      titleKey: 'quickActions.image',
+      descKey: 'quickActions.imageDesc',
+      buttonKey: 'quickActions.imageButton',
       primary: false,
       gradient: "from-orange-500/10 to-amber-500/10"
     },
     {
       id: 'voiceover',
-      title: 'AI Voiceover',
-      description: 'Generate professional voiceovers',
-      buttonText: 'Create Voiceover',
+      titleKey: 'quickActions.voiceover',
+      descKey: 'quickActions.voiceoverDesc',
+      buttonKey: 'quickActions.voiceoverButton',
       primary: false,
       gradient: "from-yellow-500/10 to-amber-500/10"
     },
     {
       id: 'repurpose',
-      title: 'Repurpose Video',
-      description: 'Turn videos into multiple posts',
-      buttonText: 'Upload Video',
+      titleKey: 'quickActions.videoToPosts',
+      descKey: 'quickActions.videoToPostsDesc',
+      buttonKey: 'quickActions.videoToPostsButton',
       primary: false,
       gradient: "from-red-500/10 to-orange-500/10"
     },
     {
       id: 'clip',
-      title: 'Motion Clip',
-      description: 'AI video from your script',
-      buttonText: 'Create Clip',
+      titleKey: 'quickActions.clip',
+      descKey: 'quickActions.clipDesc',
+      buttonKey: 'quickActions.clipButton',
       primary: false,
       gradient: "from-emerald-500/10 to-teal-500/10"
     },
     {
       id: 'brand',
-      title: 'Create Brand',
-      description: "Add a new brand profile",
-      buttonText: "Add Brand",
+      titleKey: 'quickActions.createBrand',
+      descKey: 'quickActions.createBrandDesc',
+      buttonKey: 'quickActions.createBrandButton',
       primary: false,
       gradient: "from-blue-500/10 to-cyan-500/10"
     }
@@ -101,7 +104,7 @@ export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoi
 
   return (
     <div className="overflow-hidden">
-      <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Actions</h2>
+      <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">{t('quickActions.title')}</h2>
       <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-7 sm:overflow-visible">
         {actions.map((action) => (
           <Card
@@ -110,10 +113,10 @@ export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoi
             onClick={() => handleClick(action.id)}
           >
             <h3 className="font-medium text-xs sm:text-base mb-0.5 sm:mb-1 group-hover:text-primary transition-colors truncate">
-              {action.title}
+              {t(action.titleKey)}
             </h3>
             <p className="text-[10px] sm:text-sm text-muted-foreground mb-2 sm:mb-4 line-clamp-2">
-              {action.description}
+              {t(action.descKey)}
             </p>
             <Button
               variant={action.primary ? "default" : "outline"}
@@ -124,7 +127,7 @@ export function QuickActions({ onGenerateContent, onAddBrand, onRepurpose, onVoi
                 handleClick(action.id)
               }}
             >
-              {action.buttonText}
+              {t(action.buttonKey)}
             </Button>
           </Card>
         ))}

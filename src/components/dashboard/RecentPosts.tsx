@@ -20,27 +20,28 @@ const statusColors: Record<string, string> = {
   published: "bg-green-500/10 text-green-400"
 }
 
-function formatScheduledTime(dateString?: string): string {
-  if (!dateString) return 'Not scheduled'
-
-  const date = new Date(dateString)
-  const now = new Date()
-  const tomorrow = new Date(now)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  const isToday = date.toDateString() === now.toDateString()
-  const isTomorrow = date.toDateString() === tomorrow.toDateString()
-
-  const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-
-  if (isToday) return `Today, ${timeStr}`
-  if (isTomorrow) return `Tomorrow, ${timeStr}`
-
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + `, ${timeStr}`
-}
-
 export function RecentPosts({ onConvertToClip }: { onConvertToClip?: (post: { content: string; brandId: string }) => void }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+
+  const formatScheduledTime = (dateString?: string): string => {
+    if (!dateString) return t('dashboard.notScheduled')
+
+    const date = new Date(dateString)
+    const now = new Date()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const isToday = date.toDateString() === now.toDateString()
+    const isTomorrow = date.toDateString() === tomorrow.toDateString()
+
+    const locale = i18n.language === 'ar' ? 'ar-SA' : 'en-US'
+    const timeStr = date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
+
+    if (isToday) return `${t('dashboard.today')}, ${timeStr}`
+    if (isTomorrow) return `${t('dashboard.tomorrow')}, ${timeStr}`
+
+    return date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' }) + `, ${timeStr}`
+  }
   const { posts, deletePost } = useData()
 
   // Get the 10 most recent posts
@@ -64,7 +65,7 @@ export function RecentPosts({ onConvertToClip }: { onConvertToClip?: (post: { co
     <Card className="p-2 sm:p-6 overflow-hidden">
       <div className="flex items-center justify-between mb-3 sm:mb-6 px-1 sm:px-0">
         <h2 className="text-sm sm:text-lg font-semibold">{t('dashboard.recentPosts')}</h2>
-        <span className="text-[10px] sm:text-sm text-muted-foreground">{posts.length} total</span>
+        <span className="text-[10px] sm:text-sm text-muted-foreground">{posts.length} {t('dashboard.total')}</span>
       </div>
 
       <div className="space-y-1 sm:space-y-4">
@@ -116,7 +117,7 @@ export function RecentPosts({ onConvertToClip }: { onConvertToClip?: (post: { co
                 className="h-7 px-2 text-xs"
                 onClick={() => navigator.clipboard.writeText(post.content)}
               >
-                Copy
+                {t('dashboard.copy')}
               </Button>
               {onConvertToClip && (
                 <Button
@@ -125,7 +126,7 @@ export function RecentPosts({ onConvertToClip }: { onConvertToClip?: (post: { co
                   className="h-7 px-2 text-xs"
                   onClick={() => onConvertToClip({ content: post.content, brandId: post.brandId })}
                 >
-                  Clip
+                  {t('dashboard.clip')}
                 </Button>
               )}
               <Button
@@ -134,7 +135,7 @@ export function RecentPosts({ onConvertToClip }: { onConvertToClip?: (post: { co
                 className="text-red-400 hover:text-red-300 h-7 px-2 text-xs"
                 onClick={() => deletePost(post.id)}
               >
-                Delete
+                {t('common.delete')}
               </Button>
             </div>
           </div>

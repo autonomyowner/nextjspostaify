@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { motion, AnimatePresence } from "framer-motion"
 import { useData } from "@/context/DataContext"
 
@@ -10,6 +11,7 @@ interface BrandSelectorProps {
 }
 
 export function BrandSelector({ onAddBrand, onEditBrand }: BrandSelectorProps) {
+  const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const { brands, selectedBrandId, selectBrand } = useData()
 
@@ -24,7 +26,7 @@ export function BrandSelector({ onAddBrand, onEditBrand }: BrandSelectorProps) {
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
-        <span className="text-sm font-medium">Create Brand</span>
+        <span className="text-sm font-medium">{t('brandSelector.create')}</span>
       </button>
     )
   }
@@ -67,7 +69,7 @@ export function BrandSelector({ onAddBrand, onEditBrand }: BrandSelectorProps) {
               className="absolute end-0 mt-2 w-48 sm:w-56 max-w-[calc(100vw-2rem)] rounded-lg bg-card border border-border shadow-xl z-50 overflow-hidden"
             >
               <div className="p-2">
-                <p className="text-xs text-muted-foreground px-2 py-1 mb-1">Select brand</p>
+                <p className="text-xs text-muted-foreground px-2 py-1 mb-1">{t('brandSelector.select')}</p>
                 {brands.map((brand) => (
                   <div
                     key={brand.id}
@@ -105,7 +107,7 @@ export function BrandSelector({ onAddBrand, onEditBrand }: BrandSelectorProps) {
                           onEditBrand(brand.id)
                         }}
                         className="p-2 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-md transition-all"
-                        title="Edit brand"
+                        title={t('brandSelector.editBrand')}
                       >
                         <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -129,7 +131,7 @@ export function BrandSelector({ onAddBrand, onEditBrand }: BrandSelectorProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                   </div>
-                  <span className="text-sm">Create Brand</span>
+                  <span className="text-sm">{t('brandSelector.create')}</span>
                 </button>
               </div>
             </motion.div>
