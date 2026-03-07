@@ -43,7 +43,7 @@ const logos = [
     ),
   },
   {
-    name: 'ElevenLabs',
+    name: 'Cartesia',
     svg: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-9 w-9">
         <path d="M4.6035 0v24h4.9317V0zm9.8613 0v24h4.9317V0z" />

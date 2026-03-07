@@ -162,7 +162,7 @@ export function ComparisonPageClient({ competitor }: Props) {
           </div>
           <div className="rounded-xl border border-zinc-800 p-6">
             <h3 className="mb-2 font-semibold text-yellow-400">
-              11 ElevenLabs Voices
+              Cartesia AI Voices
             </h3>
             <p className="text-sm text-zinc-400">
               Create professional voiceovers with 11 AI voices (5 male, 6

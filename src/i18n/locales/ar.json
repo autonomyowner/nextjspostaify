@@ -444,12 +444,12 @@
       "connected": "تم تعيين مفتاح YouTube API - الاستخراج التلقائي مفعل"
     },
     "elevenLabsApiKey": {
-      "title": "مفتاح ElevenLabs API (اختياري)",
-      "label": "مفتاح ElevenLabs API",
+      "title": "مفتاح Cartesia API (اختياري)",
+      "label": "مفتاح Cartesia API",
       "description": "يتيح توليد التعليقات الصوتية بالذكاء الاصطناعي لنصوصك",
-      "info": "أضف مفتاح ElevenLabs API لتوليد تعليقات صوتية احترافية لمحتواك.",
-      "getKey": "احصل على مفتاح API من ElevenLabs",
-      "connected": "تم تعيين مفتاح ElevenLabs API - التعليق الصوتي مفعل"
+      "info": "أضف مفتاح Cartesia API لتوليد تعليقات صوتية احترافية لمحتواك.",
+      "getKey": "احصل على مفتاح API من Cartesia",
+      "connected": "تم تعيين مفتاح Cartesia API - التعليق الصوتي مفعل"
     },
     "usage": {
       "title": "إحصائيات الاستخدام",
@@ -479,15 +479,15 @@
     "loading": "جاري التحميل...",
     "noVoices": "لا توجد أصوات متاحة",
     "loadVoices": "تحميل الأصوات",
-    "enterApiKeyFirst": "أدخل مفتاح ElevenLabs API لتحميل الأصوات",
+    "enterApiKeyFirst": "أدخل مفتاح Cartesia API لتحميل الأصوات",
     "preview": "معاينة",
     "generate": "إنشاء تعليق صوتي",
     "generating": "جاري الإنشاء...",
     "audioReady": "تعليقك الصوتي جاهز!",
     "clickToPlay": "اضغط تشغيل للمعاينة",
     "download": "تحميل MP3",
-    "apiKeyMissing": "يرجى إضافة مفتاح ElevenLabs API",
-    "apiKeyPlaceholder": "أدخل مفتاح ElevenLabs API",
+    "apiKeyMissing": "يرجى إضافة مفتاح Cartesia API",
+    "apiKeyPlaceholder": "أدخل مفتاح Cartesia API",
     "getApiKey": "احصل على مفتاح API من",
     "errorLoadingVoices": "فشل تحميل الأصوات. تحقق من مفتاح API.",
     "errorOptimizing": "فشل تحسين النص",

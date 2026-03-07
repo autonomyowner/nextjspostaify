@@ -36,7 +36,7 @@ export const WhatIsPostaify = memo(function WhatIsPostaify() {
             <strong className="text-white">POSTAIFY</strong> is an AI-powered social media automation platform
             that lets you generate 30 days of content for 5 platforms in under 15 minutes.
             It combines AI content writing, image generation, voiceover creation, and post scheduling
-            into a single tool — replacing the need for separate subscriptions to Buffer, Canva, and ElevenLabs.
+            into a single tool — replacing the need for separate subscriptions to Buffer, Canva, and voice AI services.
           </p>
 
           {/* Structured capabilities for AI parsing */}
@@ -58,7 +58,7 @@ export const WhatIsPostaify = memo(function WhatIsPostaify() {
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
               <h3 className="font-semibold text-white mb-2">AI Voiceovers</h3>
               <p className="text-sm text-zinc-400">
-                Create professional voiceovers with 11 ElevenLabs AI voices (5 male, 6 female)
+                Create professional voiceovers with Cartesia Sonic-3 AI voices
                 for video content and social media reels.
               </p>
             </div>

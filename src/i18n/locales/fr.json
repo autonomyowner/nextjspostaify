@@ -444,12 +444,12 @@
       "connected": "Cle API YouTube configuree - extraction automatique activee"
     },
     "elevenLabsApiKey": {
-      "title": "Cle API ElevenLabs (Optionnel)",
-      "label": "Cle API ElevenLabs",
+      "title": "Cle API Cartesia (Optionnel)",
+      "label": "Cle API Cartesia",
       "description": "Permet la generation de voix off IA pour vos scripts",
-      "info": "Ajoutez une cle API ElevenLabs pour generer des voix off professionnelles pour votre contenu.",
-      "getKey": "Obtenez votre cle API sur ElevenLabs",
-      "connected": "Cle API ElevenLabs configuree - voix off activee"
+      "info": "Ajoutez une cle API Cartesia pour generer des voix off professionnelles pour votre contenu.",
+      "getKey": "Obtenez votre cle API sur Cartesia",
+      "connected": "Cle API Cartesia configuree - voix off activee"
     },
     "usage": {
       "title": "Statistiques d'Utilisation",
@@ -479,15 +479,15 @@
     "loading": "Chargement...",
     "noVoices": "Aucune voix disponible",
     "loadVoices": "Charger les Voix",
-    "enterApiKeyFirst": "Entrez votre cle API ElevenLabs pour charger les voix",
+    "enterApiKeyFirst": "Entrez votre cle API Cartesia pour charger les voix",
     "preview": "Apercu",
     "generate": "Generer la Voix Off",
     "generating": "Generation...",
     "audioReady": "Votre voix off est prete!",
     "clickToPlay": "Cliquez sur lecture pour previsualiser",
     "download": "Telecharger MP3",
-    "apiKeyMissing": "Veuillez ajouter votre cle API ElevenLabs",
-    "apiKeyPlaceholder": "Entrez votre cle API ElevenLabs",
+    "apiKeyMissing": "Veuillez ajouter votre cle API Cartesia",
+    "apiKeyPlaceholder": "Entrez votre cle API Cartesia",
     "getApiKey": "Obtenez votre cle API sur",
     "errorLoadingVoices": "Echec du chargement des voix. Verifiez votre cle API.",
     "errorOptimizing": "Echec de l'optimisation du script",

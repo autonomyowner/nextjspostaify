@@ -228,7 +228,7 @@ export default function TermsPage() {
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
               <li><strong>Google:</strong> For authentication (Google Sign-In)</li>
               <li><strong>Stripe:</strong> For payment processing</li>
-              <li><strong>AI Providers:</strong> For content generation (OpenRouter, ElevenLabs, Runware, Fal.ai)</li>
+              <li><strong>AI Providers:</strong> For content generation (OpenRouter, Cartesia, Runware, Fal.ai)</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
               Your use of these services is subject to their respective terms and privacy policies.

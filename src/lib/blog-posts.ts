@@ -87,7 +87,7 @@ export const blogPosts: Record<string, BlogPost> = {
       },
       {
         heading: 'POSTAIFY — Best All-in-One Platform',
-        body: 'POSTAIFY combines AI content writing, image generation (Flux AI), voiceover creation (ElevenLabs), and YouTube repurposing in a single platform.\n\nStrengths:\n- Generates posts for 5 platforms simultaneously\n- AI images in 8 seconds (1024x1024px)\n- Voice cloning matches your writing style\n- YouTube to social media (5-10 posts per video)\n- Free tier: 2 brands, 20 posts/month\n\nPricing: Free / $19/mo (Pro) / $49/mo (Business)\n\nBest for: Creators and businesses who want one tool for everything — text, images, voiceovers, and scheduling.',
+        body: 'POSTAIFY combines AI content writing, image generation (Flux AI), voiceover creation (Cartesia), and YouTube repurposing in a single platform.\n\nStrengths:\n- Generates posts for 5 platforms simultaneously\n- AI images in 8 seconds (1024x1024px)\n- Voice cloning matches your writing style\n- YouTube to social media (5-10 posts per video)\n- Free tier: 2 brands, 20 posts/month\n\nPricing: Free / $19/mo (Pro) / $49/mo (Business)\n\nBest for: Creators and businesses who want one tool for everything — text, images, voiceovers, and scheduling.',
       },
       {
         heading: 'Buffer — Best for Simple Scheduling',

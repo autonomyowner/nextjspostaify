@@ -79,8 +79,8 @@
     "research": {
       "category": "Voice",
       "title": "Script + Voiceover",
-      "description": "Generate 15-second voiceovers with 11 ElevenLabs AI voices",
-      "feature1": "11 professional voices (5 male, 6 female)",
+      "description": "Generate 15-second voiceovers with Cartesia AI voices",
+      "feature1": "50+ professional AI voices",
       "feature2": "Natural speech patterns",
       "feature3": "Script optimization for voice"
     },
@@ -489,12 +489,12 @@
       "connected": "YouTube API key is set - auto-extraction enabled"
     },
     "elevenLabsApiKey": {
-      "title": "ElevenLabs API Key (Optional)",
-      "label": "ElevenLabs API Key",
+      "title": "Cartesia API Key (Optional)",
+      "label": "Cartesia API Key",
       "description": "Enables AI voiceover generation for your scripts",
-      "info": "Add an ElevenLabs API key to generate professional voiceovers for your content.",
-      "getKey": "Get your API key from ElevenLabs",
-      "connected": "ElevenLabs API key is set - voiceover enabled"
+      "info": "Add a Cartesia API key to generate professional voiceovers for your content.",
+      "getKey": "Get your API key from Cartesia",
+      "connected": "Cartesia API key is set - voiceover enabled"
     },
     "usage": {
       "title": "Usage Statistics",
@@ -524,15 +524,15 @@
     "loading": "Loading...",
     "noVoices": "No voices available",
     "loadVoices": "Load Voices",
-    "enterApiKeyFirst": "Enter your ElevenLabs API key to load voices",
+    "enterApiKeyFirst": "Enter your Cartesia API key to load voices",
     "preview": "Preview",
     "generate": "Generate Voiceover",
     "generating": "Generating...",
     "audioReady": "Your voiceover is ready!",
     "clickToPlay": "Click play to preview",
     "download": "Download MP3",
-    "apiKeyMissing": "Please add your ElevenLabs API key",
-    "apiKeyPlaceholder": "Enter your ElevenLabs API key",
+    "apiKeyMissing": "Please add your Cartesia API key",
+    "apiKeyPlaceholder": "Enter your Cartesia API key",
     "getApiKey": "Get your API key at",
     "errorLoadingVoices": "Failed to load voices. Check your API key.",
     "errorOptimizing": "Failed to optimize script",

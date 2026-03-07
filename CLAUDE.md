@@ -87,7 +87,7 @@ Key Convex files:
 | `imagesAction.ts` | Image generation (Runware for Flux, Fal.ai for Ideogram/Bria) |
 | `imageResize.ts` | Multi-format resize for social media sizes |
 | `images.ts` | Image model configurations |
-| `voice.ts` | ElevenLabs voiceovers |
+| `voice.ts` | Cartesia voiceovers (Sonic-3) |
 | `voiceAnalysis.ts` | Voice cloning: analyze posts to extract writing style |
 | `subscriptionsAction.ts` | Stripe integration |
 | `tools.ts` | Free YouTube converter tool actions (rate-limited) |
@@ -233,7 +233,7 @@ CONVEX_SITE_URL=https://...convex.site
 
 # Convex Dashboard (set via `npx convex env set`)
 BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SITE_URL
-OPENROUTER_API_KEY, ELEVENLABS_API_KEY, FAL_API_KEY, RUNWARE_API_KEY
+OPENROUTER_API_KEY, CARTESIA_API_KEY, FAL_API_KEY, RUNWARE_API_KEY
 STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRO_PRICE_ID, STRIPE_BUSINESS_PRICE_ID
 ADMIN_USERNAME, ADMIN_PASSWORD
 ```
@@ -247,12 +247,49 @@ ADMIN_USERNAME, ADMIN_PASSWORD
 | Image (Recraft V3) | Runware | $0.005 |
 | Logo (Ideogram V2 Turbo) | Fal.ai | $0.02-0.03 |
 | Product Shot (Bria) | Fal.ai | $0.04 |
-| Voiceover (ElevenLabs) | ElevenLabs | ~$0.015/clip |
+| Voiceover (Cartesia Sonic-3) | Cartesia | ~$0.015/clip |
 | AI Content (OpenRouter/Haiku) | OpenRouter | ~$0.001/post |
 
 **Hybrid Provider Strategy:** Runware for Flux models (93% savings vs Fal.ai), Fal.ai for Ideogram/Bria.
 
+**TEMPORARY (Fal.ai credits exhausted):** ALL image generation routed through Runware. Logos use Flux Dev instead of Ideogram. Product photography (Bria) is disabled. Search for `TODO` comments in `convex/imagesAction.ts` and `convex/brandKitActions.ts` to re-enable Fal.ai when credits are topped up.
+
 **Runware Model IDs:** `runware:400@4` (Klein, FREE), `runware:101@1` (Dev), `civitai:618692@691639` (Pro 1.1), `runware:2@1` (Recraft V3)
+
+## Motion Clip Generator
+
+AI-powered motion graphic clip generator for TikTok/Reels/Shorts (1080x1920 vertical).
+
+**Two themes:**
+- **Classic** (default) — clean motion graphics, 8 scene types
+- **Cinematic** — montage intro, letterbox bars, 4th glow orb, enhanced slam/exit, number counters, dynamic shine sweeps
+
+Available to ALL plans (not gated). Cinematic auto-prepends a montage scene (uses 1 scene slot).
+
+**Files:**
+| File | Purpose |
+|------|---------|
+| `convex/clips.ts` | Queries/mutations (NO "use node") |
+| `convex/clipActions.ts` | Generate action + MP4 export ("use node") |
+| `convex/lib/clipTemplates.ts` | Template engine: CSS, scene renderers, animation timeline, particles |
+| `src/components/dashboard/clips/ClipGeneratorModal.tsx` | Input form + generation progress + result |
+| `src/app/(dashboard)/clips/page.tsx` | Clips listing page |
+
+**Scene types:** hook, brand, features, demo, transformation, stats, comparison, cta, montage (cinematic-only, auto-generated)
+
+**Plan limits:** FREE=2/mo (4 scenes, HTML only), PRO=30/mo (8 scenes, MP4), BUSINESS=150/mo
+
+**Cost:** ~$0.001/clip (OpenRouter AI parsing only)
+
+## OpenRouter Model IDs
+
+**IMPORTANT:** `anthropic/claude-3-haiku` is deprecated. Use current model IDs:
+- **Haiku (fast/cheap):** `anthropic/claude-3.5-haiku` (deprecated Feb 19 2026) → migrate to `anthropic/claude-haiku-4.5`
+- **Sonnet (best):** `anthropic/claude-3.5-sonnet` → migrate to `anthropic/claude-sonnet-4.5`
+
+Files using OpenRouter: `ai.ts`, `clipActions.ts`, `brandKitActions.ts`, `chatbotAction.ts`, `voiceAnalysis.ts`, `voice.ts`, `tools.ts`
+
+To check production errors: `npx convex logs --prod --history 10`
 
 ## SEO & AEO Infrastructure
 

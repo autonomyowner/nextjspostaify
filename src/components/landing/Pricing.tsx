@@ -284,7 +284,7 @@ export function Pricing() {
                 <span className="font-medium">$30/{t('pricing.monthly')}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-border/30">
-                <span className="text-muted-foreground">ElevenLabs <span className="text-xs">({t('pricing.valueStack.voiceover')})</span></span>
+                <span className="text-muted-foreground">Cartesia <span className="text-xs">({t('pricing.valueStack.voiceover')})</span></span>
                 <span className="font-medium">$22/{t('pricing.monthly')}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-border/30">

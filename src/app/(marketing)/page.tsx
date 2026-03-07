@@ -5,7 +5,7 @@ import { SoftwareSchema, OrganizationSchema } from '@/components/seo/SoftwareSch
 export const metadata: Metadata = {
   title: 'POSTAIFY - AI-Powered Social Media Automation',
   description:
-    'Generate 30 posts for 5 platforms in under 15 minutes. AI content, Flux images (1024x1024px in 8 seconds), ElevenLabs voiceovers, YouTube repurposing. Free: 2 brands, 20 posts, 5 AI images/month.',
+    'Generate 30 posts for 5 platforms in under 15 minutes. AI content, Flux images (1024x1024px in 8 seconds), Cartesia AI voiceovers, YouTube repurposing. Free: 2 brands, 20 posts, 5 AI images/month.',
   keywords: [
     'AI content generator',
     'social media automation',
@@ -86,7 +86,7 @@ export default function HomePage() {
         features={[
           'Generate 30 days of content in 15 minutes',
           'Flux AI Image Generation (1024x1024px in 8 seconds)',
-          '11 ElevenLabs AI voices for voiceovers',
+          'Cartesia Sonic-3 AI voices for voiceovers',
           'YouTube to social media (5-10 posts per video)',
           'Multi-platform: Instagram, LinkedIn, Twitter, TikTok, Facebook',
           'Ideogram V2 Turbo for logo generation',

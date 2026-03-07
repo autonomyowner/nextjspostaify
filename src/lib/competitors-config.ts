@@ -159,7 +159,7 @@ export const competitors: Record<string, Competitor> = {
       {
         question: 'How does POSTAIFY compare to Hootsuite for AI content?',
         answer:
-          "Hootsuite's OwlyWriter AI provides basic caption suggestions. POSTAIFY generates complete posts with brand voice matching, AI images (Flux Pro 1.1), and voiceovers (ElevenLabs) - all for $19/mo vs $99/mo.",
+          "Hootsuite's OwlyWriter AI provides basic caption suggestions. POSTAIFY generates complete posts with brand voice matching, AI images (Flux Pro 1.1), and voiceovers (Cartesia) - all for $19/mo vs $99/mo.",
       },
       {
         question: 'Is Hootsuite worth it for small businesses?',
@@ -235,7 +235,7 @@ export const competitors: Record<string, Competitor> = {
       {
         question: 'What can POSTAIFY do that Jasper cannot?',
         answer:
-          'POSTAIFY includes scheduling, AI images (Flux Pro 1.1), voiceovers (ElevenLabs), and YouTube repurposing in one $19/mo package. Jasper charges $49/mo for content only, plus $20/mo extra for images.',
+          'POSTAIFY includes scheduling, AI images (Flux Pro 1.1), voiceovers (Cartesia), and YouTube repurposing in one $19/mo package. Jasper charges $49/mo for content only, plus $20/mo extra for images.',
       },
       {
         question: 'Is Jasper better for social media content?',
@@ -700,7 +700,7 @@ export const competitors: Record<string, Competitor> = {
       {
         question: 'Does ContentStudio have AI image generation?',
         answer:
-          'No. ContentStudio offers basic AI text writing but no image generation, logo creation, or voiceovers. POSTAIFY includes Flux Pro 1.1 images (200/month), Ideogram logos, and ElevenLabs voiceovers.',
+          'No. ContentStudio offers basic AI text writing but no image generation, logo creation, or voiceovers. POSTAIFY includes Flux Pro 1.1 images (200/month), Ideogram logos, and Cartesia voiceovers.',
       },
       {
         question: 'Which is cheaper, ContentStudio or POSTAIFY?',

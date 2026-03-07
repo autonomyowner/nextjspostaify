@@ -38,7 +38,6 @@ const VOICEOVER_STYLES = [
 ] as const
 
 type VoiceoverStyle = typeof VOICEOVER_STYLES[number]['value']
-type VoiceProvider = 'elevenlabs' | 'cartesia'
 
 export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverModalProps) {
   const { t } = useTranslation()
@@ -46,22 +45,15 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
 
   // Convex actions
   const getVoicesAction = useAction(convexApi.voice.getVoices)
-  const getCartesiaVoicesAction = useAction(convexApi.voice.getCartesiaVoices)
   const generateVoiceAction = useAction(convexApi.voice.generate)
-  const generateCartesiaAction = useAction(convexApi.voice.generateCartesia)
-
-  // Provider state
-  const [provider, setProvider] = useState<VoiceProvider>('elevenlabs')
 
   // Script state
   const [script, setScript] = useState(initialText)
   const [voiceStyle, setVoiceStyle] = useState<VoiceoverStyle>('conversational')
   const [useExactText, setUseExactText] = useState(true) // Default to exact text
 
-  // Voice state (per provider)
-  const [elevenLabsVoices, setElevenLabsVoices] = useState<Voice[]>([])
-  const [cartesiaVoices, setCartesiaVoices] = useState<Voice[]>([])
-  const voices = provider === 'elevenlabs' ? elevenLabsVoices : cartesiaVoices
+  // Voice state
+  const [voices, setVoices] = useState<Voice[]>([])
   const [selectedVoiceId, setSelectedVoiceId] = useState('')
   const [isLoadingVoices, setIsLoadingVoices] = useState(false)
 
@@ -87,18 +79,12 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
     }
   }, [initialText])
 
-  // Load voices when modal opens or provider changes
+  // Load voices when modal opens
   useEffect(() => {
     if (isOpen && hasAccess && voices.length === 0) {
       loadVoices()
     }
-  }, [isOpen, hasAccess, provider])
-
-  // Reset selected voice when switching providers
-  useEffect(() => {
-    setSelectedVoiceId('')
-    setAudioUrl(null)
-  }, [provider])
+  }, [isOpen, hasAccess])
 
   // Cleanup audio elements on unmount to prevent memory leaks
   useEffect(() => {
@@ -121,15 +107,8 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
     setError('')
 
     try {
-      const fetchedVoices = provider === 'elevenlabs'
-        ? await getVoicesAction({})
-        : await getCartesiaVoicesAction({})
-
-      if (provider === 'elevenlabs') {
-        setElevenLabsVoices(fetchedVoices)
-      } else {
-        setCartesiaVoices(fetchedVoices)
-      }
+      const fetchedVoices = await getVoicesAction({})
+      setVoices(fetchedVoices)
       if (fetchedVoices.length > 0 && !selectedVoiceId) {
         setSelectedVoiceId(fetchedVoices[0].id)
       }
@@ -162,8 +141,7 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
     setError('')
 
     try {
-      const generateAction = provider === 'elevenlabs' ? generateVoiceAction : generateCartesiaAction
-      const result = await generateAction({
+      const result = await generateVoiceAction({
         text: script,
         voiceId: selectedVoiceId,
         style: voiceStyle,
@@ -377,33 +355,6 @@ export function VoiceoverModal({ isOpen, onClose, initialText = '' }: VoiceoverM
                     </p>
                   </div>
                 </label>
-              </div>
-
-              {/* Voice Provider Toggle */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Voice Provider</label>
-                <div className="flex rounded-lg bg-white/5 p-1 w-fit">
-                  <button
-                    onClick={() => setProvider('elevenlabs')}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      provider === 'elevenlabs'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-white/10'
-                    }`}
-                  >
-                    ElevenLabs
-                  </button>
-                  <button
-                    onClick={() => setProvider('cartesia')}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      provider === 'cartesia'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-white/10'
-                    }`}
-                  >
-                    Cartesia
-                  </button>
-                </div>
               </div>
 
               {/* Voice Selection */}

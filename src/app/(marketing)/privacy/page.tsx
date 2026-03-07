@@ -109,7 +109,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Convex:</strong> Database and backend infrastructure</li>
               <li><strong>Stripe:</strong> Payment processing (PCI-compliant)</li>
               <li><strong>OpenRouter/AI Providers:</strong> AI content generation (prompts are processed, not stored by providers)</li>
-              <li><strong>ElevenLabs:</strong> Voice synthesis for voiceovers</li>
+              <li><strong>Cartesia:</strong> Voice synthesis for voiceovers</li>
               <li><strong>Runware/Fal.ai:</strong> Image generation</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
