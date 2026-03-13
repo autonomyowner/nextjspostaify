@@ -55,6 +55,8 @@ export interface SceneData {
   // CTA
   ctaText?: string;
   url?: string;
+  // Scene transition style
+  transition?: "fade" | "slide-left" | "slide-right" | "zoom-in" | "zoom-out" | "blur" | "flip";
   // Montage (cinematic only)
   montageItems?: string[];
   // Narrative
@@ -699,6 +701,118 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
     @keyframes listItemSlide {
       from { opacity: 0; transform: translateX(-40px); }
       to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ============================================================
+       SCENE TRANSITION OVERRIDES (data-transition attribute)
+       ============================================================ */
+
+    /* Slide Left */
+    .scene[data-transition="slide-left"] {
+      opacity: 0;
+      transform: translateX(100%);
+      filter: none;
+    }
+    .scene[data-transition="slide-left"].active {
+      opacity: 1;
+      transform: translateX(0);
+      filter: none;
+      transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+    }
+    .scene[data-transition="slide-left"].exit {
+      opacity: 0;
+      transform: translateX(-100%);
+      filter: none;
+    }
+
+    /* Slide Right */
+    .scene[data-transition="slide-right"] {
+      opacity: 0;
+      transform: translateX(-100%);
+      filter: none;
+    }
+    .scene[data-transition="slide-right"].active {
+      opacity: 1;
+      transform: translateX(0);
+      filter: none;
+      transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+    }
+    .scene[data-transition="slide-right"].exit {
+      opacity: 0;
+      transform: translateX(100%);
+      filter: none;
+    }
+
+    /* Zoom In */
+    .scene[data-transition="zoom-in"] {
+      opacity: 0;
+      transform: scale(0.3);
+      filter: blur(10px);
+    }
+    .scene[data-transition="zoom-in"].active {
+      opacity: 1;
+      transform: scale(1);
+      filter: blur(0);
+      transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo), filter 0.4s var(--ease-out);
+    }
+    .scene[data-transition="zoom-in"].exit {
+      opacity: 0;
+      transform: scale(1.5);
+      filter: blur(8px);
+    }
+
+    /* Zoom Out */
+    .scene[data-transition="zoom-out"] {
+      opacity: 0;
+      transform: scale(1.8);
+      filter: blur(8px);
+    }
+    .scene[data-transition="zoom-out"].active {
+      opacity: 1;
+      transform: scale(1);
+      filter: blur(0);
+      transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo), filter 0.4s var(--ease-out);
+    }
+    .scene[data-transition="zoom-out"].exit {
+      opacity: 0;
+      transform: scale(0.5);
+      filter: blur(8px);
+    }
+
+    /* Blur */
+    .scene[data-transition="blur"] {
+      opacity: 0;
+      transform: scale(1);
+      filter: blur(30px);
+    }
+    .scene[data-transition="blur"].active {
+      opacity: 1;
+      transform: scale(1);
+      filter: blur(0);
+      transition: opacity 0.6s var(--ease-out), filter 0.6s var(--ease-out);
+    }
+    .scene[data-transition="blur"].exit {
+      opacity: 0;
+      transform: scale(1);
+      filter: blur(30px);
+    }
+
+    /* Flip */
+    .scene[data-transition="flip"] {
+      opacity: 0;
+      transform: perspective(1200px) rotateY(-90deg);
+      filter: blur(4px);
+    }
+    .scene[data-transition="flip"].active {
+      opacity: 1;
+      transform: perspective(1200px) rotateY(0deg);
+      filter: blur(0);
+      transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo), filter 0.4s var(--ease-out);
+    }
+    .scene[data-transition="flip"].exit {
+      opacity: 0;
+      transform: perspective(1200px) rotateY(90deg);
+      filter: blur(4px);
     }
   `;
 
@@ -2394,9 +2508,17 @@ export function generateClipHTML(config: ClipConfig): string {
     }
   }
 
-  const sceneHtmlParts = scenes.map((scene, i) =>
-    SCENE_RENDERERS[scene.type](scene, i, colors, theme)
-  );
+  const sceneHtmlParts = scenes.map((scene, i) => {
+    let html = SCENE_RENDERERS[scene.type](scene, i, colors, theme);
+    // Inject data-transition attribute if scene has a non-default transition
+    if (scene.transition && scene.transition !== "fade") {
+      html = html.replace(
+        `<div class="scene" id="scene-${i}">`,
+        `<div class="scene" id="scene-${i}" data-transition="${scene.transition}">`
+      );
+    }
+    return html;
+  });
 
   // Cinematic-only HTML elements
   const cinematicHtml = theme === "cinematic"

@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { authComponent } from "./auth";
+import { generateClipHTML, estimateDuration } from "./lib/clipTemplates";
+import type { SceneData, ClipColors, ClipTheme } from "./lib/clipTemplates";
 
 // ============================================================
 // QUERIES
@@ -183,5 +185,57 @@ export const deleteClip = mutation({
     if (!user || clip.userId !== user._id) throw new Error("Unauthorized");
 
     await ctx.db.delete(args.id);
+  },
+});
+
+export const updateScenes = mutation({
+  args: {
+    clipId: v.id("clips"),
+    scenes: v.any(),
+    title: v.optional(v.string()),
+  },
+  handler: async (ctx, { clipId, scenes, title }) => {
+    let authUser;
+    try {
+      authUser = await authComponent.getAuthUser(ctx);
+    } catch {
+      throw new Error("Not authenticated");
+    }
+    if (!authUser || !authUser.email) throw new Error("Not authenticated");
+
+    const clip = await ctx.db.get(clipId);
+    if (!clip) throw new Error("Clip not found");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", authUser.email))
+      .first();
+    if (!user || clip.userId !== user._id) throw new Error("Unauthorized");
+
+    const typedScenes = scenes as SceneData[];
+    const clipTitle = title ?? clip.title;
+    const colors = clip.colors as ClipColors;
+    const theme = (clip.theme as ClipTheme) || "classic";
+
+    const htmlContent = generateClipHTML({
+      title: clipTitle,
+      scenes: typedScenes,
+      colors,
+      theme,
+    });
+    const duration = estimateDuration(typedScenes);
+
+    await ctx.db.patch(clipId, {
+      scenes: typedScenes,
+      htmlContent,
+      duration,
+      scenesCount: typedScenes.length,
+      ...(title !== undefined ? { title: clipTitle } : {}),
+      // Reset MP4 since content changed
+      mp4Url: undefined,
+      renderStatus: "draft",
+    });
+
+    return { htmlContent, duration, scenesCount: typedScenes.length };
   },
 });

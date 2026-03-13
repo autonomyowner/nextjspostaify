@@ -172,9 +172,15 @@ export default function ClipsPage() {
 
                   {/* Actions */}
                   <div className="flex gap-2">
+                    <Link
+                      href={`/clips/${clip._id}/edit`}
+                      className="flex-1 py-2 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium hover:from-yellow-500/20 hover:to-orange-500/20 transition-all text-center"
+                    >
+                      Edit
+                    </Link>
                     <button
                       onClick={() => handlePreview(clip.htmlContent)}
-                      className="flex-1 py-2 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium hover:from-yellow-500/20 hover:to-orange-500/20 transition-all"
+                      className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs font-medium hover:bg-white/10 transition-all"
                     >
                       Preview
                     </button>

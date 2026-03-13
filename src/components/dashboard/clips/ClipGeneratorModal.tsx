@@ -847,6 +847,21 @@ export function ClipGeneratorModal({ isOpen, onClose, initialScript, initialColo
                 </button>
               </div>
 
+              {/* Edit Clip link */}
+              {result?.clipId && (
+                <a
+                  href={`/clips/${result.clipId}/edit`}
+                  onClick={handleClose}
+                  className="mt-3 w-full py-2.5 rounded-xl bg-white/3 border border-white/8 text-white/50 text-xs font-medium hover:bg-white/6 hover:text-white/70 transition-all flex items-center justify-center gap-2"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit Clip in Editor
+                </a>
+              )}
+
               {/* MP4 Export Section */}
               {hasMp4Export ? (
                 <div className="mt-4">
