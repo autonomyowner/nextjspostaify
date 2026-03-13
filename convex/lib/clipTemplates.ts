@@ -234,8 +234,8 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       position: relative;
       overflow: hidden;
       transform-origin: top left;
-      word-break: keep-all;
-      overflow-wrap: break-word;
+      overflow-wrap: normal;
+      word-break: normal;
       hyphens: none;
       -webkit-hyphens: none;
     }
@@ -365,6 +365,10 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       filter: blur(5px);
       transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out), filter 0.5s var(--ease-out);
       will-change: opacity, transform;
+      overflow-wrap: normal;
+      word-break: normal;
+      hyphens: none;
+      -webkit-hyphens: none;
     }
 
     .scene.active {
