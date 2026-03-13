@@ -2010,10 +2010,14 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
         current.classList.remove('exit');
         current.querySelectorAll('.animate').forEach(function(el) {
           el.classList.remove('animate');
+        });
+        // Clear ALL inline styles to prevent flicker on replay/transitions
+        current.querySelectorAll('[id], .animate, [style]').forEach(function(el) {
           el.style.opacity = '';
           el.style.transform = '';
           el.style.animation = '';
           el.style.filter = '';
+          el.style.transition = '';
         });
       }
       next.classList.add('active');
@@ -2029,6 +2033,14 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
         current.classList.remove('exit');
         current.querySelectorAll('.animate').forEach(function(el) {
           el.classList.remove('animate');
+        });
+        // Clear ALL inline styles to prevent flicker on replay/transitions
+        current.querySelectorAll('[id], .animate, [style]').forEach(function(el) {
+          el.style.opacity = '';
+          el.style.transform = '';
+          el.style.animation = '';
+          el.style.filter = '';
+          el.style.transition = '';
         });
       }
       next.classList.add('active');
@@ -2143,6 +2155,22 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
     ${cinematicHelpers}
 
     async function playVideo() {
+      // Reset all scenes: clear inline styles and animation classes to prevent flicker on replay
+      document.querySelectorAll('.scene').forEach(function(scene) {
+        scene.classList.remove('active', 'exit');
+        scene.querySelectorAll('.animate').forEach(function(el) {
+          el.classList.remove('animate');
+        });
+        scene.querySelectorAll('[id], [style]').forEach(function(el) {
+          el.style.opacity = '';
+          el.style.transform = '';
+          el.style.animation = '';
+          el.style.filter = '';
+          el.style.transition = '';
+        });
+      });
+      void document.body.offsetHeight; // Force reflow before starting
+
 ${sceneTimings.join("\n\n")}
     }
 
