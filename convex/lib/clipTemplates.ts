@@ -234,6 +234,10 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       position: relative;
       overflow: hidden;
       transform-origin: top left;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      hyphens: none;
+      -webkit-hyphens: none;
     }
 
     #viewport {
