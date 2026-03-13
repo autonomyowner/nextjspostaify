@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 const logos = [
   {
     name: 'Stripe',
@@ -53,6 +55,15 @@ const logos = [
 ]
 
 export function LogoBar() {
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % logos.length)
+    }, 500)
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <section className="relative overflow-hidden bg-black pb-16 sm:pb-20">
       {/* Grid pattern - same as hero */}
@@ -67,15 +78,29 @@ export function LogoBar() {
         </p>
 
         <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8 sm:gap-x-14 md:gap-x-16">
-          {logos.map((logo) => (
+          {logos.map((logo, index) => (
             <div
               key={logo.name}
               className="group flex w-16 flex-col items-center gap-2.5 sm:w-20"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-yellow-500/[0.08] bg-yellow-500/[0.03] text-neutral-500 transition-all duration-300 group-hover:border-yellow-500/20 group-hover:bg-yellow-500/[0.07] group-hover:text-yellow-400/80 group-hover:shadow-[0_0_20px_rgba(234,179,8,0.08)]">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-xl border transition-all duration-500 ease-out"
+                style={{
+                  borderColor: activeIndex === index ? 'rgba(250, 204, 21, 0.3)' : 'rgba(250, 204, 21, 0.08)',
+                  backgroundColor: activeIndex === index ? 'rgba(250, 204, 21, 0.1)' : 'rgba(250, 204, 21, 0.03)',
+                  color: activeIndex === index ? 'rgba(250, 204, 21, 0.9)' : 'rgb(115, 115, 115)',
+                  boxShadow: activeIndex === index ? '0 0 24px rgba(250, 204, 21, 0.15), 0 0 48px rgba(250, 204, 21, 0.06)' : 'none',
+                  transform: activeIndex === index ? 'scale(1.08)' : 'scale(1)',
+                }}
+              >
                 {logo.svg}
               </div>
-              <span className="text-center text-[10px] font-medium leading-tight tracking-wide text-neutral-600 transition-colors duration-300 group-hover:text-neutral-400 sm:text-[11px]">
+              <span
+                className="text-center text-[10px] font-medium leading-tight tracking-wide transition-colors duration-500 sm:text-[11px]"
+                style={{
+                  color: activeIndex === index ? 'rgb(163, 163, 163)' : 'rgb(82, 82, 82)',
+                }}
+              >
                 {logo.name}
               </span>
             </div>
