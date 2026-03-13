@@ -234,10 +234,14 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       position: relative;
       overflow: hidden;
       transform-origin: top left;
-      overflow-wrap: normal;
-      word-break: normal;
-      hyphens: none;
-      -webkit-hyphens: none;
+    }
+
+    /* Prevent ALL word splitting — words must never be cut across lines */
+    #video-canvas *, #video-canvas *::before, #video-canvas *::after {
+      word-break: normal !important;
+      overflow-wrap: normal !important;
+      hyphens: none !important;
+      -webkit-hyphens: none !important;
     }
 
     #viewport {
@@ -365,10 +369,6 @@ function getCoreCSS(colors: ClipColors, theme: ClipTheme): string {
       filter: blur(5px);
       transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out), filter 0.5s var(--ease-out);
       will-change: opacity, transform;
-      overflow-wrap: normal;
-      word-break: normal;
-      hyphens: none;
-      -webkit-hyphens: none;
     }
 
     .scene.active {
@@ -1013,6 +1013,8 @@ function featuresScene(scene: SceneData, index: number, colors: ClipColors): str
         font-weight: 600;
         color: var(--text);
         line-height: 1.3;
+        flex: 1;
+        min-width: 0;
       ">${escapeHtml(f)}</div>
       <div class="shine-layer" style="
         content: '';
@@ -1104,6 +1106,8 @@ function demoScene(scene: SceneData, index: number, colors: ClipColors): string 
         color: var(--text-85);
         padding-top: 6px;
         line-height: 1.3;
+        flex: 1;
+        min-width: 0;
       ">${escapeHtml(s)}</div>
     </div>
   `
@@ -1310,7 +1314,7 @@ function comparisonScene(
         color: rgba(255,80,80,0.8);
         font-weight: 700;
       ">&#10007;</div>
-      <span style="font-size: 24px; color: var(--text-60); line-height: 1.3;">${escapeHtml(p)}</span>
+      <span style="font-size: 22px; color: var(--text-60); line-height: 1.3; flex: 1; min-width: 0;">${escapeHtml(p)}</span>
     </div>
   `
     )
@@ -1340,7 +1344,7 @@ function comparisonScene(
         color: ${colors.primary};
         font-weight: 700;
       ">&#10003;</div>
-      <span style="font-size: 24px; color: var(--text-85); font-weight: 500; line-height: 1.3;">${escapeHtml(s)}</span>
+      <span style="font-size: 22px; color: var(--text-85); font-weight: 500; line-height: 1.3; flex: 1; min-width: 0;">${escapeHtml(s)}</span>
     </div>
   `
     )
