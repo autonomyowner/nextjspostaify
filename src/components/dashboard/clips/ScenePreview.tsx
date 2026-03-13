@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 
 interface ScenePreviewProps {
   htmlContent: string | null
+  selectedSceneIndex?: number
 }
 
-export function ScenePreview({ htmlContent }: ScenePreviewProps) {
+export function ScenePreview({ htmlContent, selectedSceneIndex }: ScenePreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
 
@@ -25,6 +26,20 @@ export function ScenePreview({ htmlContent }: ScenePreviewProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [htmlContent])
+
+  // Jump to selected scene via postMessage
+  useEffect(() => {
+    if (selectedSceneIndex === undefined || !iframeRef.current) return
+    const iframe = iframeRef.current
+    // Small delay to ensure iframe is ready after content change
+    const timer = setTimeout(() => {
+      iframe.contentWindow?.postMessage(
+        { type: 'jumpToScene', index: selectedSceneIndex },
+        '*'
+      )
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [selectedSceneIndex])
 
   if (!htmlContent || !blobUrl) {
     return (

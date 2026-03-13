@@ -2300,6 +2300,46 @@ function getAnimationTimeline(scenes: SceneData[], theme: ClipTheme, waitRatio: 
 ${sceneTimings.join("\n\n")}
     }
 
+    // Jump to a specific scene (used by editor postMessage)
+    async function jumpToScene(index) {
+      // Stop any running playback
+      window._stopPlayback = true;
+      await wait(100);
+      // Clear all scenes
+      document.querySelectorAll('.scene').forEach(function(scene) {
+        scene.classList.remove('active', 'exit');
+        scene.querySelectorAll('.animate').forEach(function(el) {
+          el.classList.remove('animate');
+        });
+        scene.querySelectorAll('[id], [style]').forEach(function(el) {
+          el.style.opacity = '';
+          el.style.transform = '';
+          el.style.animation = '';
+          el.style.filter = '';
+          el.style.transition = '';
+        });
+      });
+      void document.body.offsetHeight;
+      // Show target scene with animations
+      var target = document.getElementById('scene-' + index);
+      if (target) {
+        target.classList.add('active');
+        await wait(200);
+        // Trigger all animations in the scene
+        target.querySelectorAll('[class*="anim"]').forEach(function(el) {
+          el.classList.add('animate');
+        });
+      }
+      window._stopPlayback = false;
+    }
+
+    // Listen for postMessage from parent (editor iframe communication)
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'jumpToScene' && typeof e.data.index === 'number') {
+        jumpToScene(e.data.index);
+      }
+    });
+
     // Auto-play on load
     window.addEventListener('load', function() {
       setTimeout(playVideo, 500);
