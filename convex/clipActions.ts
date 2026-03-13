@@ -763,14 +763,17 @@ export const exportMp4 = action({
     clipId: v.id("clips"),
   },
   handler: async (ctx, args) => {
+    console.log("[exportMp4] Starting export for clipId:", args.clipId);
     const authUser = await authComponent.getAuthUser(ctx);
     if (!authUser) throw new Error("Not authenticated");
+    console.log("[exportMp4] Auth OK");
 
     const user = await ctx.runQuery(api.users.viewer);
     if (!user) throw new Error("User not found");
 
     const plan = (user.plan || "FREE") as Plan;
     const limits = getPlanLimits(plan);
+    console.log("[exportMp4] Plan:", plan, "hasClipMp4Export:", limits.hasClipMp4Export);
 
     if (!limits.hasClipMp4Export) {
       throw new Error(
@@ -780,6 +783,7 @@ export const exportMp4 = action({
 
     const clip = await ctx.runQuery((api as any).clips.getById, { id: args.clipId });
     if (!clip) throw new Error("Clip not found");
+    console.log("[exportMp4] Clip found, duration:", clip.duration, "title:", clip.title);
 
     const browserlessToken = process.env.BROWSERLESS_TOKEN;
     if (!browserlessToken) {
@@ -788,6 +792,7 @@ export const exportMp4 = action({
 
     const convexSiteUrl = process.env.CONVEX_SITE_URL;
     const authSecret = process.env.BETTER_AUTH_SECRET;
+    console.log("[exportMp4] CONVEX_SITE_URL:", convexSiteUrl ? "SET" : "MISSING", "BETTER_AUTH_SECRET:", authSecret ? "SET" : "MISSING");
     if (!convexSiteUrl || !authSecret) {
       throw new Error("Server misconfigured: missing CONVEX_SITE_URL or BETTER_AUTH_SECRET");
     }
@@ -803,6 +808,7 @@ export const exportMp4 = action({
       const clipIdStr = args.clipId as string;
       const hmacToken = generateHmac(clipIdStr, authSecret);
       const clipRenderUrl = `${convexSiteUrl}/clip-render/${clipIdStr}?token=${hmacToken}`;
+      console.log("[exportMp4] Clip render URL:", clipRenderUrl);
 
       // Calculate recording duration (clip duration + 2s buffer) in ms
       const recordDurationMs = (clip.duration + 2) * 1000;
@@ -811,14 +817,16 @@ export const exportMp4 = action({
 
       // Two-phase approach:
       // Phase 1: Navigate to clip URL, capture JPEG frames via CDP Page.startScreencast
-      // Phase 2: Encode all frames into WebM using Chrome's MediaRecorder in page.evaluate()
-      // This works on any Browserless plan (no recording extension needed).
+      // Phase 2: Encode frames into real H.264 MP4 using WebCodecs VideoEncoder + mp4-muxer
+      // Produces actual MP4 files compatible with iOS, TikTok, Instagram, etc.
       const functionCode = `
 export default async function ({ page }) {
   const CLIP_URL = ${JSON.stringify(clipRenderUrl)};
   const DURATION_MS = ${recordDurationMs};
+  const W = 1080, H = 1920;
+  const TARGET_FPS = 30;
 
-  await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+  await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
   await page.goto(CLIP_URL, { waitUntil: 'networkidle0', timeout: 60000 });
 
   // Phase 1: Capture frames via CDP while animation plays
@@ -829,95 +837,136 @@ export default async function ({ page }) {
     cdp.send('Page.screencastFrameAck', { sessionId: params.sessionId }).catch(() => {});
   });
   await cdp.send('Page.startScreencast', {
-    format: 'jpeg', quality: 70, maxWidth: 1080, maxHeight: 1920, everyNthFrame: 1
+    format: 'jpeg', quality: 85, maxWidth: W, maxHeight: H, everyNthFrame: 1
   });
 
   // Wait for the full clip animation to play
   await new Promise(r => setTimeout(r, DURATION_MS));
   await cdp.send('Page.stopScreencast');
 
-  // Phase 2: Encode frames into WebM inside the browser page
-  // Chrome's MediaRecorder does hardware-accelerated VP8 encoding
-  const videoBase64 = await page.evaluate(async (allFrames) => {
+  console.log('[exportMp4] Captured', frames.length, 'frames');
+
+  // Inject mp4-muxer library into the page for Phase 2
+  await page.addScriptTag({
+    url: 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js'
+  });
+
+  // Phase 2: Encode frames into H.264 MP4 using WebCodecs + mp4-muxer
+  const mp4Base64 = await page.evaluate(async (allFrames) => {
     if (!allFrames.length) return '';
 
     const W = 1080, H = 1920;
-    const c = document.createElement('canvas');
-    c.width = W; c.height = H;
-    const ctx = c.getContext('2d');
-    const chunks = [];
-    const stream = c.captureStream(0);
-    const vTrack = stream.getVideoTracks()[0];
-    const rec = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=vp8',
-      videoBitsPerSecond: 4000000
-    });
-    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    const FPS = 30;
+    const MICROS_PER_FRAME = 1_000_000 / FPS;
 
-    // Draw first frame and start recording
-    const loadImg = (b64) => new Promise(r => {
-      const i = new Image();
-      i.onload = () => r(i);
-      i.onerror = () => r(i);
-      i.src = 'data:image/jpeg;base64,' + b64;
-    });
-
-    const firstImg = await loadImg(allFrames[0]);
-    ctx.drawImage(firstImg, 0, 0, W, H);
-    rec.start(200);
-
-    // Draw each frame with timing to approximate original playback speed
-    const frameDelay = Math.max(33, Math.floor(${recordDurationMs} / allFrames.length));
-    for (let i = 0; i < allFrames.length; i++) {
-      const img = await loadImg(allFrames[i]);
-      ctx.drawImage(img, 0, 0, W, H);
-      if (vTrack.requestFrame) vTrack.requestFrame();
-      await new Promise(r => setTimeout(r, frameDelay));
+    // Check WebCodecs support
+    if (typeof VideoEncoder === 'undefined') {
+      throw new Error('WebCodecs API not available in this Chrome version');
     }
 
-    // Stop and collect video
-    return new Promise(resolve => {
-      rec.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1] || '');
-        reader.readAsDataURL(blob);
-      };
-      rec.stop();
+    // Set up mp4-muxer (loaded via CDN script tag)
+    const { Muxer, ArrayBufferTarget } = globalThis.Mp4Muxer;
+    const target = new ArrayBufferTarget();
+    const muxer = new Muxer({
+      target,
+      video: { codec: 'avc', width: W, height: H },
+      fastStart: 'in-memory',
     });
+
+    // Set up H.264 encoder
+    let encoderError = null;
+    const encoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: (e) => { encoderError = e; console.error('VideoEncoder error:', e); },
+    });
+
+    encoder.configure({
+      codec: 'avc1.640033',
+      width: W,
+      height: H,
+      bitrate: 5_000_000,
+      framerate: FPS,
+      latencyMode: 'quality',
+    });
+
+    // Encode each captured frame
+    for (let i = 0; i < allFrames.length; i++) {
+      if (encoderError) throw encoderError;
+
+      const blob = await fetch('data:image/jpeg;base64,' + allFrames[i]).then(r => r.blob());
+      const bitmap = await createImageBitmap(blob);
+      const timestamp = Math.round(i * MICROS_PER_FRAME);
+      const frame = new VideoFrame(bitmap, { timestamp });
+      encoder.encode(frame, { keyFrame: i % 60 === 0 });
+      frame.close();
+      bitmap.close();
+
+      // Yield to prevent UI thread starvation on large clips
+      if (i % 30 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+
+    // Finalize
+    await encoder.flush();
+    encoder.close();
+    muxer.finalize();
+
+    // Convert ArrayBuffer to base64
+    const bytes = new Uint8Array(target.buffer);
+    const CHUNK = 8192;
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + CHUNK, bytes.length)));
+    }
+    return btoa(binary);
   }, frames);
 
-  return { data: videoBase64, type: 'application/json' };
+  return { data: mp4Base64, type: 'application/json' };
 }
       `;
 
-      // Browserless timeout: 2x recording time (capture + encode) + 60s overhead
-      const browserlessTimeout = recordDurationMs * 2 + 60000;
+      // Browserless timeout in MILLISECONDS: 2x recording time (capture + encode) + 60s overhead
+      const browserlessTimeoutMs = recordDurationMs * 2 + 60000;
+      console.log("[exportMp4] recordDurationMs:", recordDurationMs, "browserlessTimeoutMs:", browserlessTimeoutMs);
 
-      const response = await fetch(
-        `${browserlessUrl}/function?token=${browserlessToken}&timeout=${browserlessTimeout}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/javascript" },
-          body: functionCode,
-        }
-      );
+      const fetchUrl = `${browserlessUrl}/function?token=${browserlessToken}&timeout=${browserlessTimeoutMs}`;
+      console.log("[exportMp4] Calling Browserless...", browserlessUrl);
+      const response = await fetch(fetchUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/javascript" },
+        body: functionCode,
+      });
 
+      console.log("[exportMp4] Browserless response status:", response.status);
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("[exportMp4] Browserless error:", errorText);
         throw new Error(`Browserless error (${response.status}): ${errorText}`);
       }
 
-      const result = (await response.json()) as { data: string };
+      const responseText = await response.text();
+      console.log("[exportMp4] Response length:", responseText.length, "first 200 chars:", responseText.slice(0, 200));
+
+      let result: { data: string };
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("[exportMp4] JSON parse failed, response:", responseText.slice(0, 500));
+        throw new Error(`Failed to parse Browserless response: ${responseText.slice(0, 200)}`);
+      }
+
       if (!result.data) {
+        console.error("[exportMp4] Empty video data in result. Keys:", Object.keys(result));
         throw new Error("Browserless returned empty video data");
       }
 
+      console.log("[exportMp4] Video base64 length:", result.data.length);
       // Decode base64 video and store in Convex file storage
       const videoBuffer = Buffer.from(result.data, "base64");
-      const blob = new Blob([videoBuffer], { type: "video/webm" });
+      console.log("[exportMp4] Video buffer size:", videoBuffer.length, "bytes");
+      const blob = new Blob([videoBuffer], { type: "video/mp4" });
       const storageId = await ctx.storage.store(blob);
       const storageUrl = await ctx.storage.getUrl(storageId);
+      console.log("[exportMp4] Stored video, URL:", storageUrl);
 
       if (!storageUrl) {
         throw new Error("Failed to get storage URL for recorded video");
@@ -932,6 +981,8 @@ export default async function ({ page }) {
 
       return { mp4Url: storageUrl };
     } catch (e: unknown) {
+      console.error("[exportMp4] FAILED:", e instanceof Error ? e.message : String(e));
+      console.error("[exportMp4] Stack:", e instanceof Error ? e.stack : "no stack");
       await ctx.runMutation((api as any).clips.updateRenderStatus, {
         clipId: args.clipId,
         renderStatus: "failed",
