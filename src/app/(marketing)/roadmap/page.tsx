@@ -3,6 +3,9 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Roadmap',
   description: 'See what features are coming next to POSTAIFY. Our transparent roadmap shows planned improvements and new capabilities.',
+  alternates: {
+    canonical: 'https://postaify.com/roadmap',
+  },
 }
 
 // Note: This is a placeholder - migrate RoadmapPage from the Vite project

@@ -4,6 +4,9 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Terms of Service | POSTAIFY',
   description: 'Terms of Service for POSTAIFY. Read about acceptable use of our AI content generation platform.',
+  alternates: {
+    canonical: 'https://postaify.com/terms',
+  },
 }
 
 export default function TermsPage() {

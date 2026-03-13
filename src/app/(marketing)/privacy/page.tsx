@@ -4,6 +4,9 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Privacy Policy | POSTAIFY',
   description: 'Privacy Policy for POSTAIFY. Learn how we collect, use, and protect your personal information.',
+  alternates: {
+    canonical: 'https://postaify.com/privacy',
+  },
 }
 
 export default function PrivacyPolicyPage() {

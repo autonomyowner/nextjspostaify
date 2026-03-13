@@ -14,60 +14,68 @@ const tools = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://postaify.com'
 
+  const today = new Date().toISOString().split('T')[0]
+
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
-      lastModified: '2026-02-10',
+      lastModified: today,
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${baseUrl}/pricing`,
-      lastModified: '2026-02-07',
+      lastModified: today,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/tools`,
-      lastModified: '2026-02-07',
+      lastModified: today,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: '2026-02-07',
+      lastModified: today,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/youtube-summary`,
-      lastModified: '2026-02-07',
+      lastModified: today,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: '2026-01-15',
+      lastModified: today,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
       url: `${baseUrl}/terms`,
-      lastModified: '2026-01-15',
+      lastModified: today,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
       url: `${baseUrl}/roadmap`,
-      lastModified: '2026-02-07',
+      lastModified: today,
       changeFrequency: 'weekly',
       priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/waitlist`,
+      lastModified: today,
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
   ]
 
   const toolPages: MetadataRoute.Sitemap = tools.map((slug) => ({
     url: `${baseUrl}/tools/${slug}`,
-    lastModified: '2026-02-07',
+    lastModified: today,
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
@@ -75,7 +83,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Comparison pages for AEO (Generative Engine Optimization)
   const comparisonPages: MetadataRoute.Sitemap = competitorSlugs.map((slug) => ({
     url: `${baseUrl}/compare/${slug}`,
-    lastModified: '2026-02-07',
+    lastModified: today,
     changeFrequency: 'monthly' as const,
     priority: 0.7,
   }))
